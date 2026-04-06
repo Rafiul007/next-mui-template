@@ -15,48 +15,4 @@ export const appTheme = createTheme({
       paper: "#ffffff",
     },
   },
-  shape: {
-    borderRadius: 18,
-  },
-  typography: {
-    fontFamily:
-      '"Segoe UI", "Helvetica Neue", Helvetica, Arial, "Noto Sans", sans-serif',
-    h1: {
-      fontSize: "clamp(2.5rem, 5vw, 4rem)",
-      fontWeight: 700,
-      lineHeight: 1.05,
-      letterSpacing: "-0.04em",
-    },
-    h2: {
-      fontWeight: 700,
-      letterSpacing: "-0.03em",
-    },
-  },
-  components: {
-    MuiButton: {
-      defaultProps: {
-        disableElevation: true,
-      },
-      styleOverrides: {
-        root: {
-          borderRadius: 999,
-          paddingInline: 18,
-        },
-      },
-    },
-    MuiCard: {
-      styleOverrides: {
-        root: {
-          borderRadius: 28,
-        },
-      },
-    },
-    MuiPaper: {
-      styleOverrides: {
-        root: {
-          backgroundImage: "none",
-        },
-      },
-    },
-  },
 });
