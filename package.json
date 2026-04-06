@@ -18,6 +18,7 @@
     "@mui/material": "^7.3.9",
     "@mui/x-date-pickers": "^8.27.2",
     "dayjs": "^1.11.20",
+    "material-react-table": "^3.2.1",
     "next": "16.2.2",
     "react": "19.2.4",
     "react-dom": "19.2.4",
