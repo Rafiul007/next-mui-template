@@ -17,6 +17,7 @@
     "@mui/icons-material": "^7.3.9",
     "@mui/material": "^7.3.9",
     "@mui/x-date-pickers": "^8.27.2",
+    "axios": "^1.14.0",
     "dayjs": "^1.11.20",
     "material-react-table": "^3.2.1",
     "next": "16.2.2",
