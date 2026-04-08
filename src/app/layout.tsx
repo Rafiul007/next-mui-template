@@ -3,9 +3,8 @@ import { AppThemeProvider } from "@/components/app-theme-provider";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Next MUI Template",
-  description:
-    "Next.js starter with Material UI, React Hook Form, Yup, and MUI icons",
+  title: "Dashboard Project",
+  description: "Basic home, login, signup, and dashboard pages.",
 };
 
 export default function RootLayout({

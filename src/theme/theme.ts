@@ -1,6 +1,9 @@
 import { createTheme } from "@mui/material/styles";
 
 export const appTheme = createTheme({
+  shape: {
+    borderRadius: 0,
+  },
   palette: {
     primary: {
       main: "#0f766e",

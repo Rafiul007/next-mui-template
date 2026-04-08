@@ -1,18 +1,18 @@
 import Link from "next/link";
 import { Box, Stack, Typography } from "@mui/material";
 
-export default function Home() {
+export default function LoginPage() {
   return (
     <Box sx={{ p: 4 }}>
       <Typography variant="h4" component="h1" gutterBottom>
-        Home Page
+        Login Page
       </Typography>
       <Typography variant="body1" sx={{ mb: 2 }}>
-        This is the landing page.
+        Authentication logic is not added yet.
       </Typography>
 
       <Stack spacing={1}>
-        <Link href="/login">Go to Login Page</Link>
+        <Link href="/">Go to Home Page</Link>
         <Link href="/signup">Go to Signup Page</Link>
         <Link href="/dashboard">Go to Dashboard Page</Link>
       </Stack>
