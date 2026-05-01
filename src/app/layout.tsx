@@ -3,8 +3,8 @@ import { AppThemeProvider } from "@/components/app-theme-provider";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Dashboard Project",
-  description: "Basic home, login, signup, and dashboard pages.",
+  title: "BongoEdu360",
+  description: "BongoEdu360 dashboard, authentication, and admin pages.",
 };
 
 export default function RootLayout({

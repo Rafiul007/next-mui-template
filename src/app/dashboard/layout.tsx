@@ -1,86 +1,41 @@
 import type { ReactNode } from "react";
-import {
-  AssessmentRounded,
-  SchoolRounded,
-  InsertEmoticonOutlined,
-  LocationCityOutlined,
-} from "@mui/icons-material";
 import { Box } from "@mui/material";
-import { Sidebar, type SidebarMenuItem } from "@/components/dashboard/Sidebar";
-import { Topbar } from "@/components/dashboard/Topbar";
-
-const sidebarMenuItems: SidebarMenuItem[] = [
-  {
-    label: "School",
-    icon: <LocationCityOutlined />,
-    href: "/dashboard",
-  },
-  {
-    label: "Exam",
-    icon: <SchoolRounded />,
-    children: [
-      {
-        label: "Exam List",
-        href: "/dashboard/exam-list",
-        icon: <InsertEmoticonOutlined />,
-      },
-      {
-        label: "Create Exam",
-        href: "/dashboard/create-exam",
-        icon: <InsertEmoticonOutlined />,
-      },
-    ],
-  },
-  {
-    label: "Result",
-    icon: <AssessmentRounded />,
-    children: [
-      {
-        label: "Result List",
-        href: "/dashboard/result-list",
-        icon: <InsertEmoticonOutlined />,
-      },
-      {
-        label: "Publish Result",
-        href: "/dashboard/publish-result",
-        icon: <InsertEmoticonOutlined />,
-      },
-    ],
-  },
-];
+import { Sidebar } from "@/components/dashboard/Sidebar";
+import { dashboardSidebarMenuItems } from "@/config/dashboard-menu";
 
 export default function DashboardLayout({ children }: { children: ReactNode }) {
   return (
     <Box
       sx={{
-        minHeight: "100vh",
+        height: "100dvh",
         display: "flex",
         flexDirection: { xs: "column", md: "row" },
         bgcolor: "#0f172a",
+        overflow: "hidden",
       }}
     >
-      <Sidebar logoText="My School" menuItems={sidebarMenuItems} />
+      <Sidebar logoText="BongoEdu360" menuItems={dashboardSidebarMenuItems} />
 
       <Box
         component="main"
         sx={{
           flex: 1,
           minWidth: 0,
+          minHeight: 0,
           display: "flex",
           flexDirection: "column",
           bgcolor: "#0f172a",
+          overflow: "hidden",
         }}
       >
-        <Topbar
-          logoText="My School"
-          userName="John Doe"
-          userRole="Administrator"
-        />
         <Box
           sx={{
             flex: 1,
+            minHeight: 0,
             bgcolor: "background.default",
             p: { xs: 2, md: 3 },
+            overflowY: "auto",
+            overflowX: "hidden",
           }}
         >
           {children}

@@ -1,6 +1,7 @@
 "use client";
 
 import { Avatar, Box, Stack, Typography } from "@mui/material";
+import { primaryGradient } from "@/theme/theme";
 
 type UserProfileProps = {
   name: string;
@@ -25,8 +26,9 @@ export function UserProfile({
       alignItems="center"
       justifyContent="flex-end"
       sx={{
-        px: 5.5,
-        py: 1,
+        px: 1,
+        py: 0.75,
+        borderRadius: 8,
         bgcolor: "rgba(255, 255, 255, 0.06)",
         border: "1px solid",
         borderColor: "rgba(148, 163, 184, 0.18)",
@@ -36,7 +38,7 @@ export function UserProfile({
         sx={{
           width: 40,
           height: 40,
-          bgcolor: "primary.main",
+          background: primaryGradient,
           fontSize: 14,
           fontWeight: 700,
         }}
