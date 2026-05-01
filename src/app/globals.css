@@ -13,7 +13,8 @@ body {
   display: flex;
   flex-direction: column;
   font-family:
-    "Segoe UI", "Helvetica Neue", Helvetica, Arial, "Noto Sans", sans-serif;
+    "Inter", "Manrope", "Segoe UI", "Helvetica Neue", Helvetica, Arial,
+    "Noto Sans", sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }

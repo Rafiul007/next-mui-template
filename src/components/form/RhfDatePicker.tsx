@@ -22,7 +22,7 @@ type RhfDatePickerProps<TFieldValues extends FieldValues> = {
   helperText?: ReactNode;
   textFieldProps?: Omit<
     TextFieldProps,
-    "name" | "value" | "defaultValue" | "onChange" | "error" | "helperText"
+    "name" | "value" | "defaultValue" | "onChange" | "error"
   >;
   onCustomChange?: (value: Dayjs | null) => void;
 } & Omit<
