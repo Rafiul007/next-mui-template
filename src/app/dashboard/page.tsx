@@ -1,21 +1,15 @@
 import {
-  ArrowOutwardRounded,
   AutoGraphRounded,
   CheckCircleRounded,
   PeopleAltRounded,
   PlayLessonRounded,
   ReceiptLongRounded,
-  TrendingUpRounded,
 } from "@mui/icons-material";
 import {
   Box,
-  Button,
   Card,
   CardContent,
   Chip,
-  Divider,
-  LinearProgress,
-  Paper,
   Stack,
   Typography,
   alpha,
@@ -47,12 +41,6 @@ const metrics = [
     trend: "Healthy",
     icon: AutoGraphRounded,
   },
-];
-
-const progressData = [
-  { label: "Admissions target", value: 78, color: "#10b981" },
-  { label: "Fee collection rate", value: 91, color: "#14b8a6" },
-  { label: "Teacher attendance", value: 96, color: "#22c55e" },
 ];
 
 const activity = [
