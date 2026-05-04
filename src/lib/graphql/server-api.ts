@@ -2,11 +2,12 @@ import { env } from "@/config/env";
 import {
   LOGIN_MUTATION,
   REFRESH_MUTATION,
-} from "@/graphql/mutations/auth.mutations";
+} from "@/graphql/mutations/auth/auth.mutations";
 import type { AuthTokens } from "@/lib/auth/session";
 
 const LOGIN_FIELD_PATTERN = /\blogin\s*\(/i;
 const REFRESH_FIELD_PATTERN = /\brefresh\s*\(/i;
+const IMPERSONATE_TENANT_FIELD_PATTERN = /\bimpersonateTenant\s*\(/i;
 
 type GraphqlError = {
   message?: string;
@@ -124,8 +125,10 @@ export const extractAuthTokens = (
 export const isTokenIssuingOperation = (body: GraphqlRequestBody) =>
   body.operationName === "Login" ||
   body.operationName === "Refresh" ||
+  body.operationName === "ImpersonateTenant" ||
   LOGIN_FIELD_PATTERN.test(body.query) ||
-  REFRESH_FIELD_PATTERN.test(body.query);
+  REFRESH_FIELD_PATTERN.test(body.query) ||
+  IMPERSONATE_TENANT_FIELD_PATTERN.test(body.query);
 
 export const shouldAttemptTokenRefresh = (
   status: number,

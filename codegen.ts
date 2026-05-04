@@ -15,8 +15,17 @@ const config: CodegenConfig = {
   ],
   ignoreNoDocuments: true,
   generates: {
-    "src/graphql/generated/index.ts": {
-      plugins: ["typescript", "typescript-operations", "typed-document-node"],
+    "src/graphql/generated/schema.ts": {
+      plugins: ["typescript"],
+    },
+    "src/graphql/generated/operations.ts": {
+      plugins: ["typescript-operations", "typed-document-node"],
+      config: {
+        preResolveTypes: false,
+        importSchemaTypesFrom: "src/graphql/generated/schema",
+        namespacedImportName: "SchemaTypes",
+        useTypeImports: true,
+      },
     },
   },
 };

@@ -1,13 +1,12 @@
-import { NotificationsNoneRounded, SearchRounded } from "@mui/icons-material";
-import { Box, IconButton, Stack, alpha } from "@mui/material";
+import { NotificationsNoneRounded } from "@mui/icons-material";
+import { Box, IconButton, Stack, Typography, alpha } from "@mui/material";
 import { UserProfile } from "@/components/dashboard/UserProfile";
 
 type TopbarProps = {
   title: string;
-  subtitle?: string;
 };
 
-export function Topbar({}: TopbarProps) {
+export function Topbar({ title }: TopbarProps) {
   return (
     <Box
       sx={{
@@ -15,23 +14,34 @@ export function Topbar({}: TopbarProps) {
         py: 2,
         bgcolor: "#09111c",
         color: "#e2e8f0",
-        display: "flex",
-        alignItems: "end",
-        justifyContent: "space-between",
+        borderBottom: "1px solid rgba(148, 163, 184, 0.1)",
       }}
     >
-      <IconButton
-        sx={{
-          borderRadius: 2,
-          color: "#e2e8f0",
-          bgcolor: alpha("#ffffff", 0.05),
-          border: "1px solid rgba(148, 163, 184, 0.12)",
-        }}
+      <Stack
+        direction="row"
+        alignItems="center"
+        justifyContent="space-between"
+        spacing={2}
       >
-        <NotificationsNoneRounded />
-      </IconButton>
+        <Typography variant="h5" sx={{ color: "#f8fafc" }}>
+          {title}
+        </Typography>
 
-      <UserProfile />
+        <Stack direction="row" spacing={1.5} alignItems="center">
+          <IconButton
+            sx={{
+              borderRadius: 2,
+              color: "#e2e8f0",
+              bgcolor: alpha("#ffffff", 0.05),
+              border: "1px solid rgba(148, 163, 184, 0.12)",
+            }}
+          >
+            <NotificationsNoneRounded />
+          </IconButton>
+
+          <UserProfile />
+        </Stack>
+      </Stack>
     </Box>
   );
 }
