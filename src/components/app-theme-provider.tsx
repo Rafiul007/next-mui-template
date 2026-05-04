@@ -6,6 +6,7 @@ import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import type { PropsWithChildren } from "react";
 import { appTheme } from "@/theme/theme";
 import { MuiCacheProvider } from "@/components/mui-cache-provider";
+import { ApolloAppProvider } from "@/lib/apollo/provider";
 
 export function AppThemeProvider({ children }: PropsWithChildren) {
   return (
@@ -13,7 +14,7 @@ export function AppThemeProvider({ children }: PropsWithChildren) {
       <ThemeProvider theme={appTheme}>
         <LocalizationProvider dateAdapter={AdapterDayjs}>
           <CssBaseline />
-          {children}
+          <ApolloAppProvider>{children}</ApolloAppProvider>
         </LocalizationProvider>
       </ThemeProvider>
     </MuiCacheProvider>

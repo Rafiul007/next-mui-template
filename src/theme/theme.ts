@@ -115,6 +115,14 @@ export const appTheme = createTheme({
         },
       },
     },
+    MuiOutlinedInput: {
+      styleOverrides: {
+        root: {
+          borderRadius: 8,
+          backgroundColor: alpha("#ffffff", 0.72),
+        },
+      },
+    },
     MuiChip: {
       styleOverrides: {
         root: {
