@@ -3,10 +3,20 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { yupResolver } from "@hookform/resolvers/yup";
-import { Box, Button, Card, Typography, alpha } from "@mui/material";
+import {
+  Alert,
+  Box,
+  Button,
+  Card,
+  CircularProgress,
+  Typography,
+  alpha,
+} from "@mui/material";
+import { useState } from "react";
 import { useForm } from "react-hook-form";
 import * as yup from "yup";
 import { RhfTextField } from "@/components/form";
+import { loginWithPassword } from "@/lib/auth/client";
 import { primaryGradient } from "@/theme/theme";
 
 const loginSchema = yup
@@ -31,23 +41,31 @@ const defaultValues: LoginFormValues = {
   password: "",
 };
 
-const textFieldSx = {
-  "& .MuiOutlinedInput-root": {
-    borderRadius: 3,
-    bgcolor: alpha("#ffffff", 0.72),
-  },
-};
-
 export default function LoginPage() {
   const router = useRouter();
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const { control, handleSubmit } = useForm<LoginFormValues>({
     resolver: yupResolver(loginSchema),
     defaultValues,
     mode: "onTouched",
   });
 
-  const handleLogin = () => {
-    router.push("/dashboard");
+  const handleLogin = async (values: LoginFormValues) => {
+    setErrorMessage(null);
+    setIsSubmitting(true);
+
+    try {
+      await loginWithPassword(values.email, values.password);
+      router.push("/dashboard");
+      router.refresh();
+    } catch (error) {
+      setErrorMessage(
+        error instanceof Error ? error.message : "Unable to sign in.",
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -180,6 +198,12 @@ export default function LoginPage() {
                 gap: 2.5,
               }}
             >
+              {errorMessage ? (
+                <Alert severity="error" sx={{ borderRadius: 2 }}>
+                  {errorMessage}
+                </Alert>
+              ) : null}
+
               <RhfTextField
                 control={control}
                 name="email"
@@ -188,7 +212,6 @@ export default function LoginPage() {
                 fullWidth
                 autoComplete="email"
                 placeholder="name@company.com"
-                sx={textFieldSx}
                 trim
               />
               <RhfTextField
@@ -199,11 +222,20 @@ export default function LoginPage() {
                 fullWidth
                 autoComplete="current-password"
                 placeholder="Enter your password"
-                sx={textFieldSx}
               />
 
-              <Button type="submit" variant="contained" size="large" fullWidth>
-                Sign in
+              <Button
+                type="submit"
+                variant="contained"
+                size="large"
+                fullWidth
+                disabled={isSubmitting}
+              >
+                {isSubmitting ? (
+                  <CircularProgress color="inherit" size={22} />
+                ) : (
+                  "Sign in"
+                )}
               </Button>
             </Box>
           </Box>

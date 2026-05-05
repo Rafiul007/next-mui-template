@@ -1,9 +1,23 @@
 import type { ReactNode } from "react";
+import { cookies } from "next/headers";
+import { redirect } from "next/navigation";
 import { Box } from "@mui/material";
 import { Sidebar } from "@/components/dashboard/Sidebar";
+import { Topbar } from "@/components/dashboard/Topbar";
 import { dashboardSidebarMenuItems } from "@/config/dashboard-menu";
+import { hasAuthSession } from "@/lib/auth/session";
 
-export default function DashboardLayout({ children }: { children: ReactNode }) {
+export default async function DashboardLayout({
+  children,
+}: {
+  children: ReactNode;
+}) {
+  const cookieStore = await cookies();
+
+  if (!hasAuthSession(cookieStore)) {
+    redirect("/login");
+  }
+
   return (
     <Box
       sx={{
@@ -28,6 +42,8 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
           overflow: "hidden",
         }}
       >
+        <Topbar title="Dashboard Overview" />
+
         <Box
           sx={{
             flex: 1,
