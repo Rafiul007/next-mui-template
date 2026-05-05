@@ -14,9 +14,11 @@ import {
 } from "@mui/material";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
+import { toast } from "react-hot-toast";
 import * as yup from "yup";
 import { RhfTextField } from "@/components/form";
-import { loginWithPassword } from "@/lib/auth/client";
+import { AuthClientError, loginWithPassword } from "@/lib/auth/client";
+import { getErrorMessage } from "@/lib/errors";
 import { primaryGradient } from "@/theme/theme";
 
 const loginSchema = yup
@@ -51,18 +53,44 @@ export default function LoginPage() {
     mode: "onTouched",
   });
 
+  const getLoginToastMessage = (error: unknown) => {
+    if (!(error instanceof AuthClientError)) {
+      return "Unable to sign in right now. Please try again.";
+    }
+
+    if (error.code === "invalid_credentials") {
+      return "Incorrect email or password.";
+    }
+
+    if (error.code === "invalid_request") {
+      return "Please review your login details and try again.";
+    }
+
+    if (error.code === "service_unavailable") {
+      return "Authentication service is temporarily unavailable.";
+    }
+
+    if (error.code === "network_error") {
+      return error.message;
+    }
+
+    return error.message;
+  };
+
   const handleLogin = async (values: LoginFormValues) => {
     setErrorMessage(null);
     setIsSubmitting(true);
 
     try {
       await loginWithPassword(values.email, values.password);
+      toast.success("Signed in successfully.");
       router.push("/dashboard");
       router.refresh();
     } catch (error) {
-      setErrorMessage(
-        error instanceof Error ? error.message : "Unable to sign in.",
-      );
+      const message = getErrorMessage(error, "Unable to sign in.");
+
+      setErrorMessage(message);
+      toast.error(getLoginToastMessage(error));
     } finally {
       setIsSubmitting(false);
     }

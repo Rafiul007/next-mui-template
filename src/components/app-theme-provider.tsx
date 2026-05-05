@@ -5,6 +5,7 @@ import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import type { PropsWithChildren } from "react";
 import { appTheme } from "@/theme/theme";
+import { AppToaster } from "@/components/app-toaster";
 import { MuiCacheProvider } from "@/components/mui-cache-provider";
 import { ApolloAppProvider } from "@/lib/apollo/provider";
 
@@ -14,7 +15,10 @@ export function AppThemeProvider({ children }: PropsWithChildren) {
       <ThemeProvider theme={appTheme}>
         <LocalizationProvider dateAdapter={AdapterDayjs}>
           <CssBaseline />
-          <ApolloAppProvider>{children}</ApolloAppProvider>
+          <ApolloAppProvider>
+            {children}
+            <AppToaster />
+          </ApolloAppProvider>
         </LocalizationProvider>
       </ThemeProvider>
     </MuiCacheProvider>

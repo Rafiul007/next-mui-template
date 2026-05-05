@@ -42,7 +42,7 @@ export default async function DashboardLayout({
           overflow: "hidden",
         }}
       >
-        <Topbar title="Dashboard Overview" />
+        <Topbar title="Udvash Coaching Center" />
 
         <Box
           sx={{
