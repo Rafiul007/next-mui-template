@@ -30,7 +30,8 @@ const authOperationResponse = () =>
     {
       errors: [
         {
-          message: "Authentication operations must use the dedicated auth routes.",
+          message:
+            "Authentication operations must use the dedicated auth routes.",
         },
       ],
     },
@@ -40,7 +41,9 @@ const authOperationResponse = () =>
 const invalidUpstreamResponse = () =>
   NextResponse.json(
     {
-      errors: [{ message: "The GraphQL service returned an invalid response." }],
+      errors: [
+        { message: "The GraphQL service returned an invalid response." },
+      ],
     },
     { status: 502 },
   );

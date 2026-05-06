@@ -9,7 +9,8 @@ type AuthErrorResponse = {
   error?: string;
 };
 
-const defaultAuthErrorMessage = "Unable to complete the authentication request.";
+const defaultAuthErrorMessage =
+  "Unable to complete the authentication request.";
 
 const parseJsonResponse = async (response: Response) => {
   // Auth endpoints should return JSON, but guard against unexpected upstream or
@@ -26,7 +27,10 @@ const isAuthSuccessResponse = (
 ): payload is AuthSuccessResponse =>
   payload !== null && "success" in payload && payload.success === true;
 
-const throwAuthError = (payload: AuthErrorResponse | null, fallback: string) => {
+const throwAuthError = (
+  payload: AuthErrorResponse | null,
+  fallback: string,
+) => {
   throw new Error(payload?.error ?? fallback);
 };
 

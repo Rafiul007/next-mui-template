@@ -1,6 +1,8 @@
 "use client";
 
-import createCache, { type Options as CreateCacheOptions } from "@emotion/cache";
+import createCache, {
+  type Options as CreateCacheOptions,
+} from "@emotion/cache";
 import { CacheProvider } from "@emotion/react";
 import { useServerInsertedHTML } from "next/navigation";
 import { type PropsWithChildren, useState } from "react";
