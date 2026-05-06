@@ -18,10 +18,11 @@ export function DashboardStatePage({
   description,
   mode = "construction",
 }: DashboardStatePageProps) {
-  const Icon =
-    mode === "construction" ? ConstructionRounded : SearchOffRounded;
+  const Icon = mode === "construction" ? ConstructionRounded : SearchOffRounded;
   const accentBg =
-    mode === "construction" ? "rgba(37, 99, 235, 0.12)" : "rgba(15, 118, 110, 0.12)";
+    mode === "construction"
+      ? "rgba(37, 99, 235, 0.12)"
+      : "rgba(15, 118, 110, 0.12)";
   const accentColor = mode === "construction" ? "#2563eb" : "#0f766e";
 
   return (
