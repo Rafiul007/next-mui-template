@@ -38,10 +38,7 @@ type RhfRadioProps<TFieldValues extends FieldValues> = {
     event: ChangeEvent<HTMLInputElement>,
     value: string,
   ) => void;
-} & Omit<
-  RadioGroupProps,
-  "name" | "value" | "defaultValue" | "onChange"
-> &
+} & Omit<RadioGroupProps, "name" | "value" | "defaultValue" | "onChange"> &
   Omit<ControllerProps<TFieldValues>, "control" | "render" | "name">;
 
 export const RhfRadio = <TFieldValues extends FieldValues>({

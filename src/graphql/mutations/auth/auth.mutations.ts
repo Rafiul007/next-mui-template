@@ -28,10 +28,7 @@ export const LOGOUT_MUTATION = /* GraphQL */ `
 
 export const CHANGE_PASSWORD_MUTATION = /* GraphQL */ `
   mutation ChangePassword($newPassword: String!, $confirmPassword: String!) {
-    changePassword(
-      newPassword: $newPassword
-      confirmPassword: $confirmPassword
-    )
+    changePassword(newPassword: $newPassword, confirmPassword: $confirmPassword)
   }
 `;
 

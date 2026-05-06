@@ -29,7 +29,8 @@ export class AuthClientError extends Error {
   }
 }
 
-const defaultAuthErrorMessage = "Unable to complete the authentication request.";
+const defaultAuthErrorMessage =
+  "Unable to complete the authentication request.";
 
 const parseJsonResponse = async (response: Response) => {
   // Auth endpoints should return JSON, but guard against unexpected upstream or
