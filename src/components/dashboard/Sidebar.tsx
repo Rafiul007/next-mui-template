@@ -101,29 +101,8 @@ export function Sidebar({ logoText, menuItems }: SidebarProps) {
           >
             <SchoolRounded />
           </Box>
-          <Box>
-            <Typography variant="h6" component="div" fontWeight={700}>
-              {logoText}
-            </Typography>
-            <Typography
-              variant="caption"
-              sx={{ color: "rgba(226, 232, 240, 0.72)" }}
-            >
-              Admin Workspace
-            </Typography>
-          </Box>
-        </Stack>
-
-        <Stack spacing={1} sx={{ px: 0 }}>
-          <Typography
-            variant="overline"
-            sx={{
-              px: 1.5,
-              color: "rgba(148, 163, 184, 0.92)",
-              letterSpacing: 1.2,
-            }}
-          >
-            Main Menu
+          <Typography variant="h6" component="div" fontWeight={700}>
+            {logoText}
           </Typography>
         </Stack>
 

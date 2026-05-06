@@ -114,7 +114,7 @@ export const dashboardMenuMap = {
   phases: [
     createSection({
       key: "tenant-setup",
-      label: "Center Setup",
+      label: "Profile Setup",
       icon: ApartmentRounded,
       phase: "Phase 2",
       route: ["tenant-setup"],
@@ -122,12 +122,14 @@ export const dashboardMenuMap = {
         {
           key: "center-profile",
           label: "Center Details",
+          icon: ApartmentRounded,
           moduleCode: "2.1",
           useCases: ["UC-CA-01", "UC-CA-10"],
           route: ["tenant-setup", "center-profile"],
         },
         {
           key: "branch-management",
+          icon: ApartmentRounded,
           label: "Branches",
           moduleCode: "2.2",
           useCases: ["UC-BM-01"],
@@ -142,14 +144,14 @@ export const dashboardMenuMap = {
         },
         {
           key: "org-hierarchy",
-          label: "Teams & Structure",
+          label: "Organization Structure",
           moduleCode: "2.4",
           route: ["tenant-setup", "org-hierarchy"],
           icon: AccountTreeRounded,
         },
         {
           key: "tenant-roles",
-          label: "Roles & Access",
+          label: "Roles & Permissions",
           moduleCode: "2.5",
           route: ["tenant-setup", "roles"],
           icon: SettingsRounded,
