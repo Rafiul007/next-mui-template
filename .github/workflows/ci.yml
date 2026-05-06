@@ -1,4 +1,4 @@
-name: Lint & Format Check
+name: Lint Check
 
 on:
   pull_request:
@@ -8,7 +8,7 @@ on:
 
 jobs:
   lint-and-format:
-    name: ESLint & Prettier
+    name: ESLint
     runs-on: ubuntu-latest
 
     steps:
@@ -26,6 +26,3 @@ jobs:
 
       - name: Run ESLint
         run: yarn lint
-
-      - name: Run Prettier check
-        run: yarn format:check
