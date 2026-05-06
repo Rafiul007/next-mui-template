@@ -69,10 +69,7 @@ export function CreateRoleDialog({
     })
     .required();
 
-  const {
-    control,
-    handleSubmit,
-  } = useForm<CreateRoleFormValues>({
+  const { control, handleSubmit } = useForm<CreateRoleFormValues>({
     resolver: yupResolver(createRoleSchema),
     defaultValues: {
       name: "",
@@ -100,7 +97,9 @@ export function CreateRoleDialog({
               Define what this role can manage inside the tenant workspace.
             </Typography>
 
-            {errorMessage ? <Alert severity="error">{errorMessage}</Alert> : null}
+            {errorMessage ? (
+              <Alert severity="error">{errorMessage}</Alert>
+            ) : null}
 
             <RhfTextField
               control={control}
@@ -209,7 +208,10 @@ export function CreateRoleDialog({
                                     }}
                                   />
                                   <Box sx={{ minWidth: 0 }}>
-                                    <Typography variant="body2" fontWeight={600}>
+                                    <Typography
+                                      variant="body2"
+                                      fontWeight={600}
+                                    >
                                       {option.label}
                                     </Typography>
                                     <Typography

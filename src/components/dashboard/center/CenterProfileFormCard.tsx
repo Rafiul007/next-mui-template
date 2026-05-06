@@ -58,17 +58,19 @@ const centerProfileSchema = yup
       .default(""),
     academicYearStartMonth: yup
       .string()
-      .oneOf(["", ...monthOptions.slice(1).map((option) => String(option.value))])
+      .oneOf([
+        "",
+        ...monthOptions.slice(1).map((option) => String(option.value)),
+      ])
       .default(""),
-    email: yup
-      .string()
-      .trim()
-      .email("Enter a valid email address")
-      .default(""),
+    email: yup.string().trim().email("Enter a valid email address").default(""),
     phone: yup
       .string()
       .trim()
-      .matches(/^$|^[0-9+\-() ]+$/, "Use numbers and simple phone characters only")
+      .matches(
+        /^$|^[0-9+\-() ]+$/,
+        "Use numbers and simple phone characters only",
+      )
       .max(30, "Phone number must be 30 characters or fewer")
       .default(""),
     address: yup
@@ -116,12 +118,16 @@ type CenterFieldConfig =
       options: RhfSelectOption[];
     };
 
-const getCenterProfileValues = (center: CenterRecord): CenterProfileFormValues => ({
+const getCenterProfileValues = (
+  center: CenterRecord,
+): CenterProfileFormValues => ({
   name: center?.name ?? "",
   nameBangla: center?.nameBangla ?? "",
   tagline: center?.tagline ?? "",
   logo: center?.logo ?? "",
-  establishedYear: center?.establishedYear ? String(center.establishedYear) : "",
+  establishedYear: center?.establishedYear
+    ? String(center.establishedYear)
+    : "",
   academicYearStartMonth: center?.academicYearStartMonth
     ? String(center.academicYearStartMonth)
     : "",
@@ -131,14 +137,64 @@ const getCenterProfileValues = (center: CenterRecord): CenterProfileFormValues =
 });
 
 const centerFieldConfigs: CenterFieldConfig[] = [
-  { kind: "text", name: "name", label: "Center name", placeholder: "Bongo Coaching Center", trim: true },
-  { kind: "text", name: "nameBangla", label: "Center name (Bangla)", placeholder: "বাংলা নাম", trim: true },
-  { kind: "text", name: "tagline", label: "Tagline", placeholder: "Helping students learn with confidence", trim: true },
-  { kind: "text", name: "establishedYear", label: "Established year", placeholder: "2018", type: "number" },
-  { kind: "select", name: "academicYearStartMonth", label: "Academic year starts in", options: monthOptions },
-  { kind: "text", name: "email", label: "Center email", placeholder: "info@center.com", type: "email", trim: true },
-  { kind: "text", name: "phone", label: "Center phone", placeholder: "+8801XXXXXXXXX", trim: true },
-  { kind: "text", name: "address", label: "Address", placeholder: "Road, area, city", trim: true, multiline: true, minRows: 3 },
+  {
+    kind: "text",
+    name: "name",
+    label: "Center name",
+    placeholder: "Bongo Coaching Center",
+    trim: true,
+  },
+  {
+    kind: "text",
+    name: "nameBangla",
+    label: "Center name (Bangla)",
+    placeholder: "বাংলা নাম",
+    trim: true,
+  },
+  {
+    kind: "text",
+    name: "tagline",
+    label: "Tagline",
+    placeholder: "Helping students learn with confidence",
+    trim: true,
+  },
+  {
+    kind: "text",
+    name: "establishedYear",
+    label: "Established year",
+    placeholder: "2018",
+    type: "number",
+  },
+  {
+    kind: "select",
+    name: "academicYearStartMonth",
+    label: "Academic year starts in",
+    options: monthOptions,
+  },
+  {
+    kind: "text",
+    name: "email",
+    label: "Center email",
+    placeholder: "info@center.com",
+    type: "email",
+    trim: true,
+  },
+  {
+    kind: "text",
+    name: "phone",
+    label: "Center phone",
+    placeholder: "+8801XXXXXXXXX",
+    trim: true,
+  },
+  {
+    kind: "text",
+    name: "address",
+    label: "Address",
+    placeholder: "Road, area, city",
+    trim: true,
+    multiline: true,
+    minRows: 3,
+  },
 ];
 
 export function CenterProfileFormCard({

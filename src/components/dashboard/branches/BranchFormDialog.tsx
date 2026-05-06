@@ -63,12 +63,7 @@ export type BranchFormValues = yup.InferType<typeof branchFormSchema>;
 
 type BranchTextFieldConfig = {
   kind: "text";
-  name:
-    | "name"
-    | "phone"
-    | "address"
-    | "openTime"
-    | "closeTime";
+  name: "name" | "phone" | "address" | "openTime" | "closeTime";
   label: string;
   placeholder?: string;
   type?: "text" | "time";
@@ -179,7 +174,9 @@ export function BranchFormDialog({
               </Typography>
             </Box>
 
-            {errorMessage ? <Alert severity="error">{errorMessage}</Alert> : null}
+            {errorMessage ? (
+              <Alert severity="error">{errorMessage}</Alert>
+            ) : null}
 
             <Box
               sx={{

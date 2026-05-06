@@ -1,6 +1,11 @@
 import { BusinessRounded, EditRounded } from "@mui/icons-material";
 import { Box, Button, Stack, Typography } from "@mui/material";
-import { CardSectionHeader, InfoBox, InfoValue, SectionCard } from "@/components/ui";
+import {
+  CardSectionHeader,
+  InfoBox,
+  InfoValue,
+  SectionCard,
+} from "@/components/ui";
 import type { GetTenantQuery } from "@/graphql/generated";
 
 type TenantRecord = GetTenantQuery["getTenant"];
@@ -53,7 +58,10 @@ export function TenantLegalSummaryCard({
             gridTemplateColumns: { xs: "1fr", md: "1fr 1fr" },
           }}
         >
-          <InfoValue label="Legal name" value={tenant?.legalName || "Not set"} />
+          <InfoValue
+            label="Legal name"
+            value={tenant?.legalName || "Not set"}
+          />
           <InfoValue
             label="Contact person"
             value={tenant?.contactName || "Not set"}

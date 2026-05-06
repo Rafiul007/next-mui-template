@@ -215,9 +215,7 @@ const buildEmployeeColumns = (): MRT_ColumnDef<UserRecord>[] => [
     header: "Phone",
     size: 150,
     Cell: ({ row }) => (
-      <Typography variant="body2">
-        {row.original.phone || "Not set"}
-      </Typography>
+      <Typography variant="body2">{row.original.phone || "Not set"}</Typography>
     ),
   },
 ];
@@ -386,9 +384,11 @@ export function TeamAccessWorkspace() {
       }
 
       await refetchUsers();
-      toast.success(`${formatPersonName(pendingStatusAction.user)} is now ${
-        pendingStatusAction.nextStatus ? "active" : "inactive"
-      }.`);
+      toast.success(
+        `${formatPersonName(pendingStatusAction.user)} is now ${
+          pendingStatusAction.nextStatus ? "active" : "inactive"
+        }.`,
+      );
       setPendingStatusAction(null);
     } catch (error) {
       toast.error(getErrorMessage(error, "Unable to update employee status."));
@@ -763,7 +763,9 @@ export function TeamAccessWorkspace() {
                                 flexWrap="wrap"
                                 useFlexGap
                               >
-                                <Typography variant="h6">{role.name}</Typography>
+                                <Typography variant="h6">
+                                  {role.name}
+                                </Typography>
                                 <Chip
                                   size="small"
                                   label={role.system ? "System" : "Custom"}
@@ -805,7 +807,10 @@ export function TeamAccessWorkspace() {
                             }}
                           >
                             <Box>
-                              <Typography variant="caption" color="text.secondary">
+                              <Typography
+                                variant="caption"
+                                color="text.secondary"
+                              >
                                 Permissions
                               </Typography>
                               <Typography variant="body2" sx={{ mt: 0.5 }}>
@@ -813,7 +818,10 @@ export function TeamAccessWorkspace() {
                               </Typography>
                             </Box>
                             <Box>
-                              <Typography variant="caption" color="text.secondary">
+                              <Typography
+                                variant="caption"
+                                color="text.secondary"
+                              >
                                 Type
                               </Typography>
                               <Typography variant="body2" sx={{ mt: 0.5 }}>
@@ -886,7 +894,9 @@ export function TeamAccessWorkspace() {
                       >
                         <ShieldRounded />
                       </Avatar>
-                      <Typography variant="h6">No roles available yet</Typography>
+                      <Typography variant="h6">
+                        No roles available yet
+                      </Typography>
                       <Typography variant="body2" color="text.secondary">
                         Create the first custom role to start delegating access
                         across your team.
@@ -931,13 +941,17 @@ export function TeamAccessWorkspace() {
       <Dialog
         open={!!pendingStatusAction}
         onClose={() =>
-          setActiveStatusState.loading ? undefined : setPendingStatusAction(null)
+          setActiveStatusState.loading
+            ? undefined
+            : setPendingStatusAction(null)
         }
         fullWidth
         maxWidth="xs"
       >
         <DialogTitle>
-          {pendingStatusAction?.nextStatus ? "Activate employee" : "Deactivate employee"}
+          {pendingStatusAction?.nextStatus
+            ? "Activate employee"
+            : "Deactivate employee"}
         </DialogTitle>
         <DialogContent>
           <Typography variant="body2" color="text.secondary">

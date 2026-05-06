@@ -105,7 +105,8 @@ export const RhfCheckboxGroup = <TFieldValues extends FieldValues>({
                       bgcolor: isChecked
                         ? alpha("#10b981", 0.08)
                         : "background.paper",
-                      transition: "border-color 120ms ease, background-color 120ms ease",
+                      transition:
+                        "border-color 120ms ease, background-color 120ms ease",
                     }}
                   >
                     <FormControlLabel

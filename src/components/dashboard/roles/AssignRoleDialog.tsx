@@ -15,14 +15,8 @@ import {
 } from "@mui/material";
 import { useForm } from "react-hook-form";
 import * as yup from "yup";
-import {
-  RhfSelect,
-  type RhfSelectOption,
-} from "@/components/form";
-import type {
-  GetTenantRolesQuery,
-  GetUsersQuery,
-} from "@/graphql/generated";
+import { RhfSelect, type RhfSelectOption } from "@/components/form";
+import type { GetTenantRolesQuery, GetUsersQuery } from "@/graphql/generated";
 import { formatPermissionLabel } from "./permission-registry";
 import { useWatch } from "react-hook-form";
 
@@ -64,10 +58,7 @@ export function AssignRoleDialog({
     value: role.name,
   }));
 
-  const {
-    control,
-    handleSubmit,
-  } = useForm<AssignRoleFormValues>({
+  const { control, handleSubmit } = useForm<AssignRoleFormValues>({
     resolver: yupResolver(assignRoleSchema),
     defaultValues: {
       roleName: user?.roles[0] ?? "",
@@ -108,7 +99,9 @@ export function AssignRoleDialog({
               </Box>
             ) : null}
 
-            {errorMessage ? <Alert severity="error">{errorMessage}</Alert> : null}
+            {errorMessage ? (
+              <Alert severity="error">{errorMessage}</Alert>
+            ) : null}
 
             {!roles.length ? (
               <Alert severity="info">

@@ -275,7 +275,9 @@ export function CenterDetailsWorkspace() {
       {center ? (
         <Dialog
           open={isCenterEditOpen}
-          onClose={isSavingCenter ? undefined : () => setIsCenterEditOpen(false)}
+          onClose={
+            isSavingCenter ? undefined : () => setIsCenterEditOpen(false)
+          }
           fullWidth
           maxWidth="md"
         >
@@ -302,7 +304,9 @@ export function CenterDetailsWorkspace() {
       {tenant ? (
         <Dialog
           open={isTenantEditOpen}
-          onClose={isSavingTenant ? undefined : () => setIsTenantEditOpen(false)}
+          onClose={
+            isSavingTenant ? undefined : () => setIsTenantEditOpen(false)
+          }
           fullWidth
           maxWidth="md"
         >

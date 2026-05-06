@@ -1,14 +1,5 @@
-import {
-  Alert,
-  Box,
-  Chip,
-  Stack,
-  Typography,
-  alpha,
-} from "@mui/material";
-import {
-  SettingsRounded,
-} from "@mui/icons-material";
+import { Alert, Box, Chip, Stack, Typography, alpha } from "@mui/material";
+import { SettingsRounded } from "@mui/icons-material";
 import { CardSectionHeader, SectionCard } from "@/components/ui";
 import type { GetTenantQuery } from "@/graphql/generated";
 import { formatDate, formatStatusLabel, statusChipColor } from "./center-utils";

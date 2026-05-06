@@ -32,7 +32,10 @@ const tenantLegalSchema = yup
     contactPhone: yup
       .string()
       .trim()
-      .matches(/^$|^[0-9+\-() ]+$/, "Use numbers and simple phone characters only")
+      .matches(
+        /^$|^[0-9+\-() ]+$/,
+        "Use numbers and simple phone characters only",
+      )
       .max(30, "Contact phone must be 30 characters or fewer")
       .default(""),
     address: yup
@@ -93,13 +96,51 @@ const getTenantLegalValues = (tenant: TenantRecord): TenantLegalFormValues => ({
 });
 
 const tenantFieldConfigs: TenantFieldConfig[] = [
-  { name: "legalName", label: "Legal name", placeholder: "Bongo Coaching Ltd.", trim: true },
-  { name: "contactName", label: "Contact person", placeholder: "Owner or operations lead", trim: true },
-  { name: "contactEmail", label: "Contact email", placeholder: "ops@center.com", type: "email", trim: true },
-  { name: "contactPhone", label: "Contact phone", placeholder: "+8801XXXXXXXXX", trim: true },
-  { name: "tradeLicense", label: "Trade license number", placeholder: "Trade license", trim: true },
-  { name: "eBIN", label: "eBIN number", placeholder: "Electronic BIN", trim: true },
-  { name: "address", label: "Registered address", placeholder: "Registered office address", trim: true, multiline: true, minRows: 3 },
+  {
+    name: "legalName",
+    label: "Legal name",
+    placeholder: "Bongo Coaching Ltd.",
+    trim: true,
+  },
+  {
+    name: "contactName",
+    label: "Contact person",
+    placeholder: "Owner or operations lead",
+    trim: true,
+  },
+  {
+    name: "contactEmail",
+    label: "Contact email",
+    placeholder: "ops@center.com",
+    type: "email",
+    trim: true,
+  },
+  {
+    name: "contactPhone",
+    label: "Contact phone",
+    placeholder: "+8801XXXXXXXXX",
+    trim: true,
+  },
+  {
+    name: "tradeLicense",
+    label: "Trade license number",
+    placeholder: "Trade license",
+    trim: true,
+  },
+  {
+    name: "eBIN",
+    label: "eBIN number",
+    placeholder: "Electronic BIN",
+    trim: true,
+  },
+  {
+    name: "address",
+    label: "Registered address",
+    placeholder: "Registered office address",
+    trim: true,
+    multiline: true,
+    minRows: 3,
+  },
 ];
 
 export function TenantLegalFormCard({

@@ -1,6 +1,11 @@
 import { EditRounded, ImageRounded } from "@mui/icons-material";
 import { Avatar, Box, Button, Stack, Typography } from "@mui/material";
-import { CardSectionHeader, InfoValue, InfoBox, SectionCard } from "@/components/ui";
+import {
+  CardSectionHeader,
+  InfoValue,
+  InfoBox,
+  SectionCard,
+} from "@/components/ui";
 import type { GetCenterQuery } from "@/graphql/generated";
 import { primaryGradient } from "@/theme/theme";
 
@@ -78,10 +83,17 @@ export function CenterProfileSummaryCard({
             gridTemplateColumns: { xs: "1fr", md: "1fr 1fr" },
           }}
         >
-          <InfoValue label="Center name (Bangla)" value={center?.nameBangla || "Not set"} />
+          <InfoValue
+            label="Center name (Bangla)"
+            value={center?.nameBangla || "Not set"}
+          />
           <InfoValue
             label="Established year"
-            value={center?.establishedYear ? String(center.establishedYear) : "Not set"}
+            value={
+              center?.establishedYear
+                ? String(center.establishedYear)
+                : "Not set"
+            }
           />
           <InfoValue
             label="Academic year starts in"
