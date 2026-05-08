@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { Box } from "@mui/material";
 import { Sidebar } from "@/components/dashboard/Sidebar";
 import { Topbar } from "@/components/dashboard/Topbar";
+import { DashboardAuthGuard } from "@/components/dashboard/DashboardAuthGuard";
 import { dashboardSidebarMenuItems } from "@/config/dashboard-menu";
 import { hasAuthSession } from "@/lib/auth/session";
 
@@ -54,7 +55,7 @@ export default async function DashboardLayout({
             overflowX: "hidden",
           }}
         >
-          {children}
+          <DashboardAuthGuard>{children}</DashboardAuthGuard>
         </Box>
       </Box>
     </Box>

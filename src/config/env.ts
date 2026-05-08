@@ -11,7 +11,7 @@ const parseTimeout = (value: string | undefined, fallback: number) => {
 
 const runtimeGraphqlUrl =
   process.env.NEXT_PUBLIC_GRAPHQL_URL ??
-  "https://bongo-coaching-be.onrender.com/graphiql";
+  "http://coaching.bongobrain.it.com/graphiql";
 
 export const env = {
   // Server-side POST routes use this origin to reject cross-site requests.

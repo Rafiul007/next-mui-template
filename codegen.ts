@@ -3,7 +3,7 @@ import { toGraphqlApiUrl } from "./src/lib/graphql/endpoint";
 
 const runtimeUrl =
   process.env.NEXT_PUBLIC_GRAPHQL_URL ??
-  "https://bongo-coaching-be.onrender.com/graphiql";
+  "http://coaching.bongobrain.it.com/graphiql";
 
 const config: CodegenConfig = {
   overwrite: true,

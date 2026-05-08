@@ -85,10 +85,7 @@ export const RhfCheckboxGroup = <TFieldValues extends FieldValues>({
               sx={{
                 display: "grid",
                 gap: 1,
-                gridTemplateColumns: {
-                  xs: "repeat(2, minmax(0, 1fr))",
-                  md: "repeat(4, minmax(0, 1fr))",
-                },
+                gridTemplateColumns: "repeat(auto-fill, minmax(150px, 1fr))",
               }}
             >
               {options.map((option) => {
