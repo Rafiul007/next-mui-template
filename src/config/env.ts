@@ -19,7 +19,7 @@ export const env = {
     process.env.APP_ORIGIN ??
     process.env.NEXT_PUBLIC_APP_ORIGIN ??
     "http://localhost:3000",
-  apiBaseUrl: process.env.NEXT_PUBLIC_API_BASE_URL ?? "",
+  apiBaseUrl: process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://coaching.bongobrain.it.com",
   apiTimeout: parseTimeout(process.env.NEXT_PUBLIC_API_TIMEOUT, 10000),
   // `NEXT_PUBLIC_GRAPHQL_URL` may point to the GraphiQL UI, but server requests
   // and codegen need the actual GraphQL endpoint.
