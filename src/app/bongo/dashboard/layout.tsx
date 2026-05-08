@@ -4,11 +4,10 @@ import { redirect } from "next/navigation";
 import { Box } from "@mui/material";
 import { Sidebar } from "@/components/dashboard/Sidebar";
 import { Topbar } from "@/components/dashboard/Topbar";
-import { DashboardAuthGuard } from "@/components/dashboard/DashboardAuthGuard";
-import { dashboardSidebarMenuItems } from "@/config/dashboard-menu";
+import { bongoSidebarMenuItems } from "@/config/bongo-menu";
 import { hasAuthSession } from "@/lib/auth/session";
 
-export default async function DashboardLayout({
+export default async function BongoDashboardLayout({
   children,
 }: {
   children: ReactNode;
@@ -25,11 +24,11 @@ export default async function DashboardLayout({
         height: "100dvh",
         display: "flex",
         flexDirection: { xs: "column", md: "row" },
-        bgcolor: "#0f172a",
+        bgcolor: "#09111c",
         overflow: "hidden",
       }}
     >
-      <Sidebar logoText="BongoEdu360" menuItems={dashboardSidebarMenuItems} />
+      <Sidebar logoText="Bongo Admin" menuItems={bongoSidebarMenuItems} />
 
       <Box
         component="main"
@@ -39,11 +38,11 @@ export default async function DashboardLayout({
           minHeight: 0,
           display: "flex",
           flexDirection: "column",
-          bgcolor: "#0f172a",
+          bgcolor: "#09111c",
           overflow: "hidden",
         }}
       >
-        <Topbar title="Udvash Coaching Center" />
+        <Topbar title="Bongo Platform" />
 
         <Box
           sx={{
@@ -55,7 +54,7 @@ export default async function DashboardLayout({
             overflowX: "hidden",
           }}
         >
-          <DashboardAuthGuard>{children}</DashboardAuthGuard>
+          {children}
         </Box>
       </Box>
     </Box>

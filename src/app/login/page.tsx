@@ -9,9 +9,12 @@ import {
   Button,
   Card,
   CircularProgress,
+  IconButton,
+  InputAdornment,
   Typography,
   alpha,
 } from "@mui/material";
+import { VisibilityOffRounded, VisibilityRounded } from "@mui/icons-material";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "react-hot-toast";
@@ -47,6 +50,7 @@ export default function LoginPage() {
   const router = useRouter();
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const { control, handleSubmit } = useForm<LoginFormValues>({
     resolver: yupResolver(loginSchema),
     defaultValues,
@@ -246,10 +250,30 @@ export default function LoginPage() {
                 control={control}
                 name="password"
                 label="Password"
-                type="password"
+                type={showPassword ? "text" : "password"}
                 fullWidth
                 autoComplete="current-password"
                 placeholder="Enter your password"
+                slotProps={{
+                  input: {
+                    endAdornment: (
+                      <InputAdornment position="end">
+                        <IconButton
+                          onClick={() => setShowPassword((prev) => !prev)}
+                          edge="end"
+                          size="small"
+                          aria-label={showPassword ? "Hide password" : "Show password"}
+                        >
+                          {showPassword ? (
+                            <VisibilityOffRounded fontSize="small" />
+                          ) : (
+                            <VisibilityRounded fontSize="small" />
+                          )}
+                        </IconButton>
+                      </InputAdornment>
+                    ),
+                  },
+                }}
               />
 
               <Button
