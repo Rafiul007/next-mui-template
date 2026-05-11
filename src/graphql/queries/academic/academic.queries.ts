@@ -27,6 +27,14 @@ export const GET_ALL_BATCHES_QUERY = /* GraphQL */ `
       endDate
       status
       tenantId
+      type
+      deliveryMode
+      mediumOfInstruction
+      registrationDeadline
+      certificateOnCompletion
+      certificateTemplateName
+      prerequisites
+      notes
     }
   }
 `;

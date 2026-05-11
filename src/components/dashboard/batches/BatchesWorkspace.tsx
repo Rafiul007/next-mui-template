@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type ReactNode } from "react";
+import React, { useState, type ReactNode } from "react";
 import {
   AddRounded,
   AutoStoriesRounded,
@@ -18,6 +18,7 @@ import {
   Box,
   Button,
   Chip,
+  CircularProgress,
   Dialog,
   DialogActions,
   DialogContent,
@@ -29,9 +30,18 @@ import {
   Typography,
   alpha,
 } from "@mui/material";
+import { useMutation, useQuery } from "@apollo/client/react";
 import { MaterialReactTable, type MRT_ColumnDef } from "material-react-table";
 import { toast } from "react-hot-toast";
 import { primaryGradient } from "@/theme/theme";
+import { getErrorMessage } from "@/lib/errors";
+import {
+  ChangeBatchStatusDocument,
+  CreateBatchDocument,
+  GetAllBatchesDocument,
+  UpdateBatchDocument,
+  type GetAllBatchesQuery,
+} from "@/graphql/generated";
 import {
   BatchFormDialog,
   emptyBatchFormValues,
@@ -75,8 +85,7 @@ type BatchRecord = {
   notes?: string;
 };
 
-let nextId = 1;
-const generateId = () => String(nextId++);
+type ApiBatch = GetAllBatchesQuery["getAllBatches"][number];
 
 const STATUS_LABEL: Record<BatchStatus, string> = {
   upcoming: "Upcoming",
@@ -106,6 +115,41 @@ const DELIVERY_ICON: Record<DeliveryMode, ReactNode> = {
   online: <VideocamRounded sx={{ fontSize: "14px !important" }} />,
   hybrid: <DevicesRounded sx={{ fontSize: "14px !important" }} />,
 };
+
+const mapApiBatch = (batch: ApiBatch): BatchRecord => {
+  const nameParts = batch.name.split(" · ");
+  const isClass = batch.type === "class";
+  return {
+    id: batch.id,
+    type: (batch.type ?? "course") as BatchType,
+    courseName: !isClass ? (nameParts[0] ?? "") : "",
+    batchNumber: !isClass ? (nameParts[1] ?? "") : "",
+    className: isClass ? (nameParts[0] ?? "") : "",
+    section: isClass ? (nameParts[1] ?? "") : "",
+    totalSeats: batch.capacity,
+    enrolledCount: batch.enrolledCount,
+    status: (batch.status ?? "upcoming") as BatchStatus,
+    deliveryMode: (batch.deliveryMode ?? "in-person") as DeliveryMode,
+    mediumOfInstruction: (batch.mediumOfInstruction ?? "bangla") as MediumOfInstruction,
+    registrationDeadline: batch.registrationDeadline ?? undefined,
+    oneTimePayments: [],
+    monthlyPayments: [],
+    discounts: [],
+    certificateOnCompletion: batch.certificateOnCompletion ?? false,
+    certificateTemplateName: batch.certificateTemplateName ?? undefined,
+    prerequisites: batch.prerequisites ?? undefined,
+    notes: batch.notes ?? undefined,
+  };
+};
+
+const buildBatchName = (values: BatchFormValues) =>
+  values.type === "course"
+    ? [values.courseName, values.batchNumber].filter(Boolean).join(" · ")
+    : [values.className, values.section].filter(Boolean).join(" · ");
+
+// Java enums are UPPER_SNAKE_CASE. Convert frontend kebab/lower values before sending.
+const toApiEnum = (value: string) =>
+  value.toUpperCase().replace(/-/g, "_");
 
 const getBatchDisplayName = (batch: BatchRecord): string => {
   if (batch.type === "course") {
@@ -363,26 +407,40 @@ function SummaryCard({
   );
 }
 
-// React import needed for JSX in DELIVERY_ICON map
-import React from "react";
-
 export function BatchesWorkspace() {
-  const [batches, setBatches] = useState<BatchRecord[]>([]);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [formMode, setFormMode] = useState<"create" | "edit">("create");
   const [selectedBatch, setSelectedBatch] = useState<BatchRecord | null>(null);
   const [batchToCancel, setBatchToCancel] = useState<BatchRecord | null>(null);
   const [formDialogKey, setFormDialogKey] = useState(0);
   const [formErrorMessage, setFormErrorMessage] = useState<string | null>(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isCancelling, setIsCancelling] = useState(false);
+
+  const { data, loading } = useQuery(GetAllBatchesDocument, {
+    fetchPolicy: "cache-and-network",
+  });
+
+  const [createBatch, { loading: isCreating }] = useMutation(CreateBatchDocument, {
+    refetchQueries: [GetAllBatchesDocument],
+  });
+
+  const [updateBatch, { loading: isUpdating }] = useMutation(UpdateBatchDocument, {
+    refetchQueries: [GetAllBatchesDocument],
+  });
+
+  const [changeBatchStatus, { loading: isCancellingMutation }] = useMutation(
+    ChangeBatchStatusDocument,
+    { refetchQueries: [GetAllBatchesDocument] },
+  );
+
+  const batches: BatchRecord[] = (data?.getAllBatches ?? []).map(mapApiBatch);
+
+  const isSubmitting = isCreating || isUpdating;
+  const isCancelling = isCancellingMutation;
 
   const totalBatches = batches.length;
   const upcomingBatches = batches.filter((b) => b.status === "upcoming").length;
   const ongoingBatches = batches.filter((b) => b.status === "ongoing").length;
-  const completedBatches = batches.filter(
-    (b) => b.status === "completed",
-  ).length;
+  const completedBatches = batches.filter((b) => b.status === "completed").length;
 
   const openCreateDialog = () => {
     setFormMode("create");
@@ -409,88 +467,62 @@ export function BatchesWorkspace() {
   };
 
   const handleSubmitBatch = async (values: BatchFormValues) => {
-    setIsSubmitting(true);
     setFormErrorMessage(null);
 
     try {
       if (formMode === "edit" && selectedBatch) {
-        setBatches((prev) =>
-          prev.map((b) =>
-            b.id === selectedBatch.id
-              ? {
-                  ...b,
-                  type: values.type,
-                  status: values.status,
-                  courseName: values.courseName,
-                  batchNumber: values.batchNumber,
-                  className: values.className,
-                  section: values.section,
-                  totalSeats: values.totalSeats,
-                  deliveryMode: values.deliveryMode,
-                  mediumOfInstruction: values.mediumOfInstruction,
-                  registrationDeadline: values.registrationDeadline || undefined,
-                  oneTimePayments: values.oneTimePayments,
-                  monthlyPayments: values.monthlyPayments,
-                  discounts: values.discounts,
-                  certificateOnCompletion: values.certificateOnCompletion,
-                  certificateTemplateName:
-                    values.certificateTemplateName || undefined,
-                  prerequisites: values.prerequisites || undefined,
-                  notes: values.notes || undefined,
-                }
-              : b,
-          ),
-        );
+        const result = await updateBatch({
+          variables: {
+            batch: {
+              id: selectedBatch.id,
+              name: buildBatchName(values),
+              capacity: values.totalSeats,
+            },
+          },
+        });
+        if (result.error) throw result.error;
         toast.success("Batch updated successfully.");
       } else {
-        const newBatch: BatchRecord = {
-          id: generateId(),
-          type: values.type,
-          status: values.status,
-          courseName: values.courseName,
-          batchNumber: values.batchNumber,
-          className: values.className,
-          section: values.section,
-          totalSeats: values.totalSeats,
-          enrolledCount: 0,
-          deliveryMode: values.deliveryMode,
-          mediumOfInstruction: values.mediumOfInstruction,
-          registrationDeadline: values.registrationDeadline || undefined,
-          oneTimePayments: values.oneTimePayments,
-          monthlyPayments: values.monthlyPayments,
-          discounts: values.discounts,
-          certificateOnCompletion: values.certificateOnCompletion,
-          certificateTemplateName: values.certificateTemplateName || undefined,
-          prerequisites: values.prerequisites || undefined,
-          notes: values.notes || undefined,
-        };
-        setBatches((prev) => [...prev, newBatch]);
+        const result = await createBatch({
+          variables: {
+            batch: {
+              name: buildBatchName(values),
+              capacity: values.totalSeats,
+              type: toApiEnum(values.type),
+              status: toApiEnum(values.status),
+              deliveryMode: toApiEnum(values.deliveryMode),
+              mediumOfInstruction: toApiEnum(values.mediumOfInstruction),
+              registrationDeadline: values.registrationDeadline || undefined,
+              certificateOnCompletion: values.certificateOnCompletion,
+              certificateTemplateName: values.certificateTemplateName || undefined,
+              prerequisites: values.prerequisites || undefined,
+              notes: values.notes || undefined,
+            },
+          },
+        });
+        if (result.error) throw result.error;
         toast.success("Batch created successfully.");
       }
       closeFormDialog();
-    } catch {
-      setFormErrorMessage("Unable to save batch. Please try again.");
-    } finally {
-      setIsSubmitting(false);
+    } catch (error) {
+      const message = getErrorMessage(error, "Unable to save batch. Please try again.");
+      setFormErrorMessage(message);
+      toast.error(message);
     }
   };
 
   const handleCancelBatch = async () => {
     if (!batchToCancel) return;
 
-    setIsCancelling(true);
     try {
-      setBatches((prev) =>
-        prev.map((b) =>
-          b.id === batchToCancel.id ? { ...b, status: "cancelled" } : b,
-        ),
-      );
-      toast.success(
-        `"${getBatchDisplayName(batchToCancel)}" was cancelled.`,
-      );
+      const result = await changeBatchStatus({
+        variables: { batchId: batchToCancel.id, status: "CANCELLED" },
+      });
+      if (result.error) throw result.error;
+      toast.success(`"${getBatchDisplayName(batchToCancel)}" was cancelled.`);
       setBatchToCancel(null);
-    } finally {
-      setIsCancelling(false);
+    } catch (error) {
+      toast.error(getErrorMessage(error, "Failed to cancel batch."));
     }
   };
 
@@ -595,6 +627,7 @@ export function BatchesWorkspace() {
           enableSorting
           enableStickyHeader
           getRowId={(row) => row.id}
+          state={{ isLoading: loading && batches.length === 0 }}
           initialState={{
             pagination: { pageIndex: 0, pageSize: 10 },
             showColumnFilters: false,
@@ -692,24 +725,30 @@ export function BatchesWorkspace() {
           }}
           renderEmptyRowsFallback={() => (
             <Box sx={{ px: 3, py: 6, textAlign: "center" }}>
-              <Typography variant="subtitle1" fontWeight={700}>
-                No batches yet
-              </Typography>
-              <Typography
-                variant="body2"
-                color="text.secondary"
-                sx={{ mt: 1 }}
-              >
-                Create your first batch to start managing courses and classes.
-              </Typography>
-              <Button
-                variant="outlined"
-                startIcon={<AddRounded />}
-                onClick={openCreateDialog}
-                sx={{ mt: 2 }}
-              >
-                Create Batch
-              </Button>
+              {loading ? (
+                <CircularProgress size={32} />
+              ) : (
+                <>
+                  <Typography variant="subtitle1" fontWeight={700}>
+                    No batches yet
+                  </Typography>
+                  <Typography
+                    variant="body2"
+                    color="text.secondary"
+                    sx={{ mt: 1 }}
+                  >
+                    Create your first batch to start managing courses and classes.
+                  </Typography>
+                  <Button
+                    variant="outlined"
+                    startIcon={<AddRounded />}
+                    onClick={openCreateDialog}
+                    sx={{ mt: 2 }}
+                  >
+                    Create Batch
+                  </Button>
+                </>
+              )}
             </Box>
           )}
           renderRowActions={({ row }) => (

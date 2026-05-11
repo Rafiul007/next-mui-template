@@ -172,6 +172,7 @@ export const dashboardMenuMap = {
           moduleCode: "3.1",
           useCases: ["UC-HT-01", "UC-HT-06"],
           route: ["academic", "catalog"],
+          status: "active",
         },
         {
           key: "batch-management",
@@ -266,12 +267,14 @@ export const dashboardMenuMap = {
       icon: BadgeRounded,
       phase: "Phase 6",
       route: ["hr"],
+      status: "active",
       children: [
         {
           key: "employee-profile",
           label: "Staff Directory",
           moduleCode: "6.1",
           route: ["hr", "employees"],
+          status: "active",
         },
         {
           key: "recruitment",
@@ -284,12 +287,14 @@ export const dashboardMenuMap = {
           label: "Leave & Time Off",
           moduleCode: "6.3",
           route: ["hr", "leave"],
+          status: "active",
         },
         {
           key: "employee-attendance",
           label: "Staff Attendance",
           moduleCode: "6.4",
           route: ["hr", "attendance"],
+          status: "active",
         },
         {
           key: "payroll",
@@ -302,6 +307,7 @@ export const dashboardMenuMap = {
           label: "Performance Reviews",
           moduleCode: "6.6",
           route: ["hr", "performance"],
+          status: "active",
         },
       ],
     }),

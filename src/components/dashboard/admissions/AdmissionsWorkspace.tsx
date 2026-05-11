@@ -6,15 +6,16 @@ import {
   BlockRounded,
   CheckCircleRounded,
   EditRounded,
+  EmojiEventsRounded,
+  GroupsRounded,
   PersonAddRounded,
   SchoolRounded,
-  GroupsRounded,
-  EmojiEventsRounded,
 } from "@mui/icons-material";
 import {
   Box,
   Button,
   Chip,
+  CircularProgress,
   Dialog,
   DialogActions,
   DialogContent,
@@ -26,9 +27,22 @@ import {
   Typography,
   alpha,
 } from "@mui/material";
+import { useMutation, useQuery } from "@apollo/client/react";
 import { MaterialReactTable, type MRT_ColumnDef } from "material-react-table";
 import { toast } from "react-hot-toast";
 import { primaryGradient } from "@/theme/theme";
+import { getErrorMessage } from "@/lib/errors";
+import {
+  AdmitStudentDocument,
+  AddGuardianDocument,
+  ChangeStudentStatusDocument,
+  EnrollStudentDocument,
+  GetAllBatchesDocument,
+  GetStudentsDocument,
+  UpdateStudentDocument,
+  type GetAllBatchesQuery,
+  type GetStudentsQuery,
+} from "@/graphql/generated";
 import {
   AdmissionFormDialog,
   emptyAdmissionFormValues,
@@ -47,26 +61,15 @@ type StudentRecord = {
   studentId: string;
   firstName: string;
   lastName: string;
-  dob: string;
   gender: Gender;
   bloodGroup: string;
   phone: string;
   email: string;
-  address: string;
-  guardianName: string;
-  guardianRelation: string;
-  guardianPhone: string;
-  guardianEmail: string;
-  guardianOccupation: string;
-  guardianNid: string;
-  qualifications: QualificationEntry[];
-  appliedDiscountIndexes: number[];
-  batchId: string;
-  batchName: string;
-  admissionDate: string;
   status: AdmissionStatus;
-  notes: string;
 };
+
+type ApiStudent = GetStudentsQuery["getStudents"][number];
+type ApiBatch = GetAllBatchesQuery["getAllBatches"][number];
 
 // ── Constants ────────────────────────────────────────────────────────────────
 
@@ -93,224 +96,124 @@ const GENDER_LABEL: Record<Gender, string> = {
   other: "Other",
 };
 
-const GUARDIAN_RELATION_LABEL: Record<string, string> = {
-  father: "Father",
-  mother: "Mother",
-  sibling: "Sibling",
-  grandparent: "Grandparent",
-  uncle_aunt: "Uncle / Aunt",
-  guardian: "Legal guardian",
-  other: "Other",
-};
+// ── Mappers ──────────────────────────────────────────────────────────────────
 
-// Sample batches — replace with API data when backend is ready
-const SAMPLE_BATCHES: BatchSummary[] = [
-  {
-    id: "batch-1",
-    displayName: "Calculus · Batch 1",
-    type: "course",
-    status: "ongoing",
-    totalSeats: 40,
-    enrolledCount: 12,
-    oneTimePayments: [
-      { name: "Admission fee", amount: 2000 },
-      { name: "Course fee", amount: 5000 },
-    ],
-    monthlyPayments: [{ name: "Monthly fee", amount: 800 }],
-    discounts: [
-      { name: "Early Bird Discount", value: 500, valueType: "fixed" },
-    ],
-  },
-  {
-    id: "batch-2",
-    displayName: "Class 9 · Section A",
-    type: "class",
-    status: "upcoming",
-    totalSeats: 50,
-    enrolledCount: 0,
-    oneTimePayments: [{ name: "Admission fee", amount: 3000 }],
-    monthlyPayments: [
-      { name: "Monthly fee", amount: 1200 },
-      { name: "Development fee", amount: 200 },
-    ],
-    discounts: [],
-  },
-  {
-    id: "batch-3",
-    displayName: "Physics · Batch 2",
-    type: "course",
-    status: "ongoing",
-    totalSeats: 35,
-    enrolledCount: 28,
-    oneTimePayments: [{ name: "Admission fee", amount: 1500 }],
-    monthlyPayments: [{ name: "Monthly fee", amount: 600 }],
-    discounts: [{ name: "Sibling Discount", value: 10, valueType: "percentage" }],
-  },
-  {
-    id: "batch-4",
-    displayName: "Class 10 · Section B",
-    type: "class",
-    status: "ongoing",
-    totalSeats: 45,
-    enrolledCount: 45,
-    oneTimePayments: [{ name: "Admission fee", amount: 3500 }],
-    monthlyPayments: [{ name: "Monthly fee", amount: 1500 }],
-    discounts: [],
-  },
-];
+const mapApiStudent = (s: ApiStudent): StudentRecord => ({
+  id: s.id,
+  studentId: s.studentCode,
+  firstName: s.firstName,
+  lastName: s.lastName ?? "",
+  gender: (s.gender as Gender) ?? "other",
+  bloodGroup: s.bloodGroup ?? "",
+  phone: s.phone ?? "",
+  email: s.email ?? "",
+  status: (s.status as AdmissionStatus) ?? "active",
+});
 
-// ── Helpers ──────────────────────────────────────────────────────────────────
-
-let studentSeq = 1;
-const generateStudentId = () => {
-  const id = `STU-${String(studentSeq).padStart(3, "0")}`;
-  studentSeq++;
-  return id;
-};
-
-let recordSeq = 1;
-const generateRecordId = () => String(recordSeq++);
+const mapApiBatchToSummary = (batch: ApiBatch): BatchSummary => ({
+  id: batch.id,
+  displayName: batch.name,
+  type: (batch.type ?? "course") as "course" | "class",
+  status: batch.status.toLowerCase() as "upcoming" | "ongoing" | "completed" | "cancelled",
+  totalSeats: batch.capacity,
+  enrolledCount: batch.enrolledCount,
+  oneTimePayments: [],
+  monthlyPayments: [],
+  discounts: [],
+});
 
 const getFullName = (s: StudentRecord) =>
   `${s.firstName} ${s.lastName}`.trim();
 
-const today = () => new Date().toISOString().split("T")[0];
-
-const formatDate = (date: string) => {
-  if (!date) return "—";
-  return new Date(date).toLocaleDateString("en-BD", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-  });
-};
-
 const getStudentFormValues = (s: StudentRecord): AdmissionFormValues => ({
   firstName: s.firstName,
   lastName: s.lastName,
-  dob: s.dob,
+  dob: "",
   gender: s.gender,
   bloodGroup: s.bloodGroup,
   phone: s.phone,
   email: s.email,
-  address: s.address,
-  guardianName: s.guardianName,
-  guardianRelation: s.guardianRelation,
-  guardianPhone: s.guardianPhone,
-  guardianEmail: s.guardianEmail,
-  guardianOccupation: s.guardianOccupation,
-  guardianNid: s.guardianNid,
-  qualifications: s.qualifications,
-  appliedDiscountIndexes: s.appliedDiscountIndexes,
-  batchId: s.batchId,
-  notes: s.notes,
+  address: "",
+  guardianName: "",
+  guardianRelation: "",
+  guardianPhone: "",
+  guardianEmail: "",
+  guardianOccupation: "",
+  guardianNid: "",
+  qualifications: [],
+  appliedDiscountIndexes: [],
+  batchId: "",
+  notes: "",
 });
 
 // ── Columns ──────────────────────────────────────────────────────────────────
 
-const buildStudentColumns = (
-  batches: BatchSummary[],
-): MRT_ColumnDef<StudentRecord>[] => {
-  const batchNames = batches.map((b) => b.displayName);
-
-  return [
-    {
-      id: "student",
-      accessorFn: getFullName,
-      header: "Student",
-      size: 220,
-      Cell: ({ row }) => (
-        <Stack spacing={0.25}>
-          <Typography variant="subtitle2" fontWeight={700}>
-            {getFullName(row.original)}
-          </Typography>
-          <Typography variant="caption" color="text.secondary">
-            {row.original.studentId}
-          </Typography>
-        </Stack>
-      ),
-    },
-    {
-      accessorKey: "batchName",
-      header: "Batch",
-      size: 200,
-      filterVariant: "select",
-      filterSelectOptions: batchNames,
-      Cell: ({ cell }) => (
-        <Typography variant="body2">{String(cell.getValue())}</Typography>
-      ),
-    },
-    {
-      id: "gender",
-      accessorFn: (row) => GENDER_LABEL[row.gender] ?? row.gender,
-      header: "Gender",
-      size: 100,
-      filterVariant: "select",
-      filterSelectOptions: ["Male", "Female", "Other"],
-      Cell: ({ cell }) => (
-        <Typography variant="body2">{String(cell.getValue())}</Typography>
-      ),
-    },
-    {
-      id: "guardian",
-      accessorFn: (row) =>
-        `${row.guardianName} (${GUARDIAN_RELATION_LABEL[row.guardianRelation] ?? row.guardianRelation})`,
-      header: "Guardian",
-      size: 210,
-      Cell: ({ row }) => (
-        <Stack spacing={0.25}>
-          <Typography variant="body2" fontWeight={500}>
-            {row.original.guardianName}
-          </Typography>
-          <Typography variant="caption" color="text.secondary">
-            {GUARDIAN_RELATION_LABEL[row.original.guardianRelation] ??
-              row.original.guardianRelation}
-          </Typography>
-        </Stack>
-      ),
-    },
-    {
-      accessorKey: "phone",
-      header: "Contact",
-      size: 150,
-      Cell: ({ cell }) => (
-        <Typography variant="body2">{String(cell.getValue())}</Typography>
-      ),
-    },
-    {
-      accessorKey: "admissionDate",
-      header: "Admitted",
-      size: 130,
-      Cell: ({ cell }) => (
-        <Typography variant="body2">
-          {formatDate(String(cell.getValue()))}
+const buildStudentColumns = (): MRT_ColumnDef<StudentRecord>[] => [
+  {
+    id: "student",
+    accessorFn: getFullName,
+    header: "Student",
+    size: 220,
+    Cell: ({ row }) => (
+      <Stack spacing={0.25}>
+        <Typography variant="subtitle2" fontWeight={700}>
+          {getFullName(row.original)}
         </Typography>
-      ),
+        <Typography variant="caption" color="text.secondary">
+          {row.original.studentId}
+        </Typography>
+      </Stack>
+    ),
+  },
+  {
+    id: "gender",
+    accessorFn: (row) => GENDER_LABEL[row.gender] ?? row.gender,
+    header: "Gender",
+    size: 100,
+    filterVariant: "select",
+    filterSelectOptions: ["Male", "Female", "Other"],
+    Cell: ({ cell }) => (
+      <Typography variant="body2">{String(cell.getValue())}</Typography>
+    ),
+  },
+  {
+    accessorKey: "phone",
+    header: "Contact",
+    size: 160,
+    Cell: ({ row }) => (
+      <Stack spacing={0.25}>
+        <Typography variant="body2">{row.original.phone || "—"}</Typography>
+        {row.original.email && (
+          <Typography variant="caption" color="text.secondary" noWrap>
+            {row.original.email}
+          </Typography>
+        )}
+      </Stack>
+    ),
+  },
+  {
+    accessorKey: "status",
+    header: "Status",
+    size: 120,
+    filterVariant: "select",
+    filterSelectOptions: ["active", "graduated", "withdrawn", "suspended"],
+    Cell: ({ cell }) => {
+      const status = cell.getValue<AdmissionStatus>();
+      return (
+        <Chip
+          label={STATUS_LABEL[status]}
+          color={STATUS_COLOR[status]}
+          size="small"
+          variant={
+            status === "withdrawn" || status === "graduated"
+              ? "outlined"
+              : "filled"
+          }
+        />
+      );
     },
-    {
-      accessorKey: "status",
-      header: "Status",
-      size: 120,
-      filterVariant: "select",
-      filterSelectOptions: ["active", "graduated", "withdrawn", "suspended"],
-      Cell: ({ cell }) => {
-        const status = cell.getValue<AdmissionStatus>();
-        return (
-          <Chip
-            label={STATUS_LABEL[status]}
-            color={STATUS_COLOR[status]}
-            size="small"
-            variant={
-              status === "withdrawn" || status === "graduated"
-                ? "outlined"
-                : "filled"
-            }
-          />
-        );
-      },
-    },
-  ];
-};
+  },
+];
 
 // ── Summary card ─────────────────────────────────────────────────────────────
 
@@ -385,17 +288,32 @@ function SummaryCard({
 // ── Workspace ─────────────────────────────────────────────────────────────────
 
 export function AdmissionsWorkspace() {
-  const [students, setStudents] = useState<StudentRecord[]>([]);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [formMode, setFormMode] = useState<"create" | "edit">("create");
-  const [selectedStudent, setSelectedStudent] =
-    useState<StudentRecord | null>(null);
-  const [studentToWithdraw, setStudentToWithdraw] =
-    useState<StudentRecord | null>(null);
+  const [selectedStudent, setSelectedStudent] = useState<StudentRecord | null>(null);
+  const [studentToWithdraw, setStudentToWithdraw] = useState<StudentRecord | null>(null);
   const [formDialogKey, setFormDialogKey] = useState(0);
   const [formErrorMessage, setFormErrorMessage] = useState<string | null>(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isWithdrawing, setIsWithdrawing] = useState(false);
+
+  const { data: studentsData, loading: studentsLoading, refetch: refetchStudents } =
+    useQuery(GetStudentsDocument, { fetchPolicy: "cache-and-network" });
+
+  const { data: batchesData } = useQuery(GetAllBatchesDocument, {
+    fetchPolicy: "cache-and-network",
+  });
+
+  const [admitStudent, { loading: isAdmitting }] = useMutation(AdmitStudentDocument);
+  const [addGuardian] = useMutation(AddGuardianDocument);
+  const [enrollStudent] = useMutation(EnrollStudentDocument);
+  const [updateStudent, { loading: isUpdating }] = useMutation(UpdateStudentDocument);
+  const [changeStudentStatus, { loading: isWithdrawing }] = useMutation(
+    ChangeStudentStatusDocument,
+  );
+
+  const students: StudentRecord[] = (studentsData?.getStudents ?? []).map(mapApiStudent);
+  const batches: BatchSummary[] = (batchesData?.getAllBatches ?? []).map(mapApiBatchToSummary);
+
+  const isSubmitting = isAdmitting || isUpdating;
 
   const total = students.length;
   const active = students.filter((s) => s.status === "active").length;
@@ -429,96 +347,106 @@ export function AdmissionsWorkspace() {
   };
 
   const handleSubmit = async (values: AdmissionFormValues) => {
-    setIsSubmitting(true);
     setFormErrorMessage(null);
 
     try {
-      const batch =
-        SAMPLE_BATCHES.find((b) => b.id === values.batchId) ?? null;
-
       if (formMode === "edit" && selectedStudent) {
-        setStudents((prev) =>
-          prev.map((s) =>
-            s.id === selectedStudent.id
-              ? {
-                  ...s,
-                  firstName: values.firstName,
-                  lastName: values.lastName,
-                  dob: values.dob,
-                  gender: values.gender as Gender,
-                  bloodGroup: values.bloodGroup,
-                  phone: values.phone,
-                  email: values.email,
-                  address: values.address,
-                  guardianName: values.guardianName,
-                  guardianRelation: values.guardianRelation,
-                  guardianPhone: values.guardianPhone,
-                  guardianEmail: values.guardianEmail,
-                  guardianOccupation: values.guardianOccupation,
-                  guardianNid: values.guardianNid,
-                  qualifications: (values.qualifications ?? []) as QualificationEntry[],
-                  appliedDiscountIndexes: values.appliedDiscountIndexes ?? [],
-                  batchId: values.batchId,
-                  batchName: batch?.displayName ?? "Unknown batch",
-                  notes: values.notes,
-                }
-              : s,
-          ),
-        );
+        const result = await updateStudent({
+          variables: {
+            student: {
+              id: selectedStudent.id,
+              firstName: values.firstName,
+              lastName: values.lastName || undefined,
+              email: values.email || undefined,
+              phone: values.phone || undefined,
+            },
+          },
+        });
+        if (result.error) throw result.error;
         toast.success("Student record updated.");
+        await refetchStudents();
       } else {
-        const newStudent: StudentRecord = {
-          id: generateRecordId(),
-          studentId: generateStudentId(),
-          firstName: values.firstName,
-          lastName: values.lastName,
-          dob: values.dob,
-          gender: values.gender as Gender,
-          bloodGroup: values.bloodGroup,
-          phone: values.phone,
-          email: values.email,
-          address: values.address,
-          guardianName: values.guardianName,
-          guardianRelation: values.guardianRelation,
-          guardianPhone: values.guardianPhone,
-          guardianEmail: values.guardianEmail,
-          guardianOccupation: values.guardianOccupation,
-          guardianNid: values.guardianNid,
-          qualifications: (values.qualifications ?? []) as QualificationEntry[],
-          appliedDiscountIndexes: values.appliedDiscountIndexes ?? [],
-          batchId: values.batchId,
-          batchName: batch?.displayName ?? "Unknown batch",
-          admissionDate: today(),
-          status: "active",
-          notes: values.notes,
-        };
-        setStudents((prev) => [...prev, newStudent]);
+        const qualifications =
+          (values.qualifications as QualificationEntry[] | undefined)
+            ?.filter((q) => q.institution || q.exam)
+            .map((q) => ({
+              institution: q.institution,
+              exam: q.exam,
+              gradeGpa: q.gradeGpa || undefined,
+              passingYear: q.passingYear || undefined,
+              board: q.board || undefined,
+            })) ?? undefined;
+
+        const admitResult = await admitStudent({
+          variables: {
+            student: {
+              firstName: values.firstName,
+              lastName: values.lastName || undefined,
+              email: values.email || undefined,
+              phone: values.phone || undefined,
+              dateOfBirth: values.dob || undefined,
+              gender: values.gender ? values.gender.toUpperCase() : undefined,
+              bloodGroup: values.bloodGroup || undefined,
+              address: values.address || undefined,
+              notes: values.notes || undefined,
+              qualifications: qualifications?.length ? qualifications : undefined,
+            },
+          },
+        });
+        if (admitResult.error) throw admitResult.error;
+
+        const studentId = admitResult.data?.admitStudent?.id;
+
+        if (studentId && values.guardianName) {
+          await addGuardian({
+            variables: {
+              guardian: {
+                studentId,
+                name: values.guardianName,
+                relationship: values.guardianRelation,
+                phone: values.guardianPhone || undefined,
+                email: values.guardianEmail || undefined,
+                occupation: values.guardianOccupation || undefined,
+                nid: values.guardianNid || undefined,
+              },
+            },
+          });
+        }
+
+        if (studentId && values.batchId) {
+          await enrollStudent({
+            variables: { studentId, batchId: values.batchId },
+          });
+        }
+
+        const studentCode = admitResult.data?.admitStudent?.studentCode ?? "";
         toast.success(
-          `${newStudent.firstName} ${newStudent.lastName} admitted as ${newStudent.studentId}.`,
+          `${values.firstName} ${values.lastName} admitted${studentCode ? ` as ${studentCode}` : ""}.`,
         );
+        await refetchStudents();
       }
 
       closeFormDialog();
-    } catch {
-      setFormErrorMessage("Unable to save admission. Please try again.");
-    } finally {
-      setIsSubmitting(false);
+    } catch (error) {
+      const message = getErrorMessage(error, "Unable to save admission. Please try again.");
+      setFormErrorMessage(message);
+      toast.error(message);
     }
   };
 
   const handleWithdraw = async () => {
     if (!studentToWithdraw) return;
-    setIsWithdrawing(true);
+
     try {
-      setStudents((prev) =>
-        prev.map((s) =>
-          s.id === studentToWithdraw.id ? { ...s, status: "withdrawn" } : s,
-        ),
-      );
+      const result = await changeStudentStatus({
+        variables: { studentId: studentToWithdraw.id, status: "WITHDRAWN" },
+      });
+      if (result.error) throw result.error;
       toast.success(`${getFullName(studentToWithdraw)} marked as withdrawn.`);
       setStudentToWithdraw(null);
-    } finally {
-      setIsWithdrawing(false);
+      await refetchStudents();
+    } catch (error) {
+      toast.error(getErrorMessage(error, "Failed to withdraw student."));
     }
   };
 
@@ -613,7 +541,7 @@ export function AdmissionsWorkspace() {
 
         {/* Table */}
         <MaterialReactTable
-          columns={buildStudentColumns(SAMPLE_BATCHES)}
+          columns={buildStudentColumns()}
           data={students}
           enableColumnFilters
           enableDensityToggle={false}
@@ -623,6 +551,7 @@ export function AdmissionsWorkspace() {
           enableSorting
           enableStickyHeader
           getRowId={(row) => row.id}
+          state={{ isLoading: studentsLoading && students.length === 0 }}
           initialState={{
             pagination: { pageIndex: 0, pageSize: 15 },
             showColumnFilters: true,
@@ -634,7 +563,7 @@ export function AdmissionsWorkspace() {
           }}
           positionActionsColumn="last"
           muiSearchTextFieldProps={{
-            placeholder: "Search by name, ID, guardian…",
+            placeholder: "Search by name, ID…",
             size: "small",
             sx: { minWidth: { xs: "100%", md: 320 } },
           }}
@@ -724,24 +653,30 @@ export function AdmissionsWorkspace() {
           }}
           renderEmptyRowsFallback={() => (
             <Box sx={{ px: 3, py: 6, textAlign: "center" }}>
-              <Typography variant="subtitle1" fontWeight={700}>
-                No admissions yet
-              </Typography>
-              <Typography
-                variant="body2"
-                color="text.secondary"
-                sx={{ mt: 1 }}
-              >
-                Start by admitting your first student.
-              </Typography>
-              <Button
-                variant="outlined"
-                startIcon={<AddRounded />}
-                onClick={openCreateDialog}
-                sx={{ mt: 2 }}
-              >
-                New Admission
-              </Button>
+              {studentsLoading ? (
+                <CircularProgress size={32} />
+              ) : (
+                <>
+                  <Typography variant="subtitle1" fontWeight={700}>
+                    No admissions yet
+                  </Typography>
+                  <Typography
+                    variant="body2"
+                    color="text.secondary"
+                    sx={{ mt: 1 }}
+                  >
+                    Start by admitting your first student.
+                  </Typography>
+                  <Button
+                    variant="outlined"
+                    startIcon={<AddRounded />}
+                    onClick={openCreateDialog}
+                    sx={{ mt: 2 }}
+                  >
+                    New Admission
+                  </Button>
+                </>
+              )}
             </Box>
           )}
           renderRowActions={({ row }) => (
@@ -794,7 +729,7 @@ export function AdmissionsWorkspace() {
 
       <AdmissionFormDialog
         key={formDialogKey}
-        batches={SAMPLE_BATCHES}
+        batches={batches}
         errorMessage={formErrorMessage}
         initialValues={
           selectedStudent

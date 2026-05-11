@@ -19,7 +19,17 @@ export type AcademicYear = {
   tenantId: Scalars['ID']['output'];
 };
 
+export type AddCertificationInput = {
+  certificateUrl?: InputMaybe<Scalars['String']['input']>;
+  employeeId: Scalars['ID']['input'];
+  expiryDate?: InputMaybe<Scalars['String']['input']>;
+  issueDate: Scalars['String']['input'];
+  issuingOrganization: Scalars['String']['input'];
+  name: Scalars['String']['input'];
+};
+
 export type AddGuardianInput = {
+  email?: InputMaybe<Scalars['String']['input']>;
   name: Scalars['String']['input'];
   nid?: InputMaybe<Scalars['String']['input']>;
   occupation?: InputMaybe<Scalars['String']['input']>;
@@ -28,8 +38,15 @@ export type AddGuardianInput = {
   studentId: Scalars['ID']['input'];
 };
 
+export type AddSkillTagInput = {
+  employeeId: Scalars['ID']['input'];
+  proficiencyLevel: Scalars['String']['input'];
+  skill: Scalars['String']['input'];
+};
+
 /**  ─── Inputs ────────────────────────────────────────────────────────────────── */
 export type AdmitStudentInput = {
+  address?: InputMaybe<Scalars['String']['input']>;
   admissionSource?: InputMaybe<Scalars['String']['input']>;
   bloodGroup?: InputMaybe<Scalars['String']['input']>;
   classLevel?: InputMaybe<Scalars['String']['input']>;
@@ -41,12 +58,31 @@ export type AdmitStudentInput = {
   firstNameBangla?: InputMaybe<Scalars['String']['input']>;
   gender?: InputMaybe<Scalars['String']['input']>;
   lastName?: InputMaybe<Scalars['String']['input']>;
+  notes?: InputMaybe<Scalars['String']['input']>;
   phone?: InputMaybe<Scalars['String']['input']>;
   previousInstitution?: InputMaybe<Scalars['String']['input']>;
   previousResult?: InputMaybe<Scalars['String']['input']>;
+  qualifications?: InputMaybe<Array<QualificationInput>>;
   referrerId?: InputMaybe<Scalars['ID']['input']>;
   upazila?: InputMaybe<Scalars['String']['input']>;
   village?: InputMaybe<Scalars['String']['input']>;
+};
+
+export type ApplyForVacancyInput = {
+  applicantEmail: Scalars['String']['input'];
+  applicantName: Scalars['String']['input'];
+  applicantPhone: Scalars['String']['input'];
+  coverLetter?: InputMaybe<Scalars['String']['input']>;
+  resume?: InputMaybe<Scalars['String']['input']>;
+  vacancyId: Scalars['ID']['input'];
+};
+
+export type ApplyLeaveInput = {
+  employeeId: Scalars['ID']['input'];
+  endDate: Scalars['String']['input'];
+  leaveType: Scalars['String']['input'];
+  reason?: InputMaybe<Scalars['String']['input']>;
+  startDate: Scalars['String']['input'];
 };
 
 export type Assignment = {
@@ -99,17 +135,25 @@ export type Batch = {
   __typename?: 'Batch';
   branchId?: Maybe<Scalars['ID']['output']>;
   capacity: Scalars['Int']['output'];
+  certificateOnCompletion: Scalars['Boolean']['output'];
+  certificateTemplateName?: Maybe<Scalars['String']['output']>;
   classLevel?: Maybe<Scalars['String']['output']>;
   coTeacherIds?: Maybe<Array<Scalars['ID']['output']>>;
+  deliveryMode?: Maybe<Scalars['String']['output']>;
   endDate?: Maybe<Scalars['String']['output']>;
   enrolledCount: Scalars['Int']['output'];
   headTeacherId?: Maybe<Scalars['ID']['output']>;
   id: Scalars['ID']['output'];
+  mediumOfInstruction?: Maybe<Scalars['String']['output']>;
   name: Scalars['String']['output'];
+  notes?: Maybe<Scalars['String']['output']>;
+  prerequisites?: Maybe<Scalars['String']['output']>;
   programId?: Maybe<Scalars['ID']['output']>;
+  registrationDeadline?: Maybe<Scalars['String']['output']>;
   startDate?: Maybe<Scalars['String']['output']>;
   status: Scalars['String']['output'];
   tenantId: Scalars['ID']['output'];
+  type?: Maybe<Scalars['String']['output']>;
 };
 
 export type Branch = {
@@ -143,6 +187,18 @@ export type Center = {
   tenantId: Scalars['ID']['output'];
 };
 
+export type Certification = {
+  __typename?: 'Certification';
+  certificateUrl?: Maybe<Scalars['String']['output']>;
+  employeeId: Scalars['ID']['output'];
+  expiryDate?: Maybe<Scalars['String']['output']>;
+  id: Scalars['ID']['output'];
+  issueDate: Scalars['String']['output'];
+  issuingOrganization: Scalars['String']['output'];
+  name: Scalars['String']['output'];
+  tenantId: Scalars['ID']['output'];
+};
+
 export type CreateAcademicYearInput = {
   current: Scalars['Boolean']['input'];
   endDate: Scalars['String']['input'];
@@ -161,13 +217,22 @@ export type CreateAssignmentInput = {
 export type CreateBatchInput = {
   branchId?: InputMaybe<Scalars['ID']['input']>;
   capacity: Scalars['Int']['input'];
+  certificateOnCompletion?: InputMaybe<Scalars['Boolean']['input']>;
+  certificateTemplateName?: InputMaybe<Scalars['String']['input']>;
   classLevel?: InputMaybe<Scalars['String']['input']>;
   coTeacherIds?: InputMaybe<Array<Scalars['ID']['input']>>;
+  deliveryMode?: InputMaybe<Scalars['String']['input']>;
   endDate?: InputMaybe<Scalars['String']['input']>;
   headTeacherId?: InputMaybe<Scalars['ID']['input']>;
+  mediumOfInstruction?: InputMaybe<Scalars['String']['input']>;
   name: Scalars['String']['input'];
+  notes?: InputMaybe<Scalars['String']['input']>;
+  prerequisites?: InputMaybe<Scalars['String']['input']>;
   programId?: InputMaybe<Scalars['ID']['input']>;
+  registrationDeadline?: InputMaybe<Scalars['String']['input']>;
   startDate?: InputMaybe<Scalars['String']['input']>;
+  status?: InputMaybe<Scalars['String']['input']>;
+  type?: InputMaybe<Scalars['String']['input']>;
 };
 
 export type CreateBranchInput = {
@@ -184,6 +249,7 @@ export type CreateBranchInput = {
 export type CreateDiscountInput = {
   applicableRuleJson?: InputMaybe<Scalars['String']['input']>;
   discountType: Scalars['String']['input'];
+  earlyBirdDeadline?: InputMaybe<Scalars['String']['input']>;
   isPercentage: Scalars['Boolean']['input'];
   name: Scalars['String']['input'];
   value: Scalars['Float']['input'];
@@ -210,6 +276,15 @@ export type CreateHolidayInput = {
   type: Scalars['String']['input'];
 };
 
+export type CreateLeavePolicyInput = {
+  carryForwardDays: Scalars['Int']['input'];
+  description?: InputMaybe<Scalars['String']['input']>;
+  leaveType: Scalars['String']['input'];
+  name: Scalars['String']['input'];
+  requiresApproval: Scalars['Boolean']['input'];
+  totalDaysPerYear: Scalars['Int']['input'];
+};
+
 export type CreateOneOffSessionInput = {
   batchId: Scalars['ID']['input'];
   date: Scalars['String']['input'];
@@ -225,6 +300,15 @@ export type CreateOrgNodeInput = {
   managerId?: InputMaybe<Scalars['ID']['input']>;
   name: Scalars['String']['input'];
   parentId?: InputMaybe<Scalars['ID']['input']>;
+};
+
+export type CreatePipInput = {
+  createdBy: Scalars['ID']['input'];
+  employeeId: Scalars['ID']['input'];
+  endDate: Scalars['String']['input'];
+  goals: Scalars['String']['input'];
+  progressNotes?: InputMaybe<Scalars['String']['input']>;
+  startDate: Scalars['String']['input'];
 };
 
 export type CreatePlanInput = {
@@ -285,11 +369,59 @@ export type Discount = {
   __typename?: 'Discount';
   applicableRuleJson?: Maybe<Scalars['String']['output']>;
   discountType: Scalars['String']['output'];
+  earlyBirdDeadline?: Maybe<Scalars['String']['output']>;
   id: Scalars['ID']['output'];
   isPercentage: Scalars['Boolean']['output'];
   name: Scalars['String']['output'];
   tenantId: Scalars['ID']['output'];
   value: Scalars['Float']['output'];
+};
+
+/**
+ * # Phase 6 — HR Module (Employee, Recruitment, Leave, Attendance, Payroll, Performance)
+ *  ─── Types ──────────────────────────────────────────────────────────────────
+ */
+export type Employee = {
+  __typename?: 'Employee';
+  bloodGroup?: Maybe<Scalars['String']['output']>;
+  branchId: Scalars['ID']['output'];
+  department?: Maybe<Scalars['String']['output']>;
+  designation?: Maybe<Scalars['String']['output']>;
+  emergencyContactName?: Maybe<Scalars['String']['output']>;
+  emergencyContactPhone?: Maybe<Scalars['String']['output']>;
+  employeeCode: Scalars['String']['output'];
+  employmentType: Scalars['String']['output'];
+  id: Scalars['ID']['output'];
+  isOnProbation: Scalars['Boolean']['output'];
+  joiningDate: Scalars['String']['output'];
+  nid?: Maybe<Scalars['String']['output']>;
+  probationEndsAt?: Maybe<Scalars['String']['output']>;
+  status: Scalars['String']['output'];
+  tenantId: Scalars['ID']['output'];
+  tin?: Maybe<Scalars['String']['output']>;
+  userId?: Maybe<Scalars['ID']['output']>;
+};
+
+export type EmployeeAttendance = {
+  __typename?: 'EmployeeAttendance';
+  attendanceDate: Scalars['String']['output'];
+  checkInTime?: Maybe<Scalars['String']['output']>;
+  checkOutTime?: Maybe<Scalars['String']['output']>;
+  employeeId: Scalars['ID']['output'];
+  id: Scalars['ID']['output'];
+  source: Scalars['String']['output'];
+  status: Scalars['String']['output'];
+  tenantId: Scalars['ID']['output'];
+};
+
+export type EmployeeDocument = {
+  __typename?: 'EmployeeDocument';
+  employeeId: Scalars['ID']['output'];
+  filePath: Scalars['String']['output'];
+  id: Scalars['ID']['output'];
+  tenantId: Scalars['ID']['output'];
+  type: Scalars['String']['output'];
+  uploadedAt: Scalars['String']['output'];
 };
 
 export type Enrollment = {
@@ -349,6 +481,7 @@ export type FeeType = {
 
 export type Guardian = {
   __typename?: 'Guardian';
+  email?: Maybe<Scalars['String']['output']>;
   id: Scalars['ID']['output'];
   name: Scalars['String']['output'];
   nid?: Maybe<Scalars['String']['output']>;
@@ -356,6 +489,15 @@ export type Guardian = {
   phone?: Maybe<Scalars['String']['output']>;
   relationship?: Maybe<Scalars['String']['output']>;
   studentId: Scalars['ID']['output'];
+};
+
+export type HireApplicantInput = {
+  applicationId: Scalars['ID']['input'];
+  branchId: Scalars['ID']['input'];
+  department: Scalars['String']['input'];
+  designation: Scalars['String']['input'];
+  joiningDate: Scalars['String']['input'];
+  userId?: InputMaybe<Scalars['ID']['input']>;
 };
 
 export type Holiday = {
@@ -397,6 +539,37 @@ export type Invoice = {
   vatAmount: Scalars['Float']['output'];
 };
 
+export type JobApplication = {
+  __typename?: 'JobApplication';
+  applicantEmail: Scalars['String']['output'];
+  applicantName: Scalars['String']['output'];
+  applicantPhone: Scalars['String']['output'];
+  appliedAt: Scalars['String']['output'];
+  coverLetter?: Maybe<Scalars['String']['output']>;
+  id: Scalars['ID']['output'];
+  interviewDate?: Maybe<Scalars['String']['output']>;
+  interviewScore?: Maybe<Scalars['Float']['output']>;
+  resume?: Maybe<Scalars['String']['output']>;
+  status: Scalars['String']['output'];
+  tenantId: Scalars['ID']['output'];
+  vacancyId: Scalars['ID']['output'];
+};
+
+export type JobVacancy = {
+  __typename?: 'JobVacancy';
+  department: Scalars['String']['output'];
+  description?: Maybe<Scalars['String']['output']>;
+  id: Scalars['ID']['output'];
+  jobType: Scalars['String']['output'];
+  noOfPositions: Scalars['Int']['output'];
+  postedAt: Scalars['String']['output'];
+  requiredExperience?: Maybe<Scalars['Int']['output']>;
+  requiredQualification?: Maybe<Scalars['String']['output']>;
+  status: Scalars['String']['output'];
+  tenantId: Scalars['ID']['output'];
+  title: Scalars['String']['output'];
+};
+
 export type LateFinePolicy = {
   __typename?: 'LateFinePolicy';
   fineType: Scalars['String']['output'];
@@ -404,6 +577,53 @@ export type LateFinePolicy = {
   id: Scalars['ID']['output'];
   tenantId: Scalars['ID']['output'];
   value: Scalars['Float']['output'];
+};
+
+export type LaunchReviewCycleInput = {
+  cycleType: Scalars['String']['input'];
+  name: Scalars['String']['input'];
+  submissionDeadline: Scalars['String']['input'];
+  year: Scalars['Int']['input'];
+};
+
+export type LeaveApplication = {
+  __typename?: 'LeaveApplication';
+  appliedAt: Scalars['String']['output'];
+  approvalDate?: Maybe<Scalars['String']['output']>;
+  approvedBy?: Maybe<Scalars['ID']['output']>;
+  employeeId: Scalars['ID']['output'];
+  endDate: Scalars['String']['output'];
+  id: Scalars['ID']['output'];
+  leaveType: Scalars['String']['output'];
+  numberOfDays: Scalars['Int']['output'];
+  reason?: Maybe<Scalars['String']['output']>;
+  startDate: Scalars['String']['output'];
+  status: Scalars['String']['output'];
+  tenantId: Scalars['ID']['output'];
+};
+
+export type LeaveBalance = {
+  __typename?: 'LeaveBalance';
+  employeeId: Scalars['ID']['output'];
+  id: Scalars['ID']['output'];
+  leaveType: Scalars['String']['output'];
+  remainingDays: Scalars['Int']['output'];
+  tenantId: Scalars['ID']['output'];
+  totalBalance: Scalars['Int']['output'];
+  usedDays: Scalars['Int']['output'];
+  year: Scalars['Int']['output'];
+};
+
+export type LeavePolicy = {
+  __typename?: 'LeavePolicy';
+  carryForwardDays: Scalars['Int']['output'];
+  description?: Maybe<Scalars['String']['output']>;
+  id: Scalars['ID']['output'];
+  leaveType: Scalars['String']['output'];
+  name: Scalars['String']['output'];
+  requiresApproval: Scalars['Boolean']['output'];
+  tenantId: Scalars['ID']['output'];
+  totalDaysPerYear: Scalars['Int']['output'];
 };
 
 export type LineItem = {
@@ -422,14 +642,22 @@ export type MarkAttendanceInput = {
 export type Mutation = {
   __typename?: 'Mutation';
   activateTenant: Tenant;
+  addCertification: Certification;
   addGuardian: Guardian;
   addOneOffSession: Session;
   addOrgNode: OrgNode;
   addRole?: Maybe<User>;
+  addSkillTag: SkillTag;
   admitStudent: Student;
+  applyForVacancy: JobApplication;
+  applyLeave: LeaveApplication;
+  approveLeave: LeaveApplication;
+  approveManualAttendance: EmployeeAttendance;
+  approvePayroll: PayrollRun;
   approveWaiver: StudentInvoice;
   assignRoleToUser: TenantRole;
   assignSubstitute: Session;
+  cancelLeave: LeaveApplication;
   changeBatchStatus: Batch;
   changePassword?: Maybe<Scalars['Boolean']['output']>;
   changeStudentStatus: Student;
@@ -444,6 +672,8 @@ export type Mutation = {
   createFeePlan: FeePlan;
   createFeeType: FeeType;
   createHoliday: Holiday;
+  createLeavePolicy: LeavePolicy;
+  createPIP: Pip;
   createProgram: Program;
   createRecurringSchedule: RecurringSchedule;
   createSubject: Subject;
@@ -451,38 +681,56 @@ export type Mutation = {
   createTenant: Tenant;
   deactivateBranch: Branch;
   deleteUser?: Maybe<Scalars['Boolean']['output']>;
+  disbursePayroll: PayrollRun;
   dropEnrollment: Enrollment;
   enrollStudent: Enrollment;
   generateMonthlyInvoices: Array<Invoice>;
   generateMonthlyStudentInvoices: Array<StudentInvoice>;
+  generateOfferLetter: Scalars['String']['output'];
   giveFeedback: Submission;
+  hireApplicant: Employee;
   impersonateTenant: ImpersonationResult;
   inviteBongoUser: User;
+  launchReviewCycle: ReviewCycle;
   login: AuthResponse;
   logout: Scalars['Boolean']['output'];
   markAttendance: Array<Attendance>;
+  onboardEmployee: Employee;
+  postVacancy: JobVacancy;
   reEnroll: Enrollment;
+  recordCheckIn: EmployeeAttendance;
+  recordCheckOut: EmployeeAttendance;
   recordPayment: PaymentResult;
   recordStudentPayment: StudentPayment;
   refresh: AuthResponse;
+  rejectLeave: LeaveApplication;
+  requestManualAttendance: EmployeeAttendance;
   requestWaiver: StudentInvoice;
   resendOtp?: Maybe<OtpResendStatus>;
+  reviewApplication: JobApplication;
+  runPayroll: PayrollRun;
+  scheduleInterview: JobApplication;
   setActiveStatus?: Maybe<User>;
   setFeatureFlag: FeatureFlag;
   setLateFinePolicy: LateFinePolicy;
+  setSalaryStructure: SalaryStructure;
   setupCenter: Center;
   submitAssignment: Submission;
+  submitReview: PerformanceReview;
   suspendTenant: Tenant;
   terminateTenant: Tenant;
   updateBatch: Batch;
   updateBranch: Branch;
   updateCenter: Center;
+  updateEmployee: Employee;
+  updatePIPProgress: Pip;
   updateProfile?: Maybe<User>;
   updateProgram: Program;
   updateStudent: Student;
   updateSubject: Subject;
   updateSubscriptionPlan: SubscriptionPlan;
   updateTenant: Tenant;
+  uploadEmployeeDocument: EmployeeDocument;
   uploadMaterial: StudyMaterial;
   userRegistration?: Maybe<User>;
   verifyUser?: Maybe<User>;
@@ -491,6 +739,11 @@ export type Mutation = {
 
 export type MutationActivateTenantArgs = {
   tenantId: Scalars['ID']['input'];
+};
+
+
+export type MutationAddCertificationArgs = {
+  input: AddCertificationInput;
 };
 
 
@@ -515,8 +768,38 @@ export type MutationAddRoleArgs = {
 };
 
 
+export type MutationAddSkillTagArgs = {
+  input: AddSkillTagInput;
+};
+
+
 export type MutationAdmitStudentArgs = {
   student: AdmitStudentInput;
+};
+
+
+export type MutationApplyForVacancyArgs = {
+  input: ApplyForVacancyInput;
+};
+
+
+export type MutationApplyLeaveArgs = {
+  input: ApplyLeaveInput;
+};
+
+
+export type MutationApproveLeaveArgs = {
+  applicationId: Scalars['ID']['input'];
+};
+
+
+export type MutationApproveManualAttendanceArgs = {
+  attendanceId: Scalars['ID']['input'];
+};
+
+
+export type MutationApprovePayrollArgs = {
+  payrollRunId: Scalars['ID']['input'];
 };
 
 
@@ -534,6 +817,11 @@ export type MutationAssignRoleToUserArgs = {
 export type MutationAssignSubstituteArgs = {
   sessionId: Scalars['ID']['input'];
   substituteTeacherId: Scalars['ID']['input'];
+};
+
+
+export type MutationCancelLeaveArgs = {
+  applicationId: Scalars['ID']['input'];
 };
 
 
@@ -616,6 +904,16 @@ export type MutationCreateHolidayArgs = {
 };
 
 
+export type MutationCreateLeavePolicyArgs = {
+  input: CreateLeavePolicyInput;
+};
+
+
+export type MutationCreatePipArgs = {
+  input: CreatePipInput;
+};
+
+
 export type MutationCreateProgramArgs = {
   program: CreateProgramInput;
 };
@@ -651,6 +949,11 @@ export type MutationDeleteUserArgs = {
 };
 
 
+export type MutationDisbursePayrollArgs = {
+  payrollRunId: Scalars['ID']['input'];
+};
+
+
 export type MutationDropEnrollmentArgs = {
   enrollmentId: Scalars['ID']['input'];
   reason?: InputMaybe<Scalars['String']['input']>;
@@ -669,10 +972,20 @@ export type MutationGenerateMonthlyStudentInvoicesArgs = {
 };
 
 
+export type MutationGenerateOfferLetterArgs = {
+  applicationId: Scalars['ID']['input'];
+};
+
+
 export type MutationGiveFeedbackArgs = {
   assignmentId: Scalars['ID']['input'];
   feedback: Scalars['String']['input'];
   studentId: Scalars['ID']['input'];
+};
+
+
+export type MutationHireApplicantArgs = {
+  input: HireApplicantInput;
 };
 
 
@@ -683,6 +996,11 @@ export type MutationImpersonateTenantArgs = {
 
 export type MutationInviteBongoUserArgs = {
   user: InviteBongoUserInput;
+};
+
+
+export type MutationLaunchReviewCycleArgs = {
+  input: LaunchReviewCycleInput;
 };
 
 
@@ -702,9 +1020,29 @@ export type MutationMarkAttendanceArgs = {
 };
 
 
+export type MutationOnboardEmployeeArgs = {
+  input: OnboardEmployeeInput;
+};
+
+
+export type MutationPostVacancyArgs = {
+  input: PostVacancyInput;
+};
+
+
 export type MutationReEnrollArgs = {
   newBatchId: Scalars['ID']['input'];
   studentId: Scalars['ID']['input'];
+};
+
+
+export type MutationRecordCheckInArgs = {
+  input: RecordCheckInInput;
+};
+
+
+export type MutationRecordCheckOutArgs = {
+  input: RecordCheckOutInput;
 };
 
 
@@ -723,6 +1061,17 @@ export type MutationRefreshArgs = {
 };
 
 
+export type MutationRejectLeaveArgs = {
+  applicationId: Scalars['ID']['input'];
+  reason: Scalars['String']['input'];
+};
+
+
+export type MutationRequestManualAttendanceArgs = {
+  input: RequestManualAttendanceInput;
+};
+
+
 export type MutationRequestWaiverArgs = {
   invoiceId: Scalars['ID']['input'];
 };
@@ -730,6 +1079,23 @@ export type MutationRequestWaiverArgs = {
 
 export type MutationResendOtpArgs = {
   email: Scalars['String']['input'];
+};
+
+
+export type MutationReviewApplicationArgs = {
+  applicationId: Scalars['ID']['input'];
+  status: Scalars['String']['input'];
+};
+
+
+export type MutationRunPayrollArgs = {
+  input: RunPayrollInput;
+};
+
+
+export type MutationScheduleInterviewArgs = {
+  applicationId: Scalars['ID']['input'];
+  interviewDate: Scalars['String']['input'];
 };
 
 
@@ -749,6 +1115,11 @@ export type MutationSetLateFinePolicyArgs = {
 };
 
 
+export type MutationSetSalaryStructureArgs = {
+  input: SetSalaryStructureInput;
+};
+
+
 export type MutationSetupCenterArgs = {
   center: SetupCenterInput;
 };
@@ -757,6 +1128,11 @@ export type MutationSetupCenterArgs = {
 export type MutationSubmitAssignmentArgs = {
   assignmentId: Scalars['ID']['input'];
   studentId: Scalars['ID']['input'];
+};
+
+
+export type MutationSubmitReviewArgs = {
+  input: SubmitReviewInput;
 };
 
 
@@ -782,6 +1158,16 @@ export type MutationUpdateBranchArgs = {
 
 export type MutationUpdateCenterArgs = {
   center: SetupCenterInput;
+};
+
+
+export type MutationUpdateEmployeeArgs = {
+  input: UpdateEmployeeInput;
+};
+
+
+export type MutationUpdatePipProgressArgs = {
+  input: UpdatePipProgressInput;
 };
 
 
@@ -815,6 +1201,11 @@ export type MutationUpdateTenantArgs = {
 };
 
 
+export type MutationUploadEmployeeDocumentArgs = {
+  input: UploadEmployeeDocumentInput;
+};
+
+
 export type MutationUploadMaterialArgs = {
   material: UploadMaterialInput;
 };
@@ -828,6 +1219,24 @@ export type MutationUserRegistrationArgs = {
 export type MutationVerifyUserArgs = {
   email: Scalars['String']['input'];
   otp?: InputMaybe<Scalars['Int']['input']>;
+};
+
+/**  ─── Input Types ──────────────────────────────────────────────────────────── */
+export type OnboardEmployeeInput = {
+  bloodGroup?: InputMaybe<Scalars['String']['input']>;
+  branchId: Scalars['ID']['input'];
+  department?: InputMaybe<Scalars['String']['input']>;
+  designation?: InputMaybe<Scalars['String']['input']>;
+  email?: InputMaybe<Scalars['String']['input']>;
+  emergencyContactName?: InputMaybe<Scalars['String']['input']>;
+  emergencyContactPhone?: InputMaybe<Scalars['String']['input']>;
+  employeeCode?: InputMaybe<Scalars['String']['input']>;
+  employmentType: Scalars['String']['input'];
+  joiningDate: Scalars['String']['input'];
+  nid?: InputMaybe<Scalars['String']['input']>;
+  probationEndsAt?: InputMaybe<Scalars['String']['input']>;
+  tin?: InputMaybe<Scalars['String']['input']>;
+  userId?: InputMaybe<Scalars['ID']['input']>;
 };
 
 export type OrgNode = {
@@ -847,6 +1256,18 @@ export type OtpResendStatus = {
   status?: Maybe<Scalars['Boolean']['output']>;
 };
 
+export type Pip = {
+  __typename?: 'PIP';
+  createdBy: Scalars['ID']['output'];
+  employeeId: Scalars['ID']['output'];
+  endDate: Scalars['String']['output'];
+  goals: Scalars['String']['output'];
+  id: Scalars['ID']['output'];
+  progressNotes?: Maybe<Scalars['String']['output']>;
+  startDate: Scalars['String']['output'];
+  status: Scalars['String']['output'];
+};
+
 export type PaymentResult = {
   __typename?: 'PaymentResult';
   amount: Scalars['Float']['output'];
@@ -856,6 +1277,62 @@ export type PaymentResult = {
   recordedAt: Scalars['String']['output'];
   recordedBy?: Maybe<Scalars['ID']['output']>;
   transactionRef?: Maybe<Scalars['String']['output']>;
+};
+
+export type PayrollEntry = {
+  __typename?: 'PayrollEntry';
+  allowances: Scalars['Float']['output'];
+  basicSalary: Scalars['Float']['output'];
+  deductions: Scalars['Float']['output'];
+  employeeId: Scalars['ID']['output'];
+  id: Scalars['ID']['output'];
+  netAmount: Scalars['Float']['output'];
+  payrollRunId: Scalars['ID']['output'];
+  taxableIncome: Scalars['Float']['output'];
+  taxes: Scalars['Float']['output'];
+  tenantId: Scalars['ID']['output'];
+};
+
+export type PayrollRun = {
+  __typename?: 'PayrollRun';
+  createdAt: Scalars['String']['output'];
+  id: Scalars['ID']['output'];
+  month: Scalars['Int']['output'];
+  status: Scalars['String']['output'];
+  tenantId: Scalars['ID']['output'];
+  totalAmount: Scalars['Float']['output'];
+  totalEmployees: Scalars['Int']['output'];
+  year: Scalars['Int']['output'];
+};
+
+export type PerformanceDashboard = {
+  __typename?: 'PerformanceDashboard';
+  averageScore: Scalars['Float']['output'];
+  reviewCount: Scalars['Int']['output'];
+  revieweeId: Scalars['ID']['output'];
+  reviewerTypes: Array<Scalars['String']['output']>;
+};
+
+export type PerformanceReview = {
+  __typename?: 'PerformanceReview';
+  comments?: Maybe<Scalars['String']['output']>;
+  cycleId: Scalars['ID']['output'];
+  id: Scalars['ID']['output'];
+  overallScore: Scalars['Int']['output'];
+  revieweeId: Scalars['ID']['output'];
+  reviewerId: Scalars['ID']['output'];
+  reviewerType: Scalars['String']['output'];
+  submittedAt?: Maybe<Scalars['String']['output']>;
+};
+
+export type PostVacancyInput = {
+  department: Scalars['String']['input'];
+  description?: InputMaybe<Scalars['String']['input']>;
+  jobType: Scalars['String']['input'];
+  noOfPositions: Scalars['Int']['input'];
+  requiredExperience?: InputMaybe<Scalars['Int']['input']>;
+  requiredQualification?: InputMaybe<Scalars['String']['input']>;
+  title: Scalars['String']['input'];
 };
 
 export type Program = {
@@ -870,10 +1347,19 @@ export type Program = {
   tenantId: Scalars['ID']['output'];
 };
 
+export type QualificationInput = {
+  board?: InputMaybe<Scalars['String']['input']>;
+  exam: Scalars['String']['input'];
+  gradeGpa?: InputMaybe<Scalars['String']['input']>;
+  institution: Scalars['String']['input'];
+  passingYear?: InputMaybe<Scalars['String']['input']>;
+};
+
 export type Query = {
   __typename?: 'Query';
   getAcademicYears: Array<AcademicYear>;
   getAllBatches: Array<Batch>;
+  getApplicationsByVacancy: Array<JobApplication>;
   getAssignmentsByBatch: Array<Assignment>;
   getAttendanceBySession: Array<Attendance>;
   getAttendanceSummary: AttendanceSummary;
@@ -882,8 +1368,11 @@ export type Query = {
   getBranches: Array<Branch>;
   getCenter?: Maybe<Center>;
   getDiscounts: Array<Discount>;
+  getEmployee: Employee;
+  getEmployees: Array<Employee>;
   getEnrollmentsByBatch: Array<Enrollment>;
   getEnrollmentsByStudent: Array<Enrollment>;
+  getExpiringCertifications: Array<Certification>;
   getFeatureFlags: Array<FeatureFlag>;
   getFeePlans: Array<FeePlan>;
   getFeeTypes: Array<FeeType>;
@@ -892,12 +1381,21 @@ export type Query = {
   getInvoice?: Maybe<Invoice>;
   getInvoices: Array<Invoice>;
   getLateFinePolicy?: Maybe<LateFinePolicy>;
+  getLeaveApplications: Array<LeaveApplication>;
+  getLeaveBalance: Array<LeaveBalance>;
   getMaterialsByBatch: Array<StudyMaterial>;
+  getMonthlyAttendanceSheet: Array<EmployeeAttendance>;
   getOrgChart: Array<OrgNode>;
+  getPIPs: Array<Pip>;
   getPaymentsByInvoice: Array<StudentPayment>;
+  getPayrollRuns: Array<PayrollRun>;
+  getPayslip: PayrollEntry;
+  getPerformanceDashboard: Array<PerformanceDashboard>;
   getPrograms: Array<Program>;
+  getSalaryStructure: SalaryStructure;
   getSchedulesByBatch: Array<RecurringSchedule>;
   getSessionsByBatch: Array<Session>;
+  getSkillMatrix: Array<SkillTag>;
   getStudent: Student;
   getStudentDocuments: Array<StudentDocument>;
   getStudentInvoice: StudentInvoice;
@@ -912,8 +1410,15 @@ export type Query = {
   getTenants: Array<Tenant>;
   getUser?: Maybe<User>;
   getUsers: Array<Maybe<User>>;
+  getVacancies: Array<JobVacancy>;
   isFeatureEnabled: Scalars['Boolean']['output'];
   me: User;
+  suggestSubstitutes: Array<Employee>;
+};
+
+
+export type QueryGetApplicationsByVacancyArgs = {
+  vacancyId: Scalars['ID']['input'];
 };
 
 
@@ -944,6 +1449,11 @@ export type QueryGetBranchArgs = {
 
 export type QueryGetBranchesArgs = {
   centerId: Scalars['ID']['input'];
+};
+
+
+export type QueryGetEmployeeArgs = {
+  employeeId: Scalars['ID']['input'];
 };
 
 
@@ -983,13 +1493,52 @@ export type QueryGetInvoicesArgs = {
 };
 
 
+export type QueryGetLeaveApplicationsArgs = {
+  employeeId: Scalars['ID']['input'];
+};
+
+
+export type QueryGetLeaveBalanceArgs = {
+  employeeId: Scalars['ID']['input'];
+  year: Scalars['Int']['input'];
+};
+
+
 export type QueryGetMaterialsByBatchArgs = {
   batchId: Scalars['ID']['input'];
 };
 
 
+export type QueryGetMonthlyAttendanceSheetArgs = {
+  employeeId: Scalars['ID']['input'];
+  month: Scalars['Int']['input'];
+  year: Scalars['Int']['input'];
+};
+
+
+export type QueryGetPiPsArgs = {
+  employeeId: Scalars['ID']['input'];
+};
+
+
 export type QueryGetPaymentsByInvoiceArgs = {
   invoiceId: Scalars['ID']['input'];
+};
+
+
+export type QueryGetPayslipArgs = {
+  employeeId: Scalars['ID']['input'];
+  payrollRunId: Scalars['ID']['input'];
+};
+
+
+export type QueryGetPerformanceDashboardArgs = {
+  cycleId: Scalars['ID']['input'];
+};
+
+
+export type QueryGetSalaryStructureArgs = {
+  employeeId: Scalars['ID']['input'];
 };
 
 
@@ -1000,6 +1549,11 @@ export type QueryGetSchedulesByBatchArgs = {
 
 export type QueryGetSessionsByBatchArgs = {
   batchId: Scalars['ID']['input'];
+};
+
+
+export type QueryGetSkillMatrixArgs = {
+  employeeId: Scalars['ID']['input'];
 };
 
 
@@ -1061,6 +1615,21 @@ export type QueryIsFeatureEnabledArgs = {
   tenantId: Scalars['ID']['input'];
 };
 
+
+export type QuerySuggestSubstitutesArgs = {
+  leaveApplicationId: Scalars['ID']['input'];
+};
+
+export type RecordCheckInInput = {
+  checkInTime: Scalars['String']['input'];
+  employeeId: Scalars['ID']['input'];
+};
+
+export type RecordCheckOutInput = {
+  checkOutTime: Scalars['String']['input'];
+  employeeId: Scalars['ID']['input'];
+};
+
 export type RecordPaymentInput = {
   amount: Scalars['Float']['input'];
   invoiceId: Scalars['ID']['input'];
@@ -1072,6 +1641,8 @@ export type RecordStudentPaymentInput = {
   amount: Scalars['Float']['input'];
   invoiceId: Scalars['ID']['input'];
   method: Scalars['String']['input'];
+  paidAt?: InputMaybe<Scalars['String']['input']>;
+  remarks?: InputMaybe<Scalars['String']['input']>;
   studentId: Scalars['ID']['input'];
   transactionRef: Scalars['String']['input'];
 };
@@ -1086,6 +1657,40 @@ export type RecurringSchedule = {
   roomName?: Maybe<Scalars['String']['output']>;
   startTime: Scalars['String']['output'];
   teacherId?: Maybe<Scalars['ID']['output']>;
+  tenantId: Scalars['ID']['output'];
+};
+
+export type RequestManualAttendanceInput = {
+  attendanceDate: Scalars['String']['input'];
+  employeeId: Scalars['ID']['input'];
+  reason?: InputMaybe<Scalars['String']['input']>;
+  status: Scalars['String']['input'];
+};
+
+export type ReviewCycle = {
+  __typename?: 'ReviewCycle';
+  cycleType: Scalars['String']['output'];
+  id: Scalars['ID']['output'];
+  name: Scalars['String']['output'];
+  status: Scalars['String']['output'];
+  submissionDeadline: Scalars['String']['output'];
+  year: Scalars['Int']['output'];
+};
+
+export type RunPayrollInput = {
+  month: Scalars['Int']['input'];
+  year: Scalars['Int']['input'];
+};
+
+export type SalaryStructure = {
+  __typename?: 'SalaryStructure';
+  allowances?: Maybe<Scalars['Float']['output']>;
+  basicSalary: Scalars['Float']['output'];
+  deductions?: Maybe<Scalars['Float']['output']>;
+  effectiveFrom: Scalars['String']['output'];
+  employeeId: Scalars['ID']['output'];
+  id: Scalars['ID']['output'];
+  netSalary: Scalars['Float']['output'];
   tenantId: Scalars['ID']['output'];
 };
 
@@ -1112,6 +1717,14 @@ export type SetLateFinePolicyInput = {
   value: Scalars['Float']['input'];
 };
 
+export type SetSalaryStructureInput = {
+  allowances?: InputMaybe<Scalars['Float']['input']>;
+  basicSalary: Scalars['Float']['input'];
+  deductions?: InputMaybe<Scalars['Float']['input']>;
+  effectiveFrom: Scalars['String']['input'];
+  employeeId: Scalars['ID']['input'];
+};
+
 export type SetupCenterInput = {
   academicYearStartMonth?: InputMaybe<Scalars['Int']['input']>;
   address?: InputMaybe<Scalars['String']['input']>;
@@ -1124,12 +1737,22 @@ export type SetupCenterInput = {
   tagline?: InputMaybe<Scalars['String']['input']>;
 };
 
+export type SkillTag = {
+  __typename?: 'SkillTag';
+  employeeId: Scalars['ID']['output'];
+  id: Scalars['ID']['output'];
+  proficiencyLevel: Scalars['String']['output'];
+  skill: Scalars['String']['output'];
+  tenantId: Scalars['ID']['output'];
+};
+
 /**
  * # Phase 4 — Student Management: Profiles, Guardians, Enrollment, Attendance, Document Vault
  *  ─── Types ──────────────────────────────────────────────────────────────────
  */
 export type Student = {
   __typename?: 'Student';
+  address?: Maybe<Scalars['String']['output']>;
   admissionSource?: Maybe<Scalars['String']['output']>;
   bloodGroup?: Maybe<Scalars['String']['output']>;
   classLevel?: Maybe<Scalars['String']['output']>;
@@ -1142,10 +1765,12 @@ export type Student = {
   gender?: Maybe<Scalars['String']['output']>;
   id: Scalars['ID']['output'];
   lastName?: Maybe<Scalars['String']['output']>;
+  notes?: Maybe<Scalars['String']['output']>;
   phone?: Maybe<Scalars['String']['output']>;
   photo?: Maybe<Scalars['String']['output']>;
   previousInstitution?: Maybe<Scalars['String']['output']>;
   previousResult?: Maybe<Scalars['String']['output']>;
+  qualifications?: Maybe<Array<StudentQualification>>;
   referrerId?: Maybe<Scalars['ID']['output']>;
   status: Scalars['String']['output'];
   studentCode: Scalars['String']['output'];
@@ -1194,10 +1819,21 @@ export type StudentPayment = {
   invoiceId: Scalars['ID']['output'];
   method: Scalars['String']['output'];
   receiptPath?: Maybe<Scalars['String']['output']>;
+  remarks?: Maybe<Scalars['String']['output']>;
   status: Scalars['String']['output'];
   studentId: Scalars['ID']['output'];
   tenantId: Scalars['ID']['output'];
   transactionRef: Scalars['String']['output'];
+};
+
+export type StudentQualification = {
+  __typename?: 'StudentQualification';
+  board?: Maybe<Scalars['String']['output']>;
+  exam: Scalars['String']['output'];
+  gradeGpa?: Maybe<Scalars['String']['output']>;
+  id: Scalars['ID']['output'];
+  institution: Scalars['String']['output'];
+  passingYear?: Maybe<Scalars['String']['output']>;
 };
 
 export type StudyMaterial = {
@@ -1241,6 +1877,15 @@ export type Submission = {
   studentId: Scalars['ID']['output'];
   submittedAt?: Maybe<Scalars['String']['output']>;
   tenantId: Scalars['ID']['output'];
+};
+
+export type SubmitReviewInput = {
+  comments?: InputMaybe<Scalars['String']['input']>;
+  cycleId: Scalars['ID']['input'];
+  overallScore: Scalars['Int']['input'];
+  revieweeId: Scalars['ID']['input'];
+  reviewerId: Scalars['ID']['input'];
+  reviewerType: Scalars['String']['input'];
 };
 
 /** # Platform / Bongo Portal — Subscription Plans, Tenants, Billing, Feature Flags */
@@ -1308,6 +1953,23 @@ export type UpdateBranchInput = {
   workingDays?: InputMaybe<Array<Scalars['String']['input']>>;
 };
 
+export type UpdateEmployeeInput = {
+  bloodGroup?: InputMaybe<Scalars['String']['input']>;
+  department?: InputMaybe<Scalars['String']['input']>;
+  designation?: InputMaybe<Scalars['String']['input']>;
+  emergencyContactName?: InputMaybe<Scalars['String']['input']>;
+  emergencyContactPhone?: InputMaybe<Scalars['String']['input']>;
+  employeeId: Scalars['ID']['input'];
+  nid?: InputMaybe<Scalars['String']['input']>;
+  tin?: InputMaybe<Scalars['String']['input']>;
+};
+
+export type UpdatePipProgressInput = {
+  id: Scalars['ID']['input'];
+  progressNotes?: InputMaybe<Scalars['String']['input']>;
+  status?: InputMaybe<Scalars['String']['input']>;
+};
+
 export type UpdatePlanInput = {
   active?: InputMaybe<Scalars['Boolean']['input']>;
   billingCycle?: InputMaybe<Scalars['String']['input']>;
@@ -1366,6 +2028,12 @@ export type UpdateTenantInput = {
   logo?: InputMaybe<Scalars['String']['input']>;
   planId?: InputMaybe<Scalars['ID']['input']>;
   tradeLicense?: InputMaybe<Scalars['String']['input']>;
+};
+
+export type UploadEmployeeDocumentInput = {
+  documentType: Scalars['String']['input'];
+  employeeId: Scalars['ID']['input'];
+  filePath: Scalars['String']['input'];
 };
 
 export type UploadMaterialInput = {

@@ -98,8 +98,13 @@ export async function POST(request: Request) {
   }
 
   const cookieStore = await cookies();
-  const accessToken = cookieStore.get(AUTH_COOKIE_NAMES.accessToken)?.value;
-  const refreshToken = cookieStore.get(AUTH_COOKIE_NAMES.refreshToken)?.value;
+  // Prefer the tenant-scoped impersonation token when present. Impersonation
+  // tokens cannot be refreshed, so skip the refresh flow for those requests.
+  const impersonateToken = cookieStore.get(AUTH_COOKIE_NAMES.impersonateToken)?.value;
+  const accessToken = impersonateToken ?? cookieStore.get(AUTH_COOKIE_NAMES.accessToken)?.value;
+  const refreshToken = impersonateToken
+    ? undefined
+    : cookieStore.get(AUTH_COOKIE_NAMES.refreshToken)?.value;
 
   try {
     let result = await executeExternalGraphql(body, accessToken);

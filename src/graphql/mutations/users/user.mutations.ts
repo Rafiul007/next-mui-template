@@ -51,3 +51,27 @@ export const UPDATE_PROFILE_MUTATION = /* GraphQL */ `
     }
   }
 `;
+
+export const ONBOARD_EMPLOYEE_MUTATION = /* GraphQL */ `
+  mutation OnboardEmployee($input: OnboardEmployeeInput!) {
+    onboardEmployee(input: $input) {
+      id
+      tenantId
+      userId
+      branchId
+      employeeCode
+      designation
+      department
+      employmentType
+      joiningDate
+      status
+      isOnProbation
+      probationEndsAt
+      nid
+      tin
+      bloodGroup
+      emergencyContactName
+      emergencyContactPhone
+    }
+  }
+`;

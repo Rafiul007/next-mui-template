@@ -6,6 +6,9 @@ import { env } from "@/config/env";
 export const AUTH_COOKIE_NAMES = {
   accessToken: "bongo.access-token",
   refreshToken: "bongo.refresh-token",
+  // Stored when a platform admin impersonates a tenant. Checked by the proxy
+  // before the regular access token so admin cookies are untouched.
+  impersonateToken: "bongo.impersonate-token",
 } as const;
 
 // Matches the token bundle returned by the backend login/refresh mutations.
@@ -50,14 +53,35 @@ export const setAuthCookies = (response: NextResponse, tokens: AuthTokens) => {
   });
 };
 
+// Store a short-lived impersonation access token in its own cookie so the
+// platform admin's session cookies are left intact.
+export const setImpersonateCookie = (response: NextResponse, accessToken: string) => {
+  response.cookies.set(AUTH_COOKIE_NAMES.impersonateToken, accessToken, {
+    ...baseCookieOptions,
+    maxAge: 3600, // impersonation tokens are short-lived; re-impersonate when expired
+  });
+};
+
+export const clearImpersonateCookie = (response: NextResponse) => {
+  response.cookies.set(AUTH_COOKIE_NAMES.impersonateToken, "", {
+    ...baseCookieOptions,
+    maxAge: 0,
+  });
+};
+
 export const clearAuthCookies = (response: NextResponse) => {
-  // Overwrite both cookies with an immediate expiry to remove the whole session.
+  // Overwrite all cookies with an immediate expiry to remove the whole session.
   response.cookies.set(AUTH_COOKIE_NAMES.accessToken, "", {
     ...baseCookieOptions,
     maxAge: 0,
   });
 
   response.cookies.set(AUTH_COOKIE_NAMES.refreshToken, "", {
+    ...baseCookieOptions,
+    maxAge: 0,
+  });
+
+  response.cookies.set(AUTH_COOKIE_NAMES.impersonateToken, "", {
     ...baseCookieOptions,
     maxAge: 0,
   });
