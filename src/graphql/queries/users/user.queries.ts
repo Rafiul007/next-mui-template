@@ -1,15 +1,19 @@
 export const ME_QUERY = /* GraphQL */ `
   query Me {
     me {
-      id
-      firstName
-      lastName
-      email
-      phone
-      profilePicture
-      isActivated
-      isVerified
+      user {
+        id
+        firstName
+        lastName
+        email
+        phone
+        profilePicture
+        isActivated
+        isVerified
+      }
       roles
+      permissions
+      userType
     }
   }
 `;

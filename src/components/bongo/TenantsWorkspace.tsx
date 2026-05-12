@@ -22,7 +22,6 @@ import {
   ActivateTenantDocument,
   GetSubscriptionPlansDocument,
   GetTenantsDocument,
-  ImpersonateTenantDocument,
   SuspendTenantDocument,
   TerminateTenantDocument,
 } from "@/graphql/generated";
@@ -147,7 +146,7 @@ export function TenantsWorkspace() {
     tenant: TenantRecord;
   } | null>(null);
   const [impersonateResult, setImpersonateResult] = useState<{
-    accessToken: string;
+    tenantId: string;
     tenantSlug: string;
   } | null>(null);
   const [impersonatingId, setImpersonatingId] = useState<string | null>(null);
@@ -223,19 +222,30 @@ export function TenantsWorkspace() {
     },
   );
 
-  const [impersonateTenant] = useMutation(ImpersonateTenantDocument, {
-    onCompleted: (data) => {
-      setImpersonatingId(null);
-      setImpersonateResult({
-        accessToken: data.impersonateTenant.accessToken,
-        tenantSlug: data.impersonateTenant.tenantSlug,
+  const handleImpersonate = async (tenantId: string) => {
+    setImpersonatingId(tenantId);
+    try {
+      const res = await fetch("/api/auth/impersonate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ tenantId }),
       });
-    },
-    onError: (err) => {
-      setImpersonatingId(null);
+      const data = (await res.json()) as {
+        success?: boolean;
+        tenantId?: string;
+        tenantSlug?: string;
+        error?: string;
+      };
+      if (!res.ok || !data.success) {
+        throw new Error(data.error ?? "Failed to impersonate tenant");
+      }
+      setImpersonateResult({ tenantId: data.tenantId!, tenantSlug: data.tenantSlug! });
+    } catch (err) {
       toast.error(getErrorMessage(err, "Failed to impersonate tenant"));
-    },
-  });
+    } finally {
+      setImpersonatingId(null);
+    }
+  };
 
   const actionLoadingMap: Record<ConfirmAction, boolean> = {
     activate: activating,
@@ -441,10 +451,7 @@ export function TenantsWorkspace() {
                     onTerminate={() =>
                       setConfirmState({ action: "terminate", tenant: row.original })
                     }
-                    onImpersonate={() => {
-                      setImpersonatingId(row.original.id);
-                      impersonateTenant({ variables: { tenantId: row.original.id } });
-                    }}
+                    onImpersonate={() => handleImpersonate(row.original.id)}
                   />
                 )}
               </Box>
@@ -483,7 +490,7 @@ export function TenantsWorkspace() {
 
       <TenantImpersonateDialog
         open={impersonateResult !== null}
-        accessToken={impersonateResult?.accessToken ?? ""}
+        tenantId={impersonateResult?.tenantId ?? ""}
         tenantSlug={impersonateResult?.tenantSlug ?? ""}
         onClose={() => setImpersonateResult(null)}
       />

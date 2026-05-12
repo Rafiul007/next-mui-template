@@ -3,6 +3,7 @@ import {
   LOGIN_MUTATION,
   REFRESH_MUTATION,
 } from "@/graphql/mutations/auth/auth.mutations";
+import { IMPERSONATE_TENANT_MUTATION } from "@/graphql/mutations/platform/platform.mutations";
 import type { AuthTokens } from "@/lib/auth/session";
 
 const LOGIN_FIELD_PATTERN = /\blogin\s*\(/i;
@@ -149,6 +150,41 @@ export const shouldAttemptTokenRefresh = (
       return /token|auth|unauthorized/i.test(error.message ?? "");
     }) ?? false
   );
+};
+
+type ImpersonateResult = {
+  accessToken: string;
+  tenantId: string;
+  tenantSlug: string;
+};
+
+const isImpersonateResult = (value: unknown): value is ImpersonateResult => {
+  if (!value || typeof value !== "object") return false;
+  const v = value as Record<string, unknown>;
+  return (
+    typeof v.accessToken === "string" &&
+    typeof v.tenantId === "string" &&
+    typeof v.tenantSlug === "string"
+  );
+};
+
+// Calls impersonateTenant using the platform admin's access token and returns
+// the tenant-scoped token bundle, or null on failure.
+export const impersonateAsAdminUser = async (
+  tenantId: string,
+  adminAccessToken: string,
+): Promise<ImpersonateResult | null> => {
+  const result = await executeExternalGraphql(
+    {
+      operationName: "ImpersonateTenant",
+      query: IMPERSONATE_TENANT_MUTATION,
+      variables: { tenantId },
+    },
+    adminAccessToken,
+  );
+
+  const data = result.payload?.data?.impersonateTenant;
+  return isImpersonateResult(data) ? data : null;
 };
 
 export const loginWithCredentials = async (email: string, password: string) => {
