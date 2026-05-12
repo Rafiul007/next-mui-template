@@ -19,10 +19,12 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "react-hot-toast";
 import * as yup from "yup";
+import { useApolloClient } from "@apollo/client/react";
 import { RhfTextField } from "@/components/form";
 import { AuthClientError, loginWithPassword } from "@/lib/auth/client";
 import { getErrorMessage } from "@/lib/errors";
 import { primaryGradient } from "@/theme/theme";
+import { MeDocument } from "@/graphql/generated/index";
 
 const loginSchema = yup
   .object({
@@ -48,6 +50,7 @@ const defaultValues: LoginFormValues = {
 
 export default function LoginPage() {
   const router = useRouter();
+  const apolloClient = useApolloClient();
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -88,7 +91,14 @@ export default function LoginPage() {
     try {
       await loginWithPassword(values.email, values.password);
       toast.success("Signed in successfully.");
-      router.push("/dashboard");
+
+      const { data } = await apolloClient.query({
+        query: MeDocument,
+        fetchPolicy: "network-only",
+      });
+      const destination =
+        data?.me?.userType === "BONGO" ? "/bongo/dashboard" : "/dashboard";
+      router.push(destination);
       router.refresh();
     } catch (error) {
       const message = getErrorMessage(error, "Unable to sign in.");

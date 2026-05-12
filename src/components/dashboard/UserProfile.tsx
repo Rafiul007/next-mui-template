@@ -42,9 +42,9 @@ export function UserProfile() {
 
   const currentUser = data?.me
     ? {
-        name: `${data.me.firstName} ${data.me.lastName}`.trim(),
+        name: `${data.me.user.firstName} ${data.me.user.lastName}`.trim(),
         role: data.me.roles[0] ?? "Authenticated User",
-        email: data.me.email,
+        email: data.me.user.email,
       }
     : fallbackUser;
 

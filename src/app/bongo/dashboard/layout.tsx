@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { Box } from "@mui/material";
 import { Sidebar } from "@/components/dashboard/Sidebar";
 import { Topbar } from "@/components/dashboard/Topbar";
+import { BongoAuthGuard } from "@/components/bongo/BongoAuthGuard";
 import { bongoSidebarMenuItems } from "@/config/bongo-menu";
 import { hasAuthSession } from "@/lib/auth/session";
 
@@ -54,7 +55,7 @@ export default async function BongoDashboardLayout({
             overflowX: "hidden",
           }}
         >
-          {children}
+          <BongoAuthGuard>{children}</BongoAuthGuard>
         </Box>
       </Box>
     </Box>

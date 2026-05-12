@@ -142,6 +142,7 @@ export type Batch = {
   deliveryMode?: Maybe<Scalars['String']['output']>;
   endDate?: Maybe<Scalars['String']['output']>;
   enrolledCount: Scalars['Int']['output'];
+  feePlans: Array<FeePlan>;
   headTeacherId?: Maybe<Scalars['ID']['output']>;
   id: Scalars['ID']['output'];
   mediumOfInstruction?: Maybe<Scalars['String']['output']>;
@@ -154,6 +155,12 @@ export type Batch = {
   status: Scalars['String']['output'];
   tenantId: Scalars['ID']['output'];
   type?: Maybe<Scalars['String']['output']>;
+};
+
+export type BatchFeePlanInput = {
+  amount: Scalars['Float']['input'];
+  feeTypeId: Scalars['ID']['input'];
+  frequency: Scalars['String']['input'];
 };
 
 export type Branch = {
@@ -223,6 +230,7 @@ export type CreateBatchInput = {
   coTeacherIds?: InputMaybe<Array<Scalars['ID']['input']>>;
   deliveryMode?: InputMaybe<Scalars['String']['input']>;
   endDate?: InputMaybe<Scalars['String']['input']>;
+  feePlans?: InputMaybe<Array<BatchFeePlanInput>>;
   headTeacherId?: InputMaybe<Scalars['ID']['input']>;
   mediumOfInstruction?: InputMaybe<Scalars['String']['input']>;
   name: Scalars['String']['input'];
@@ -637,6 +645,15 @@ export type MarkAttendanceInput = {
   sessionId: Scalars['ID']['input'];
   status: Scalars['String']['input'];
   studentId: Scalars['ID']['input'];
+};
+
+export type MeResponse = {
+  __typename?: 'MeResponse';
+  permissions: Array<Scalars['String']['output']>;
+  roles: Array<Scalars['String']['output']>;
+  subscription?: Maybe<SubscriptionInfo>;
+  user: UserInfo;
+  userType: UserType;
 };
 
 export type Mutation = {
@@ -1412,7 +1429,7 @@ export type Query = {
   getUsers: Array<Maybe<User>>;
   getVacancies: Array<JobVacancy>;
   isFeatureEnabled: Scalars['Boolean']['output'];
-  me: User;
+  me: MeResponse;
   suggestSubstitutes: Array<Employee>;
 };
 
@@ -1888,6 +1905,12 @@ export type SubmitReviewInput = {
   reviewerType: Scalars['String']['input'];
 };
 
+export type SubscriptionInfo = {
+  __typename?: 'SubscriptionInfo';
+  features: Array<Scalars['String']['output']>;
+  plan: Scalars['String']['output'];
+};
+
 /** # Platform / Bongo Portal — Subscription Plans, Tenants, Billing, Feature Flags */
 export type SubscriptionPlan = {
   __typename?: 'SubscriptionPlan';
@@ -1936,6 +1959,7 @@ export type UpdateBatchInput = {
   classLevel?: InputMaybe<Scalars['String']['input']>;
   coTeacherIds?: InputMaybe<Array<Scalars['ID']['input']>>;
   endDate?: InputMaybe<Scalars['String']['input']>;
+  feePlans?: InputMaybe<Array<BatchFeePlanInput>>;
   headTeacherId?: InputMaybe<Scalars['ID']['input']>;
   id: Scalars['ID']['input'];
   name?: InputMaybe<Scalars['String']['input']>;
@@ -2058,6 +2082,19 @@ export type User = {
   roles: Array<Scalars['String']['output']>;
 };
 
+export type UserInfo = {
+  __typename?: 'UserInfo';
+  email: Scalars['String']['output'];
+  firstName: Scalars['String']['output'];
+  id: Scalars['String']['output'];
+  isActivated: Scalars['Boolean']['output'];
+  isVerified: Scalars['Boolean']['output'];
+  lastName: Scalars['String']['output'];
+  name: Scalars['String']['output'];
+  phone?: Maybe<Scalars['String']['output']>;
+  profilePicture?: Maybe<Scalars['String']['output']>;
+};
+
 export type UserRegistration = {
   confirmPassword: Scalars['String']['input'];
   email: Scalars['String']['input'];
@@ -2066,6 +2103,11 @@ export type UserRegistration = {
   password: Scalars['String']['input'];
   phone: Scalars['String']['input'];
 };
+
+export enum UserType {
+  Bongo = 'BONGO',
+  Coaching = 'COACHING'
+}
 
 export type UserUpdate = {
   email?: InputMaybe<Scalars['String']['input']>;

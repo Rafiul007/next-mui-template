@@ -7,9 +7,11 @@ import {
   BlockRounded,
   CheckCircleRounded,
   DevicesRounded,
+  DoneRounded,
   EditRounded,
   LayersRounded,
   PeopleRounded,
+  PlayArrowRounded,
   ScheduleRounded,
   SchoolRounded,
   VideocamRounded,
@@ -39,6 +41,7 @@ import {
   ChangeBatchStatusDocument,
   CreateBatchDocument,
   GetAllBatchesDocument,
+  GetFeeTypesDocument,
   UpdateBatchDocument,
   type GetAllBatchesQuery,
 } from "@/graphql/generated";
@@ -50,17 +53,13 @@ import {
   type BatchType,
   type DeliveryMode,
   type MediumOfInstruction,
-  type DiscountType,
-  type DiscountValueType,
 } from "./BatchFormDialog";
+import { FeeTypesSection } from "./FeeTypesSection";
 
-type PaymentEntry = { name: string; amount: number };
-type DiscountRule = {
-  type: DiscountType;
-  name: string;
-  value: number;
-  valueType: DiscountValueType;
-  earlyBirdDeadline: string;
+type FeePlanEntry = {
+  feeTypeId: string;
+  amount: number;
+  frequency: string;
 };
 
 type BatchRecord = {
@@ -70,15 +69,16 @@ type BatchRecord = {
   batchNumber?: string;
   className?: string;
   section?: string;
+  classLevel?: string;
   totalSeats: number;
   enrolledCount: number;
   status: BatchStatus;
   deliveryMode: DeliveryMode;
   mediumOfInstruction: MediumOfInstruction;
+  startDate?: string;
+  endDate?: string;
   registrationDeadline?: string;
-  oneTimePayments: PaymentEntry[];
-  monthlyPayments: PaymentEntry[];
-  discounts: DiscountRule[];
+  feePlans: FeePlanEntry[];
   certificateOnCompletion: boolean;
   certificateTemplateName?: string;
   prerequisites?: string;
@@ -110,6 +110,15 @@ const DELIVERY_LABEL: Record<DeliveryMode, string> = {
   hybrid: "Hybrid",
 };
 
+const CLASS_LEVEL_LABEL: Record<string, string> = {
+  class_1: "Class 1", class_2: "Class 2", class_3: "Class 3",
+  class_4: "Class 4", class_5: "Class 5", class_6: "Class 6",
+  class_7: "Class 7", class_8: "Class 8", class_9: "Class 9",
+  class_10: "Class 10", class_11: "Class 11", class_12: "Class 12",
+  ssc: "SSC", hsc: "HSC", admission_prep: "Admission Prep",
+  ielts: "IELTS", other: "Other",
+};
+
 const DELIVERY_ICON: Record<DeliveryMode, ReactNode> = {
   "in-person": <PeopleRounded sx={{ fontSize: "14px !important" }} />,
   online: <VideocamRounded sx={{ fontSize: "14px !important" }} />,
@@ -126,15 +135,20 @@ const mapApiBatch = (batch: ApiBatch): BatchRecord => {
     batchNumber: !isClass ? (nameParts[1] ?? "") : "",
     className: isClass ? (nameParts[0] ?? "") : "",
     section: isClass ? (nameParts[1] ?? "") : "",
+    classLevel: batch.classLevel ?? undefined,
     totalSeats: batch.capacity,
     enrolledCount: batch.enrolledCount,
     status: (batch.status ?? "upcoming") as BatchStatus,
     deliveryMode: (batch.deliveryMode ?? "in-person") as DeliveryMode,
     mediumOfInstruction: (batch.mediumOfInstruction ?? "bangla") as MediumOfInstruction,
+    startDate: batch.startDate ?? undefined,
+    endDate: batch.endDate ?? undefined,
     registrationDeadline: batch.registrationDeadline ?? undefined,
-    oneTimePayments: [],
-    monthlyPayments: [],
-    discounts: [],
+    feePlans: (batch.feePlans ?? []).map((fp) => ({
+      feeTypeId: fp.feeTypeId,
+      amount: fp.amount,
+      frequency: fp.frequency,
+    })),
     certificateOnCompletion: batch.certificateOnCompletion ?? false,
     certificateTemplateName: batch.certificateTemplateName ?? undefined,
     prerequisites: batch.prerequisites ?? undefined,
@@ -162,12 +176,6 @@ const getBatchDisplayName = (batch: BatchRecord): string => {
 
 const formatAmount = (amount: number) => `৳${amount.toLocaleString("en-BD")}`;
 
-const summarisePayments = (entries: PaymentEntry[]) => {
-  if (!entries.length) return "—";
-  const total = entries.reduce((sum, e) => sum + e.amount, 0);
-  return `${formatAmount(total)} (${entries.length})`;
-};
-
 const formatDeadline = (date?: string) => {
   if (!date) return "—";
   return new Date(date).toLocaleDateString("en-BD", {
@@ -187,13 +195,14 @@ const getBatchFormValues = (batch: BatchRecord): BatchFormValues => ({
   batchNumber: batch.batchNumber ?? "",
   className: batch.className ?? "",
   section: batch.section ?? "",
+  classLevel: batch.classLevel ?? "",
   totalSeats: batch.totalSeats,
+  startDate: batch.startDate ?? "",
+  endDate: batch.endDate ?? "",
   deliveryMode: batch.deliveryMode,
   mediumOfInstruction: batch.mediumOfInstruction,
   registrationDeadline: batch.registrationDeadline ?? "",
-  oneTimePayments: batch.oneTimePayments,
-  monthlyPayments: batch.monthlyPayments,
-  discounts: batch.discounts,
+  feePlans: batch.feePlans,
   certificateOnCompletion: batch.certificateOnCompletion,
   certificateTemplateName: batch.certificateTemplateName ?? "",
   prerequisites: batch.prerequisites ?? "",
@@ -233,6 +242,14 @@ const buildBatchColumns = (): MRT_ColumnDef<BatchRecord>[] => [
             variant="outlined"
             sx={{ fontSize: 11 }}
           />
+          {row.original.classLevel && (
+            <Chip
+              label={CLASS_LEVEL_LABEL[row.original.classLevel] ?? row.original.classLevel}
+              size="small"
+              variant="outlined"
+              sx={{ fontSize: 11 }}
+            />
+          )}
         </Stack>
       </Stack>
     ),
@@ -273,69 +290,74 @@ const buildBatchColumns = (): MRT_ColumnDef<BatchRecord>[] => [
     ),
   },
   {
-    id: "oneTime",
-    header: "One-time fees",
-    size: 160,
+    id: "feePlans",
+    header: "Fee plans",
+    size: 180,
     enableSorting: false,
-    accessorFn: (row) => summarisePayments(row.oneTimePayments),
+    accessorFn: (row) => row.feePlans.length,
     Cell: ({ row }) => {
-      const entries = row.original.oneTimePayments;
+      const plans = row.original.feePlans;
+      if (!plans.length) {
+        return <Typography variant="body2">—</Typography>;
+      }
+      const oneTimeTotal = plans
+        .filter((p) => p.frequency === "ONE_TIME")
+        .reduce((s, p) => s + p.amount, 0);
+      const monthlyTotal = plans
+        .filter((p) => p.frequency === "MONTHLY")
+        .reduce((s, p) => s + p.amount, 0);
       return (
-        <Tooltip
-          title={
-            entries.length
-              ? entries
-                  .map((e) => `${e.name}: ${formatAmount(e.amount)}`)
-                  .join(" · ")
-              : "No one-time fees"
-          }
-        >
-          <Typography variant="body2" sx={{ cursor: "default" }}>
-            {summarisePayments(entries)}
-          </Typography>
-        </Tooltip>
+        <Stack spacing={0.25}>
+          {oneTimeTotal > 0 && (
+            <Typography variant="body2" fontWeight={600}>
+              {formatAmount(oneTimeTotal)}
+            </Typography>
+          )}
+          {monthlyTotal > 0 && (
+            <Typography variant="caption" color="text.secondary">
+              {formatAmount(monthlyTotal)}/mo
+            </Typography>
+          )}
+        </Stack>
       );
     },
   },
   {
-    id: "monthly",
-    header: "Monthly fees",
+    id: "schedule",
+    header: "Schedule",
     size: 160,
     enableSorting: false,
-    accessorFn: (row) => summarisePayments(row.monthlyPayments),
+    accessorFn: (row) => row.startDate ?? "",
     Cell: ({ row }) => {
-      const entries = row.original.monthlyPayments;
+      const { startDate, endDate, registrationDeadline } = row.original;
+      if (!startDate && !endDate) {
+        return <Typography variant="body2" color="text.secondary">—</Typography>;
+      }
       return (
-        <Tooltip
-          title={
-            entries.length
-              ? entries
-                  .map((e) => `${e.name}: ${formatAmount(e.amount)}/mo`)
-                  .join(" · ")
-              : "No monthly fees"
-          }
-        >
-          <Typography variant="body2" sx={{ cursor: "default" }}>
-            {entries.length ? `${summarisePayments(entries)}/mo` : "—"}
+        <Stack spacing={0.25}>
+          <Typography variant="body2">
+            {[startDate, endDate]
+              .filter(Boolean)
+              .map((d) =>
+                new Date(d!).toLocaleDateString("en-BD", {
+                  day: "numeric",
+                  month: "short",
+                  year: "numeric",
+                }),
+              )
+              .join(" – ")}
           </Typography>
-        </Tooltip>
+          {registrationDeadline && (
+            <Stack direction="row" spacing={0.5} alignItems="center">
+              <ScheduleRounded sx={{ fontSize: 12, color: "text.secondary" }} />
+              <Typography variant="caption" color="text.secondary">
+                Reg. {formatDeadline(registrationDeadline)}
+              </Typography>
+            </Stack>
+          )}
+        </Stack>
       );
     },
-  },
-  {
-    id: "deadline",
-    header: "Reg. deadline",
-    size: 130,
-    enableSorting: false,
-    accessorFn: (row) => row.registrationDeadline ?? "",
-    Cell: ({ row }) => (
-      <Stack direction="row" spacing={0.75} alignItems="center">
-        <ScheduleRounded sx={{ fontSize: 16, color: "text.secondary" }} />
-        <Typography variant="body2">
-          {formatDeadline(row.original.registrationDeadline)}
-        </Typography>
-      </Stack>
-    ),
   },
 ];
 
@@ -408,16 +430,24 @@ function SummaryCard({
 }
 
 export function BatchesWorkspace() {
+  type StatusChangeReq = { batch: BatchRecord; toStatus: string };
+
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [formMode, setFormMode] = useState<"create" | "edit">("create");
   const [selectedBatch, setSelectedBatch] = useState<BatchRecord | null>(null);
-  const [batchToCancel, setBatchToCancel] = useState<BatchRecord | null>(null);
+  const [statusChangeReq, setStatusChangeReq] = useState<StatusChangeReq | null>(null);
   const [formDialogKey, setFormDialogKey] = useState(0);
   const [formErrorMessage, setFormErrorMessage] = useState<string | null>(null);
 
   const { data, loading } = useQuery(GetAllBatchesDocument, {
     fetchPolicy: "cache-and-network",
   });
+
+  const { data: feeTypesData } = useQuery(GetFeeTypesDocument, {
+    fetchPolicy: "cache-and-network",
+  });
+
+  const feeTypes = feeTypesData?.getFeeTypes ?? [];
 
   const [createBatch, { loading: isCreating }] = useMutation(CreateBatchDocument, {
     refetchQueries: [GetAllBatchesDocument],
@@ -435,7 +465,7 @@ export function BatchesWorkspace() {
   const batches: BatchRecord[] = (data?.getAllBatches ?? []).map(mapApiBatch);
 
   const isSubmitting = isCreating || isUpdating;
-  const isCancelling = isCancellingMutation;
+  const isChangingStatus = isCancellingMutation;
 
   const totalBatches = batches.length;
   const upcomingBatches = batches.filter((b) => b.status === "upcoming").length;
@@ -469,6 +499,12 @@ export function BatchesWorkspace() {
   const handleSubmitBatch = async (values: BatchFormValues) => {
     setFormErrorMessage(null);
 
+    const feePlans = values.feePlans.map((fp) => ({
+      feeTypeId: fp.feeTypeId,
+      amount: fp.amount,
+      frequency: fp.frequency,
+    }));
+
     try {
       if (formMode === "edit" && selectedBatch) {
         const result = await updateBatch({
@@ -477,6 +513,10 @@ export function BatchesWorkspace() {
               id: selectedBatch.id,
               name: buildBatchName(values),
               capacity: values.totalSeats,
+              classLevel: values.classLevel ? toApiEnum(values.classLevel) : undefined,
+              startDate: values.startDate || undefined,
+              endDate: values.endDate || undefined,
+              feePlans,
             },
           },
         });
@@ -490,6 +530,9 @@ export function BatchesWorkspace() {
               capacity: values.totalSeats,
               type: toApiEnum(values.type),
               status: toApiEnum(values.status),
+              classLevel: values.classLevel ? toApiEnum(values.classLevel) : undefined,
+              startDate: values.startDate || undefined,
+              endDate: values.endDate || undefined,
               deliveryMode: toApiEnum(values.deliveryMode),
               mediumOfInstruction: toApiEnum(values.mediumOfInstruction),
               registrationDeadline: values.registrationDeadline || undefined,
@@ -497,6 +540,7 @@ export function BatchesWorkspace() {
               certificateTemplateName: values.certificateTemplateName || undefined,
               prerequisites: values.prerequisites || undefined,
               notes: values.notes || undefined,
+              feePlans,
             },
           },
         });
@@ -511,18 +555,20 @@ export function BatchesWorkspace() {
     }
   };
 
-  const handleCancelBatch = async () => {
-    if (!batchToCancel) return;
+  const handleStatusChange = async () => {
+    if (!statusChangeReq) return;
 
+    const { batch, toStatus } = statusChangeReq;
     try {
       const result = await changeBatchStatus({
-        variables: { batchId: batchToCancel.id, status: "CANCELLED" },
+        variables: { batchId: batch.id, status: toStatus },
       });
       if (result.error) throw result.error;
-      toast.success(`"${getBatchDisplayName(batchToCancel)}" was cancelled.`);
-      setBatchToCancel(null);
+      const label = toStatus === "CANCELLED" ? "cancelled" : toStatus === "ONGOING" ? "marked as ongoing" : "marked as completed";
+      toast.success(`"${getBatchDisplayName(batch)}" was ${label}.`);
+      setStatusChangeReq(null);
     } catch (error) {
-      toast.error(getErrorMessage(error, "Failed to cancel batch."));
+      toast.error(getErrorMessage(error, "Failed to update batch status."));
     }
   };
 
@@ -751,53 +797,83 @@ export function BatchesWorkspace() {
               )}
             </Box>
           )}
-          renderRowActions={({ row }) => (
-            <Stack
-              direction="row"
-              spacing={0.5}
-              justifyContent="flex-end"
-              sx={{ width: "100%" }}
-            >
-              <Tooltip title="Edit batch">
-                <IconButton
-                  size="small"
-                  onClick={() => openEditDialog(row.original)}
-                  sx={{ bgcolor: alpha("#0f172a", 0.04) }}
-                >
-                  <EditRounded fontSize="small" />
-                </IconButton>
-              </Tooltip>
-              <Tooltip
-                title={
-                  isClosed(row.original.status)
-                    ? "Already closed"
-                    : "Cancel batch"
-                }
+          renderRowActions={({ row }) => {
+            const s = row.original.status;
+            return (
+              <Stack
+                direction="row"
+                spacing={0.5}
+                justifyContent="flex-end"
+                sx={{ width: "100%" }}
               >
-                <span>
+                <Tooltip title="Edit batch">
                   <IconButton
                     size="small"
-                    disabled={isClosed(row.original.status)}
-                    onClick={() => setBatchToCancel(row.original)}
-                    sx={{ bgcolor: alpha("#ef4444", 0.08), color: "#b91c1c" }}
+                    onClick={() => openEditDialog(row.original)}
+                    sx={{ bgcolor: alpha("#0f172a", 0.04) }}
                   >
-                    <BlockRounded fontSize="small" />
+                    <EditRounded fontSize="small" />
                   </IconButton>
-                </span>
-              </Tooltip>
-            </Stack>
-          )}
+                </Tooltip>
+
+                {s === "upcoming" && (
+                  <Tooltip title="Mark as ongoing">
+                    <IconButton
+                      size="small"
+                      onClick={() =>
+                        setStatusChangeReq({ batch: row.original, toStatus: "ONGOING" })
+                      }
+                      sx={{ bgcolor: alpha("#3b82f6", 0.08), color: "#1d4ed8" }}
+                    >
+                      <PlayArrowRounded fontSize="small" />
+                    </IconButton>
+                  </Tooltip>
+                )}
+
+                {s === "ongoing" && (
+                  <Tooltip title="Mark as completed">
+                    <IconButton
+                      size="small"
+                      onClick={() =>
+                        setStatusChangeReq({ batch: row.original, toStatus: "COMPLETED" })
+                      }
+                      sx={{ bgcolor: alpha("#10b981", 0.08), color: "#047857" }}
+                    >
+                      <DoneRounded fontSize="small" />
+                    </IconButton>
+                  </Tooltip>
+                )}
+
+                {!isClosed(s) && (
+                  <Tooltip title="Cancel batch">
+                    <IconButton
+                      size="small"
+                      onClick={() =>
+                        setStatusChangeReq({ batch: row.original, toStatus: "CANCELLED" })
+                      }
+                      sx={{ bgcolor: alpha("#ef4444", 0.08), color: "#b91c1c" }}
+                    >
+                      <BlockRounded fontSize="small" />
+                    </IconButton>
+                  </Tooltip>
+                )}
+              </Stack>
+            );
+          }}
           renderTopToolbarCustomActions={() => (
             <Typography variant="body2" color="text.secondary">
               {totalBatches} batch{totalBatches === 1 ? "" : "es"} total
             </Typography>
           )}
         />
+
+        <FeeTypesSection />
       </Stack>
 
       <BatchFormDialog
         key={formDialogKey}
         errorMessage={formErrorMessage}
+        feeTypes={feeTypes}
         initialValues={
           selectedBatch
             ? getBatchFormValues(selectedBatch)
@@ -811,34 +887,45 @@ export function BatchesWorkspace() {
       />
 
       <Dialog
-        open={!!batchToCancel}
-        onClose={() => !isCancelling && setBatchToCancel(null)}
+        open={!!statusChangeReq}
+        onClose={() => !isChangingStatus && setStatusChangeReq(null)}
         fullWidth
         maxWidth="xs"
       >
-        <DialogTitle>Cancel batch</DialogTitle>
+        <DialogTitle>
+          {statusChangeReq?.toStatus === "ONGOING"
+            ? "Start batch"
+            : statusChangeReq?.toStatus === "COMPLETED"
+              ? "Complete batch"
+              : "Cancel batch"}
+        </DialogTitle>
         <DialogContent>
           <Typography variant="body2" color="text.secondary">
-            {batchToCancel
-              ? `This will mark "${getBatchDisplayName(batchToCancel)}" as cancelled. Existing enrollments will not be affected.`
-              : ""}
+            {statusChangeReq?.toStatus === "ONGOING" &&
+              `"${getBatchDisplayName(statusChangeReq.batch)}" will be marked as ongoing.`}
+            {statusChangeReq?.toStatus === "COMPLETED" &&
+              `"${getBatchDisplayName(statusChangeReq.batch)}" will be closed and marked as completed.`}
+            {statusChangeReq?.toStatus === "CANCELLED" &&
+              `This will cancel "${getBatchDisplayName(statusChangeReq.batch)}". Existing enrollments will not be affected.`}
           </Typography>
         </DialogContent>
         <DialogActions sx={{ px: 3, py: 2 }}>
           <Button
             color="inherit"
-            onClick={() => setBatchToCancel(null)}
-            disabled={isCancelling}
+            onClick={() => setStatusChangeReq(null)}
+            disabled={isChangingStatus}
           >
-            Keep batch
+            Go back
           </Button>
           <Button
             variant="contained"
-            color="error"
-            onClick={handleCancelBatch}
-            disabled={isCancelling}
+            color={statusChangeReq?.toStatus === "CANCELLED" ? "error" : "primary"}
+            onClick={handleStatusChange}
+            disabled={isChangingStatus}
           >
-            Cancel batch
+            {statusChangeReq?.toStatus === "ONGOING" && "Mark as ongoing"}
+            {statusChangeReq?.toStatus === "COMPLETED" && "Mark as completed"}
+            {statusChangeReq?.toStatus === "CANCELLED" && "Cancel batch"}
           </Button>
         </DialogActions>
       </Dialog>

@@ -35,6 +35,13 @@ export const GET_ALL_BATCHES_QUERY = /* GraphQL */ `
       certificateTemplateName
       prerequisites
       notes
+      feePlans {
+        id
+        amount
+        feeTypeId
+        frequency
+        isActive
+      }
     }
   }
 `;

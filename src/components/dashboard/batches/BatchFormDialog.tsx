@@ -37,28 +37,33 @@ export type BatchType = "course" | "class";
 export type BatchStatus = "upcoming" | "ongoing" | "completed" | "cancelled";
 export type DeliveryMode = "in-person" | "online" | "hybrid";
 export type MediumOfInstruction = "bangla" | "english" | "bilingual";
-export type DiscountType = "early_bird" | "sibling" | "merit" | "custom";
-export type DiscountValueType = "fixed" | "percentage";
+export type FeePlanFrequency = "ONE_TIME" | "DAILY" | "WEEKLY" | "MONTHLY" | "YEARLY";
 
-const DISCOUNT_DEFAULT_NAMES: Record<DiscountType, string> = {
-  early_bird: "Early Bird Discount",
-  sibling: "Sibling Discount",
-  merit: "Merit Scholarship",
-  custom: "",
-};
-
-const DISCOUNT_TYPE_OPTIONS = [
-  { label: "Early bird", value: "early_bird" },
-  { label: "Sibling", value: "sibling" },
-  { label: "Merit / Scholarship", value: "merit" },
-  { label: "Custom", value: "custom" },
-];
-
-const STATUS_OPTIONS = [
+// Create-only: API forbids COMPLETED / CANCELLED on create
+const CREATE_STATUS_OPTIONS = [
   { label: "Upcoming", value: "upcoming" },
   { label: "Ongoing", value: "ongoing" },
-  { label: "Completed", value: "completed" },
-  { label: "Cancelled", value: "cancelled" },
+];
+
+const CLASS_LEVEL_OPTIONS = [
+  { label: "— None —", value: "" },
+  { label: "Class 1", value: "class_1" },
+  { label: "Class 2", value: "class_2" },
+  { label: "Class 3", value: "class_3" },
+  { label: "Class 4", value: "class_4" },
+  { label: "Class 5", value: "class_5" },
+  { label: "Class 6", value: "class_6" },
+  { label: "Class 7", value: "class_7" },
+  { label: "Class 8", value: "class_8" },
+  { label: "Class 9", value: "class_9" },
+  { label: "Class 10", value: "class_10" },
+  { label: "Class 11", value: "class_11" },
+  { label: "Class 12", value: "class_12" },
+  { label: "SSC", value: "ssc" },
+  { label: "HSC", value: "hsc" },
+  { label: "Admission Prep", value: "admission_prep" },
+  { label: "IELTS", value: "ielts" },
+  { label: "Other", value: "other" },
 ];
 
 const MEDIUM_OPTIONS = [
@@ -67,45 +72,29 @@ const MEDIUM_OPTIONS = [
   { label: "Bilingual", value: "bilingual" },
 ];
 
-const paymentEntrySchema = yup
+const FREQUENCY_OPTIONS = [
+  { label: "One-time", value: "ONE_TIME" },
+  { label: "Daily", value: "DAILY" },
+  { label: "Weekly", value: "WEEKLY" },
+  { label: "Monthly", value: "MONTHLY" },
+  { label: "Yearly", value: "YEARLY" },
+];
+
+const feePlanSchema = yup
   .object({
-    name: yup.string().trim().required("Payment name is required"),
+    feeTypeId: yup.string().required("Fee type is required"),
     amount: yup
       .number()
       .typeError("Enter a valid amount")
-      .min(0, "Amount cannot be negative")
-      .required("Amount is required"),
-  })
-  .required();
-
-const discountSchema = yup
-  .object({
-    type: yup
-      .mixed<DiscountType>()
-      .oneOf(["early_bird", "sibling", "merit", "custom"] as DiscountType[])
-      .required("Type is required"),
-    name: yup
-      .string()
-      .trim()
-      .required("Discount name is required")
-      .max(80, "Too long"),
-    value: yup
-      .number()
-      .typeError("Enter a valid value")
       .min(0, "Cannot be negative")
-      .required("Value is required"),
-    valueType: yup
-      .mixed<DiscountValueType>()
-      .oneOf(["fixed", "percentage"] as DiscountValueType[])
-      .required(),
-    earlyBirdDeadline: yup
-      .string()
-      .when("type", {
-        is: "early_bird",
-        then: (s) => s.required("Deadline is required for early bird"),
-        otherwise: (s) => s.optional(),
-      })
-      .default(""),
+      .required("Amount is required"),
+    frequency: yup
+      .mixed<FeePlanFrequency>()
+      .oneOf(
+        ["ONE_TIME", "DAILY", "WEEKLY", "MONTHLY", "YEARLY"] as FeePlanFrequency[],
+      )
+      .required()
+      .default("ONE_TIME"),
   })
   .required();
 
@@ -151,12 +140,15 @@ const batchFormSchema = yup
       })
       .default(""),
     section: yup.string().trim().max(50, "Too long").default(""),
+    classLevel: yup.string().default(""),
     totalSeats: yup
       .number()
       .typeError("Total seats must be a number")
       .min(1, "Must have at least 1 seat")
       .integer("Must be a whole number")
       .required("Total seats is required"),
+    startDate: yup.string().default(""),
+    endDate: yup.string().default(""),
     deliveryMode: yup
       .mixed<DeliveryMode>()
       .oneOf(["in-person", "online", "hybrid"] as DeliveryMode[])
@@ -168,9 +160,7 @@ const batchFormSchema = yup
       .required()
       .default("bangla"),
     registrationDeadline: yup.string().default(""),
-    oneTimePayments: yup.array(paymentEntrySchema).default([]),
-    monthlyPayments: yup.array(paymentEntrySchema).default([]),
-    discounts: yup.array(discountSchema).default([]),
+    feePlans: yup.array(feePlanSchema).default([]),
     certificateOnCompletion: yup.boolean().required().default(false),
     certificateTemplateName: yup.string().trim().max(100, "Too long").default(""),
     prerequisites: yup.string().trim().max(500, "Too long").default(""),
@@ -187,21 +177,25 @@ export const emptyBatchFormValues: BatchFormValues = {
   batchNumber: "",
   className: "",
   section: "",
+  classLevel: "",
   totalSeats: 30,
+  startDate: "",
+  endDate: "",
   deliveryMode: "in-person",
   mediumOfInstruction: "bangla",
   registrationDeadline: "",
-  oneTimePayments: [],
-  monthlyPayments: [],
-  discounts: [],
+  feePlans: [],
   certificateOnCompletion: false,
   certificateTemplateName: "",
   prerequisites: "",
   notes: "",
 };
 
+type FeeTypeOption = { id: string; typeName: string; isRecurring: boolean };
+
 type BatchFormDialogProps = {
   errorMessage?: string | null;
+  feeTypes: FeeTypeOption[];
   initialValues: BatchFormValues;
   isSubmitting: boolean;
   mode: "create" | "edit";
@@ -212,6 +206,7 @@ type BatchFormDialogProps = {
 
 export function BatchFormDialog({
   errorMessage,
+  feeTypes,
   initialValues,
   isSubmitting,
   mode,
@@ -219,47 +214,37 @@ export function BatchFormDialog({
   onSubmit,
   open,
 }: BatchFormDialogProps) {
-  const { control, handleSubmit, getValues, setValue } =
-    useForm<BatchFormValues>({
-      resolver: yupResolver(batchFormSchema),
-      defaultValues: initialValues,
-      mode: "onTouched",
-    });
+  const { control, handleSubmit, setValue } = useForm<BatchFormValues>({
+    resolver: yupResolver(batchFormSchema),
+    defaultValues: initialValues,
+    mode: "onTouched",
+  });
 
   const batchType = useWatch({ control, name: "type" });
   const deliveryMode = useWatch({ control, name: "deliveryMode" });
   const certEnabled = useWatch({ control, name: "certificateOnCompletion" });
-  const discountValues = useWatch({ control, name: "discounts" });
 
   const {
-    fields: oneTimeFields,
-    append: appendOneTime,
-    remove: removeOneTime,
-  } = useFieldArray({ control, name: "oneTimePayments" });
-
-  const {
-    fields: monthlyFields,
-    append: appendMonthly,
-    remove: removeMonthly,
-  } = useFieldArray({ control, name: "monthlyPayments" });
-
-  const {
-    fields: discountFields,
-    append: appendDiscount,
-    remove: removeDiscount,
-  } = useFieldArray({ control, name: "discounts" });
+    fields: feeFields,
+    append: appendFee,
+    remove: removeFee,
+  } = useFieldArray({ control, name: "feePlans" });
 
   const title = mode === "create" ? "Create Batch" : "Edit Batch";
   const submitLabel = mode === "create" ? "Create Batch" : "Save Changes";
 
-  const handleDiscountTypeChange = (index: number, newType: DiscountType) => {
-    const currentName = getValues(`discounts.${index}.name`);
-    const allDefaults = Object.values(DISCOUNT_DEFAULT_NAMES);
-    if (!currentName || allDefaults.includes(currentName)) {
-      setValue(`discounts.${index}.name`, DISCOUNT_DEFAULT_NAMES[newType]);
-    }
-    if (newType !== "early_bird") {
-      setValue(`discounts.${index}.earlyBirdDeadline`, "");
+  const feeTypeOptions = feeTypes.map((ft) => ({
+    label: ft.typeName,
+    value: ft.id,
+  }));
+
+  const handleFeeTypeChange = (index: number, feeTypeId: string) => {
+    const feeType = feeTypes.find((ft) => ft.id === feeTypeId);
+    if (feeType) {
+      setValue(
+        `feePlans.${index}.frequency`,
+        feeType.isRecurring ? "MONTHLY" : "ONE_TIME",
+      );
     }
   };
 
@@ -328,6 +313,7 @@ export function BatchFormDialog({
               <Typography variant="subtitle2" fontWeight={700}>
                 Batch details
               </Typography>
+
               <Box
                 sx={{
                   display: "grid",
@@ -374,6 +360,15 @@ export function BatchFormDialog({
                     />
                   </>
                 )}
+
+                <RhfSelect
+                  control={control}
+                  name="classLevel"
+                  label="Class level"
+                  options={CLASS_LEVEL_OPTIONS}
+                  fullWidth
+                />
+
                 <RhfTextField
                   control={control}
                   name="totalSeats"
@@ -383,13 +378,36 @@ export function BatchFormDialog({
                   fullWidth
                   slotProps={{ htmlInput: { min: 1 } }}
                 />
-                <RhfSelect
+
+                <RhfTextField
                   control={control}
-                  name="status"
-                  label="Status"
-                  options={STATUS_OPTIONS}
+                  name="startDate"
+                  label="Start date"
+                  type="date"
                   fullWidth
+                  slotProps={{ inputLabel: { shrink: true } }}
                 />
+
+                <RhfTextField
+                  control={control}
+                  name="endDate"
+                  label="End date"
+                  type="date"
+                  fullWidth
+                  slotProps={{ inputLabel: { shrink: true } }}
+                />
+
+                {/* Status only shown on create — API forbids COMPLETED/CANCELLED at creation.
+                    On edit, status transitions go through changeBatchStatus in the table. */}
+                {mode === "create" && (
+                  <RhfSelect
+                    control={control}
+                    name="status"
+                    label="Initial status"
+                    options={CREATE_STATUS_OPTIONS}
+                    fullWidth
+                  />
+                )}
               </Box>
             </Stack>
 
@@ -468,7 +486,7 @@ export function BatchFormDialog({
 
             <Divider />
 
-            {/* ── One-time payments ── */}
+            {/* ── Fee plans ── */}
             <Stack spacing={2}>
               <Stack
                 direction="row"
@@ -477,185 +495,18 @@ export function BatchFormDialog({
               >
                 <Stack spacing={0.25}>
                   <Typography variant="subtitle2" fontWeight={700}>
-                    One-time payments
+                    Fee plans
                   </Typography>
                   <Typography variant="caption" color="text.secondary">
-                    Admission fee, course fee, lab fee, development fee, etc.
-                  </Typography>
-                </Stack>
-                <Button
-                  size="small"
-                  startIcon={<AddRounded />}
-                  onClick={() => appendOneTime({ name: "", amount: 0 })}
-                  variant="outlined"
-                  sx={{ flexShrink: 0 }}
-                >
-                  Add
-                </Button>
-              </Stack>
-
-              {oneTimeFields.length === 0 ? (
-                <EmptyPlaceholder label="No one-time payments added yet." />
-              ) : (
-                <Stack spacing={1.5}>
-                  {oneTimeFields.map((field, index) => (
-                    <Box
-                      key={field.id}
-                      sx={{
-                        display: "grid",
-                        gap: 1.5,
-                        gridTemplateColumns: { xs: "1fr", sm: "1fr 160px auto" },
-                        alignItems: "start",
-                      }}
-                    >
-                      <RhfTextField
-                        control={control}
-                        name={`oneTimePayments.${index}.name`}
-                        label="Payment name"
-                        placeholder="e.g. Admission fee"
-                        fullWidth
-                        trim
-                      />
-                      <RhfTextField
-                        control={control}
-                        name={`oneTimePayments.${index}.amount`}
-                        label="Amount"
-                        type="number"
-                        fullWidth
-                        slotProps={{
-                          input: {
-                            startAdornment: (
-                              <InputAdornment position="start">৳</InputAdornment>
-                            ),
-                          },
-                          htmlInput: { min: 0 },
-                        }}
-                      />
-                      <Tooltip title="Remove">
-                        <IconButton
-                          size="small"
-                          color="error"
-                          onClick={() => removeOneTime(index)}
-                          sx={{ mt: 0.5 }}
-                        >
-                          <DeleteRounded fontSize="small" />
-                        </IconButton>
-                      </Tooltip>
-                    </Box>
-                  ))}
-                </Stack>
-              )}
-            </Stack>
-
-            <Divider />
-
-            {/* ── Monthly payments ── */}
-            <Stack spacing={2}>
-              <Stack
-                direction="row"
-                justifyContent="space-between"
-                alignItems="center"
-              >
-                <Stack spacing={0.25}>
-                  <Typography variant="subtitle2" fontWeight={700}>
-                    Monthly payments
-                  </Typography>
-                  <Typography variant="caption" color="text.secondary">
-                    Monthly tuition fee, transport fee, etc.
-                  </Typography>
-                </Stack>
-                <Button
-                  size="small"
-                  startIcon={<AddRounded />}
-                  onClick={() => appendMonthly({ name: "", amount: 0 })}
-                  variant="outlined"
-                  sx={{ flexShrink: 0 }}
-                >
-                  Add
-                </Button>
-              </Stack>
-
-              {monthlyFields.length === 0 ? (
-                <EmptyPlaceholder label="No monthly payments added yet." />
-              ) : (
-                <Stack spacing={1.5}>
-                  {monthlyFields.map((field, index) => (
-                    <Box
-                      key={field.id}
-                      sx={{
-                        display: "grid",
-                        gap: 1.5,
-                        gridTemplateColumns: { xs: "1fr", sm: "1fr 160px auto" },
-                        alignItems: "start",
-                      }}
-                    >
-                      <RhfTextField
-                        control={control}
-                        name={`monthlyPayments.${index}.name`}
-                        label="Payment name"
-                        placeholder="e.g. Monthly fee"
-                        fullWidth
-                        trim
-                      />
-                      <RhfTextField
-                        control={control}
-                        name={`monthlyPayments.${index}.amount`}
-                        label="Amount"
-                        type="number"
-                        fullWidth
-                        slotProps={{
-                          input: {
-                            startAdornment: (
-                              <InputAdornment position="start">৳</InputAdornment>
-                            ),
-                          },
-                          htmlInput: { min: 0 },
-                        }}
-                      />
-                      <Tooltip title="Remove">
-                        <IconButton
-                          size="small"
-                          color="error"
-                          onClick={() => removeMonthly(index)}
-                          sx={{ mt: 0.5 }}
-                        >
-                          <DeleteRounded fontSize="small" />
-                        </IconButton>
-                      </Tooltip>
-                    </Box>
-                  ))}
-                </Stack>
-              )}
-            </Stack>
-
-            <Divider />
-
-            {/* ── Discounts ── */}
-            <Stack spacing={2}>
-              <Stack
-                direction="row"
-                justifyContent="space-between"
-                alignItems="center"
-              >
-                <Stack spacing={0.25}>
-                  <Typography variant="subtitle2" fontWeight={700}>
-                    Discounts
-                  </Typography>
-                  <Typography variant="caption" color="text.secondary">
-                    Early bird, sibling, merit scholarships, or custom rules.
+                    Admission fee, monthly tuition, and other charges for this
+                    batch.
                   </Typography>
                 </Stack>
                 <Button
                   size="small"
                   startIcon={<AddRounded />}
                   onClick={() =>
-                    appendDiscount({
-                      type: "custom",
-                      name: "",
-                      value: 0,
-                      valueType: "fixed",
-                      earlyBirdDeadline: "",
-                    })
+                    appendFee({ feeTypeId: "", amount: 0, frequency: "ONE_TIME" })
                   }
                   variant="outlined"
                   sx={{ flexShrink: 0 }}
@@ -664,136 +515,84 @@ export function BatchFormDialog({
                 </Button>
               </Stack>
 
-              {discountFields.length === 0 ? (
-                <EmptyPlaceholder label="No discounts added yet." />
+              {feeFields.length === 0 ? (
+                <EmptyPlaceholder label="No fee plans added yet." />
               ) : (
                 <Stack spacing={2}>
-                  {discountFields.map((field, index) => {
-                    const currentType = discountValues?.[index]?.type;
-                    return (
-                      <Box
-                        key={field.id}
-                        sx={{
-                          p: 2,
-                          border: "1px solid",
-                          borderColor: "divider",
-                          borderRadius: 1,
-                        }}
-                      >
-                        <Stack spacing={1.5}>
-                          <Box
-                            sx={{
-                              display: "grid",
-                              gap: 1.5,
-                              gridTemplateColumns: {
-                                xs: "1fr",
-                                sm: "150px 1fr auto",
+                  {feeFields.map((field, index) => (
+                    <Box
+                      key={field.id}
+                      sx={{
+                        p: 2,
+                        border: "1px solid",
+                        borderColor: "divider",
+                        borderRadius: 1,
+                      }}
+                    >
+                      <Stack spacing={1.5}>
+                        <Box
+                          sx={{
+                            display: "grid",
+                            gap: 1.5,
+                            gridTemplateColumns: {
+                              xs: "1fr",
+                              sm: "1fr 150px auto",
+                            },
+                            alignItems: "start",
+                          }}
+                        >
+                          <RhfSelect
+                            control={control}
+                            name={`feePlans.${index}.feeTypeId`}
+                            label="Fee type"
+                            options={feeTypeOptions}
+                            fullWidth
+                            onCustomChange={(e) =>
+                              handleFeeTypeChange(
+                                index,
+                                e.target.value as string,
+                              )
+                            }
+                          />
+                          <RhfTextField
+                            control={control}
+                            name={`feePlans.${index}.amount`}
+                            label="Amount"
+                            type="number"
+                            fullWidth
+                            slotProps={{
+                              input: {
+                                startAdornment: (
+                                  <InputAdornment position="start">
+                                    ৳
+                                  </InputAdornment>
+                                ),
                               },
-                              alignItems: "start",
+                              htmlInput: { min: 0 },
                             }}
-                          >
-                            <RhfSelect
-                              control={control}
-                              name={`discounts.${index}.type`}
-                              label="Type"
-                              options={DISCOUNT_TYPE_OPTIONS}
-                              onCustomChange={(e) =>
-                                handleDiscountTypeChange(
-                                  index,
-                                  e.target.value as DiscountType,
-                                )
-                              }
-                            />
-                            <RhfTextField
-                              control={control}
-                              name={`discounts.${index}.name`}
-                              label="Discount name"
-                              placeholder="e.g. Early Bird Discount"
-                              fullWidth
-                              trim
-                            />
-                            <Tooltip title="Remove">
-                              <IconButton
-                                size="small"
-                                color="error"
-                                onClick={() => removeDiscount(index)}
-                                sx={{ mt: 0.5 }}
-                              >
-                                <DeleteRounded fontSize="small" />
-                              </IconButton>
-                            </Tooltip>
-                          </Box>
+                          />
+                          <Tooltip title="Remove">
+                            <IconButton
+                              size="small"
+                              color="error"
+                              onClick={() => removeFee(index)}
+                              sx={{ mt: 0.5 }}
+                            >
+                              <DeleteRounded fontSize="small" />
+                            </IconButton>
+                          </Tooltip>
+                        </Box>
 
-                          <Box
-                            sx={{
-                              display: "grid",
-                              gap: 1.5,
-                              gridTemplateColumns: {
-                                xs: "1fr",
-                                sm: "1fr 140px",
-                              },
-                              alignItems: "start",
-                            }}
-                          >
-                            <RhfTextField
-                              control={control}
-                              name={`discounts.${index}.value`}
-                              label="Discount value"
-                              type="number"
-                              fullWidth
-                              slotProps={{ htmlInput: { min: 0 } }}
-                              helperText="Amount in ৳ or percentage off"
-                            />
-                            <Controller
-                              control={control}
-                              name={`discounts.${index}.valueType`}
-                              render={({ field: vf }) => (
-                                <Stack spacing={0.5}>
-                                  <Typography
-                                    variant="caption"
-                                    color="text.secondary"
-                                  >
-                                    Unit
-                                  </Typography>
-                                  <ToggleButtonGroup
-                                    exclusive
-                                    value={vf.value}
-                                    onChange={(
-                                      _,
-                                      v: DiscountValueType | null,
-                                    ) => {
-                                      if (v) vf.onChange(v);
-                                    }}
-                                    size="small"
-                                    fullWidth
-                                  >
-                                    <ToggleButton value="fixed">
-                                      ৳ Fixed
-                                    </ToggleButton>
-                                    <ToggleButton value="percentage">
-                                      % Off
-                                    </ToggleButton>
-                                  </ToggleButtonGroup>
-                                </Stack>
-                              )}
-                            />
-                          </Box>
-
-                          {currentType === "early_bird" && (
-                            <RhfTextField
-                              control={control}
-                              name={`discounts.${index}.earlyBirdDeadline`}
-                              label="Enroll before"
-                              type="date"
-                              fullWidth
-                              slotProps={{ inputLabel: { shrink: true } }}
-                              helperText="Discount applies to enrollments before this date"
-                            />
-                          )}
-                        </Stack>
-                      </Box>
-                    );
-                  })}
+                        <RhfSelect
+                          control={control}
+                          name={`feePlans.${index}.frequency`}
+                          label="Billing frequency"
+                          options={FREQUENCY_OPTIONS}
+                          fullWidth
+                        />
+                      </Stack>
+                    </Box>
+                  ))}
                 </Stack>
               )}
             </Stack>

@@ -7,7 +7,7 @@ import { useQuery } from "@apollo/client/react";
 import { Box, CircularProgress } from "@mui/material";
 import { MeDocument } from "@/graphql/generated/index";
 
-export function DashboardAuthGuard({ children }: { children: ReactNode }) {
+export function BongoAuthGuard({ children }: { children: ReactNode }) {
   const router = useRouter();
   const { loading, error, data } = useQuery(MeDocument, {
     fetchPolicy: "network-only",
@@ -16,8 +16,8 @@ export function DashboardAuthGuard({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (error) {
       router.replace("/login");
-    } else if (data?.me?.userType === "BONGO") {
-      router.replace("/bongo/dashboard");
+    } else if (data && data.me?.userType !== "BONGO") {
+      router.replace("/dashboard");
     }
   }, [error, data, router]);
 
@@ -36,7 +36,7 @@ export function DashboardAuthGuard({ children }: { children: ReactNode }) {
     );
   }
 
-  if (error || data?.me?.userType === "BONGO") {
+  if (error || (data && data.me?.userType !== "BONGO")) {
     return null;
   }
 

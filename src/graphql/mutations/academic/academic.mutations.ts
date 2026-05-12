@@ -43,6 +43,21 @@ export const CREATE_BATCH_MUTATION = /* GraphQL */ `
       startDate
       endDate
       status
+      type
+      deliveryMode
+      mediumOfInstruction
+      registrationDeadline
+      certificateOnCompletion
+      certificateTemplateName
+      prerequisites
+      notes
+      feePlans {
+        id
+        amount
+        feeTypeId
+        frequency
+        isActive
+      }
       tenantId
     }
   }
@@ -63,6 +78,21 @@ export const UPDATE_BATCH_MUTATION = /* GraphQL */ `
       startDate
       endDate
       status
+      type
+      deliveryMode
+      mediumOfInstruction
+      registrationDeadline
+      certificateOnCompletion
+      certificateTemplateName
+      prerequisites
+      notes
+      feePlans {
+        id
+        amount
+        feeTypeId
+        frequency
+        isActive
+      }
       tenantId
     }
   }
@@ -83,6 +113,16 @@ export const CHANGE_BATCH_STATUS_MUTATION = /* GraphQL */ `
       startDate
       endDate
       status
+      type
+      deliveryMode
+      mediumOfInstruction
+      feePlans {
+        id
+        amount
+        feeTypeId
+        frequency
+        isActive
+      }
       tenantId
     }
   }
@@ -113,6 +153,16 @@ export const CLONE_BATCH_MUTATION = /* GraphQL */ `
       startDate
       endDate
       status
+      type
+      deliveryMode
+      mediumOfInstruction
+      feePlans {
+        id
+        amount
+        feeTypeId
+        frequency
+        isActive
+      }
       tenantId
     }
   }
