@@ -52,6 +52,7 @@ import {
   type BatchStatus,
   type BatchType,
   type DeliveryMode,
+  type FeePlanFrequency,
   type MediumOfInstruction,
 } from "./BatchFormDialog";
 import { FeeTypesSection } from "./FeeTypesSection";
@@ -59,7 +60,7 @@ import { FeeTypesSection } from "./FeeTypesSection";
 type FeePlanEntry = {
   feeTypeId: string;
   amount: number;
-  frequency: string;
+  frequency: FeePlanFrequency;
 };
 
 type BatchRecord = {
@@ -147,7 +148,7 @@ const mapApiBatch = (batch: ApiBatch): BatchRecord => {
     feePlans: (batch.feePlans ?? []).map((fp) => ({
       feeTypeId: fp.feeTypeId,
       amount: fp.amount,
-      frequency: fp.frequency,
+      frequency: fp.frequency as FeePlanFrequency,
     })),
     certificateOnCompletion: batch.certificateOnCompletion ?? false,
     certificateTemplateName: batch.certificateTemplateName ?? undefined,
