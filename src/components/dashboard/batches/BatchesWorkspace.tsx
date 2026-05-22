@@ -6,6 +6,7 @@ import {
   AutoStoriesRounded,
   BlockRounded,
   CheckCircleRounded,
+  DeleteRounded,
   DevicesRounded,
   DoneRounded,
   EditRounded,
@@ -40,6 +41,7 @@ import { getErrorMessage } from "@/lib/errors";
 import {
   ChangeBatchStatusDocument,
   CreateBatchDocument,
+  DeleteBatchDocument,
   GetAllBatchesDocument,
   GetFeeTypesDocument,
   UpdateBatchDocument,
@@ -65,6 +67,7 @@ type FeePlanEntry = {
 
 type BatchRecord = {
   id: string;
+  rawName: string;
   type: BatchType;
   courseName?: string;
   batchNumber?: string;
@@ -127,21 +130,27 @@ const DELIVERY_ICON: Record<DeliveryMode, ReactNode> = {
 };
 
 const mapApiBatch = (batch: ApiBatch): BatchRecord => {
+  // API returns UPPER_SNAKE_CASE enums — normalise to lowercase/kebab before use.
+  const batchType = ((batch.type ?? "course").toLowerCase()) as BatchType;
+  const batchStatus = ((batch.status ?? "upcoming").toLowerCase()) as BatchStatus;
   const nameParts = batch.name.split(" · ");
-  const isClass = batch.type === "class";
+  const isClass = batchType === "class";
+  // courseName from API takes precedence over parsing the name string
+  const apiCourseName = batch.courseName ?? null;
   return {
     id: batch.id,
-    type: (batch.type ?? "course") as BatchType,
-    courseName: !isClass ? (nameParts[0] ?? "") : "",
+    rawName: batch.name,
+    type: batchType,
+    courseName: !isClass ? (apiCourseName ?? nameParts[0] ?? "") : "",
     batchNumber: !isClass ? (nameParts[1] ?? "") : "",
     className: isClass ? (nameParts[0] ?? "") : "",
     section: isClass ? (nameParts[1] ?? "") : "",
-    classLevel: batch.classLevel ?? undefined,
+    classLevel: batch.classLevel?.toLowerCase() ?? undefined,
     totalSeats: batch.capacity,
     enrolledCount: batch.enrolledCount,
-    status: (batch.status ?? "upcoming") as BatchStatus,
-    deliveryMode: (batch.deliveryMode ?? "in-person") as DeliveryMode,
-    mediumOfInstruction: (batch.mediumOfInstruction ?? "bangla") as MediumOfInstruction,
+    status: batchStatus,
+    deliveryMode: (fromApiEnum(batch.deliveryMode ?? "IN_PERSON")) as DeliveryMode,
+    mediumOfInstruction: ((batch.mediumOfInstruction ?? "BANGLA").toLowerCase()) as MediumOfInstruction,
     startDate: batch.startDate ?? undefined,
     endDate: batch.endDate ?? undefined,
     registrationDeadline: batch.registrationDeadline ?? undefined,
@@ -166,7 +175,12 @@ const buildBatchName = (values: BatchFormValues) =>
 const toApiEnum = (value: string) =>
   value.toUpperCase().replace(/-/g, "_");
 
+// Reverse: convert API UPPER_SNAKE_CASE back to frontend lower-kebab.
+const fromApiEnum = (value: string) =>
+  value.toLowerCase().replace(/_/g, "-");
+
 const getBatchDisplayName = (batch: BatchRecord): string => {
+  if (batch.rawName) return batch.rawName;
   if (batch.type === "course") {
     const parts = [batch.courseName, batch.batchNumber].filter(Boolean);
     return parts.join(" · ") || "Unnamed Course Batch";
@@ -192,10 +206,12 @@ const isClosed = (status: BatchStatus) =>
 const getBatchFormValues = (batch: BatchRecord): BatchFormValues => ({
   type: batch.type,
   status: batch.status,
-  courseName: batch.courseName ?? "",
-  batchNumber: batch.batchNumber ?? "",
-  className: batch.className ?? "",
-  section: batch.section ?? "",
+  // If the raw name doesn't use the " · " separator (e.g. API-created or legacy names),
+  // put the full name into the primary name field so the user can see and edit it.
+  courseName: batch.type === "course" ? (batch.courseName || batch.rawName) : "",
+  batchNumber: batch.type === "course" ? (batch.batchNumber ?? "") : "",
+  className: batch.type === "class" ? (batch.className || batch.rawName) : "",
+  section: batch.type === "class" ? (batch.section ?? "") : "",
   classLevel: batch.classLevel ?? "",
   totalSeats: batch.totalSeats,
   startDate: batch.startDate ?? "",
@@ -215,7 +231,7 @@ const buildBatchColumns = (): MRT_ColumnDef<BatchRecord>[] => [
     id: "name",
     accessorFn: getBatchDisplayName,
     header: "Batch",
-    size: 260,
+    size: 280,
     Cell: ({ row }) => (
       <Stack spacing={0.75}>
         <Typography variant="subtitle2" fontWeight={700}>
@@ -236,21 +252,21 @@ const buildBatchColumns = (): MRT_ColumnDef<BatchRecord>[] => [
             variant="outlined"
             sx={{ fontSize: 11 }}
           />
+          {row.original.classLevel && (
+            <Chip
+              label={CLASS_LEVEL_LABEL[row.original.classLevel] ?? row.original.classLevel.toUpperCase()}
+              size="small"
+              color="default"
+              sx={{ fontSize: 11 }}
+            />
+          )}
           <Chip
-            label={DELIVERY_LABEL[row.original.deliveryMode]}
+            label={DELIVERY_LABEL[row.original.deliveryMode] ?? row.original.deliveryMode}
             size="small"
             icon={DELIVERY_ICON[row.original.deliveryMode] as React.ReactElement}
             variant="outlined"
             sx={{ fontSize: 11 }}
           />
-          {row.original.classLevel && (
-            <Chip
-              label={CLASS_LEVEL_LABEL[row.original.classLevel] ?? row.original.classLevel}
-              size="small"
-              variant="outlined"
-              sx={{ fontSize: 11 }}
-            />
-          )}
         </Stack>
       </Stack>
     ),
@@ -263,11 +279,11 @@ const buildBatchColumns = (): MRT_ColumnDef<BatchRecord>[] => [
     filterFn: "equals",
     filterSelectOptions: ["upcoming", "ongoing", "completed", "cancelled"],
     Cell: ({ cell }) => {
-      const status = cell.getValue<BatchStatus>();
+      const status = cell.getValue<string>().toLowerCase() as BatchStatus;
       return (
         <Chip
-          label={STATUS_LABEL[status]}
-          color={STATUS_COLOR[status]}
+          label={STATUS_LABEL[status] ?? status}
+          color={STATUS_COLOR[status] ?? "default"}
           size="small"
           variant={status === "completed" ? "outlined" : "filled"}
         />
@@ -277,29 +293,38 @@ const buildBatchColumns = (): MRT_ColumnDef<BatchRecord>[] => [
   {
     id: "seats",
     header: "Seats",
-    size: 100,
-    accessorFn: (row) => row.totalSeats,
-    Cell: ({ row }) => (
-      <Stack spacing={0.25}>
-        <Typography variant="body2" fontWeight={600}>
-          {row.original.totalSeats}
-        </Typography>
-        <Typography variant="caption" color="text.secondary">
-          {row.original.enrolledCount} enrolled
-        </Typography>
-      </Stack>
-    ),
+    size: 120,
+    accessorFn: (row) => row.totalSeats - row.enrolledCount,
+    Cell: ({ row }) => {
+      const { totalSeats, enrolledCount } = row.original;
+      const available = totalSeats - enrolledCount;
+      const isFull = available <= 0;
+      return (
+        <Stack spacing={0.25}>
+          <Typography variant="body2" fontWeight={600}>
+            {enrolledCount} / {totalSeats}
+          </Typography>
+          <Typography
+            variant="caption"
+            color={isFull ? "error.main" : "text.secondary"}
+            fontWeight={isFull ? 600 : 400}
+          >
+            {isFull ? "Full" : `${available} seats left`}
+          </Typography>
+        </Stack>
+      );
+    },
   },
   {
     id: "feePlans",
-    header: "Fee plans",
-    size: 180,
+    header: "Fees",
+    size: 160,
     enableSorting: false,
     accessorFn: (row) => row.feePlans.length,
     Cell: ({ row }) => {
       const plans = row.original.feePlans;
       if (!plans.length) {
-        return <Typography variant="body2">—</Typography>;
+        return <Typography variant="body2" color="text.secondary">No fees</Typography>;
       }
       const oneTimeTotal = plans
         .filter((p) => p.frequency === "ONE_TIME")
@@ -310,14 +335,20 @@ const buildBatchColumns = (): MRT_ColumnDef<BatchRecord>[] => [
       return (
         <Stack spacing={0.25}>
           {oneTimeTotal > 0 && (
-            <Typography variant="body2" fontWeight={600}>
-              {formatAmount(oneTimeTotal)}
-            </Typography>
+            <Stack spacing={0}>
+              <Typography variant="body2" fontWeight={600}>
+                {formatAmount(oneTimeTotal)}
+              </Typography>
+              <Typography variant="caption" color="text.secondary">one-time</Typography>
+            </Stack>
           )}
           {monthlyTotal > 0 && (
-            <Typography variant="caption" color="text.secondary">
-              {formatAmount(monthlyTotal)}/mo
-            </Typography>
+            <Stack spacing={0}>
+              <Typography variant="body2" fontWeight={600}>
+                {formatAmount(monthlyTotal)}/mo
+              </Typography>
+              <Typography variant="caption" color="text.secondary">monthly</Typography>
+            </Stack>
           )}
         </Stack>
       );
@@ -325,8 +356,8 @@ const buildBatchColumns = (): MRT_ColumnDef<BatchRecord>[] => [
   },
   {
     id: "schedule",
-    header: "Schedule",
-    size: 160,
+    header: "Duration",
+    size: 180,
     enableSorting: false,
     accessorFn: (row) => row.startDate ?? "",
     Cell: ({ row }) => {
@@ -334,25 +365,21 @@ const buildBatchColumns = (): MRT_ColumnDef<BatchRecord>[] => [
       if (!startDate && !endDate) {
         return <Typography variant="body2" color="text.secondary">—</Typography>;
       }
+      const fmt = (d: string) =>
+        new Date(d).toLocaleDateString("en-BD", { day: "numeric", month: "short", year: "numeric" });
       return (
         <Stack spacing={0.25}>
-          <Typography variant="body2">
-            {[startDate, endDate]
-              .filter(Boolean)
-              .map((d) =>
-                new Date(d!).toLocaleDateString("en-BD", {
-                  day: "numeric",
-                  month: "short",
-                  year: "numeric",
-                }),
-              )
-              .join(" – ")}
-          </Typography>
+          {startDate && (
+            <Typography variant="body2">
+              {fmt(startDate)}
+              {endDate ? ` – ${fmt(endDate)}` : ""}
+            </Typography>
+          )}
           {registrationDeadline && (
             <Stack direction="row" spacing={0.5} alignItems="center">
               <ScheduleRounded sx={{ fontSize: 12, color: "text.secondary" }} />
               <Typography variant="caption" color="text.secondary">
-                Reg. {formatDeadline(registrationDeadline)}
+                Reg. deadline: {fmt(registrationDeadline)}
               </Typography>
             </Stack>
           )}
@@ -437,6 +464,7 @@ export function BatchesWorkspace() {
   const [formMode, setFormMode] = useState<"create" | "edit">("create");
   const [selectedBatch, setSelectedBatch] = useState<BatchRecord | null>(null);
   const [statusChangeReq, setStatusChangeReq] = useState<StatusChangeReq | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<BatchRecord | null>(null);
   const [formDialogKey, setFormDialogKey] = useState(0);
   const [formErrorMessage, setFormErrorMessage] = useState<string | null>(null);
 
@@ -463,7 +491,13 @@ export function BatchesWorkspace() {
     { refetchQueries: [GetAllBatchesDocument] },
   );
 
-  const batches: BatchRecord[] = (data?.getAllBatches ?? []).map(mapApiBatch);
+  const [deleteBatch, { loading: isDeleting }] = useMutation(DeleteBatchDocument, {
+    refetchQueries: [GetAllBatchesDocument],
+  });
+
+  const batches: BatchRecord[] = (data?.getAllBatches ?? [])
+    .filter((b) => !b.deleted)
+    .map(mapApiBatch);
 
   const isSubmitting = isCreating || isUpdating;
   const isChangingStatus = isCancellingMutation;
@@ -513,6 +547,7 @@ export function BatchesWorkspace() {
             batch: {
               id: selectedBatch.id,
               name: buildBatchName(values),
+              courseName: values.type === "course" ? (values.courseName?.trim() || undefined) : undefined,
               capacity: values.totalSeats,
               classLevel: values.classLevel ? toApiEnum(values.classLevel) : undefined,
               startDate: values.startDate || undefined,
@@ -528,6 +563,7 @@ export function BatchesWorkspace() {
           variables: {
             batch: {
               name: buildBatchName(values),
+              courseName: values.type === "course" ? (values.courseName?.trim() || undefined) : undefined,
               capacity: values.totalSeats,
               type: toApiEnum(values.type),
               status: toApiEnum(values.status),
@@ -570,6 +606,17 @@ export function BatchesWorkspace() {
       setStatusChangeReq(null);
     } catch (error) {
       toast.error(getErrorMessage(error, "Failed to update batch status."));
+    }
+  };
+
+  const handleDeleteBatch = async () => {
+    if (!deleteTarget) return;
+    try {
+      await deleteBatch({ variables: { batchId: deleteTarget.id } });
+      toast.success(`"${getBatchDisplayName(deleteTarget)}" deleted.`);
+      setDeleteTarget(null);
+    } catch (error) {
+      toast.error(getErrorMessage(error, "Failed to delete batch."));
     }
   };
 
@@ -757,7 +804,7 @@ export function BatchesWorkspace() {
           displayColumnDefOptions={{
             "mrt-row-actions": {
               header: "Actions",
-              size: 108,
+              size: 120,
               muiTableBodyCellProps: { sx: { pr: 2, bgcolor: "#ffffff" } },
               muiTableHeadCellProps: {
                 sx: {
@@ -800,10 +847,12 @@ export function BatchesWorkspace() {
           )}
           renderRowActions={({ row }) => {
             const s = row.original.status;
+            const closed = isClosed(s);
             return (
               <Stack
                 direction="row"
                 spacing={0.5}
+                alignItems="center"
                 justifyContent="flex-end"
                 sx={{ width: "100%" }}
               >
@@ -811,9 +860,15 @@ export function BatchesWorkspace() {
                   <IconButton
                     size="small"
                     onClick={() => openEditDialog(row.original)}
-                    sx={{ bgcolor: alpha("#0f172a", 0.04) }}
+                    sx={{
+                      border: "1px solid",
+                      borderColor: "divider",
+                      borderRadius: 1.5,
+                      color: "text.secondary",
+                      "&:hover": { borderColor: "primary.main", color: "primary.main", bgcolor: alpha("#10b981", 0.06) },
+                    }}
                   >
-                    <EditRounded fontSize="small" />
+                    <EditRounded sx={{ fontSize: 16 }} />
                   </IconButton>
                 </Tooltip>
 
@@ -824,9 +879,15 @@ export function BatchesWorkspace() {
                       onClick={() =>
                         setStatusChangeReq({ batch: row.original, toStatus: "ONGOING" })
                       }
-                      sx={{ bgcolor: alpha("#3b82f6", 0.08), color: "#1d4ed8" }}
+                      sx={{
+                        border: "1px solid",
+                        borderColor: alpha("#3b82f6", 0.35),
+                        borderRadius: 1.5,
+                        color: "info.main",
+                        "&:hover": { bgcolor: alpha("#3b82f6", 0.08) },
+                      }}
                     >
-                      <PlayArrowRounded fontSize="small" />
+                      <PlayArrowRounded sx={{ fontSize: 16 }} />
                     </IconButton>
                   </Tooltip>
                 )}
@@ -838,23 +899,53 @@ export function BatchesWorkspace() {
                       onClick={() =>
                         setStatusChangeReq({ batch: row.original, toStatus: "COMPLETED" })
                       }
-                      sx={{ bgcolor: alpha("#10b981", 0.08), color: "#047857" }}
+                      sx={{
+                        border: "1px solid",
+                        borderColor: alpha("#10b981", 0.35),
+                        borderRadius: 1.5,
+                        color: "success.main",
+                        "&:hover": { bgcolor: alpha("#10b981", 0.08) },
+                      }}
                     >
-                      <DoneRounded fontSize="small" />
+                      <DoneRounded sx={{ fontSize: 16 }} />
                     </IconButton>
                   </Tooltip>
                 )}
 
-                {!isClosed(s) && (
+                {!closed && (
                   <Tooltip title="Cancel batch">
                     <IconButton
                       size="small"
                       onClick={() =>
                         setStatusChangeReq({ batch: row.original, toStatus: "CANCELLED" })
                       }
-                      sx={{ bgcolor: alpha("#ef4444", 0.08), color: "#b91c1c" }}
+                      sx={{
+                        border: "1px solid",
+                        borderColor: alpha("#ef4444", 0.3),
+                        borderRadius: 1.5,
+                        color: "error.main",
+                        "&:hover": { bgcolor: alpha("#ef4444", 0.06) },
+                      }}
                     >
-                      <BlockRounded fontSize="small" />
+                      <BlockRounded sx={{ fontSize: 16 }} />
+                    </IconButton>
+                  </Tooltip>
+                )}
+
+                {closed && (
+                  <Tooltip title="Delete batch permanently">
+                    <IconButton
+                      size="small"
+                      onClick={() => setDeleteTarget(row.original)}
+                      sx={{
+                        border: "1px solid",
+                        borderColor: alpha("#ef4444", 0.3),
+                        borderRadius: 1.5,
+                        color: "error.main",
+                        "&:hover": { bgcolor: alpha("#ef4444", 0.06) },
+                      }}
+                    >
+                      <DeleteRounded sx={{ fontSize: 16 }} />
                     </IconButton>
                   </Tooltip>
                 )}
@@ -886,6 +977,39 @@ export function BatchesWorkspace() {
         onSubmit={handleSubmitBatch}
         open={isFormOpen}
       />
+
+      <Dialog
+        open={!!deleteTarget}
+        onClose={() => !isDeleting && setDeleteTarget(null)}
+        fullWidth
+        maxWidth="xs"
+      >
+        <DialogTitle>Delete batch</DialogTitle>
+        <DialogContent>
+          <Typography variant="body2" color="text.secondary">
+            Permanently delete{" "}
+            <strong>{deleteTarget ? getBatchDisplayName(deleteTarget) : ""}</strong>?
+            This action cannot be undone.
+          </Typography>
+        </DialogContent>
+        <DialogActions sx={{ px: 3, py: 2 }}>
+          <Button
+            color="inherit"
+            onClick={() => setDeleteTarget(null)}
+            disabled={isDeleting}
+          >
+            Cancel
+          </Button>
+          <Button
+            variant="contained"
+            color="error"
+            onClick={handleDeleteBatch}
+            disabled={isDeleting}
+          >
+            Delete permanently
+          </Button>
+        </DialogActions>
+      </Dialog>
 
       <Dialog
         open={!!statusChangeReq}

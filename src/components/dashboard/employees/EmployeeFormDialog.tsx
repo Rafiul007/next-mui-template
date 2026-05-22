@@ -41,29 +41,52 @@ const bloodGroupOptions: RhfSelectOption[] = [
   { label: "AB-", value: "AB-" },
 ];
 
-const employeeFormSchema = yup
-  .object({
-    branchId: yup.string().required("Branch is required"),
-    userId: yup.string().default(""),
-    employmentType: yup.string().required("Employment type is required"),
-    joiningDate: yup.mixed<Dayjs>().nullable().required("Joining date is required"),
-    employeeCode: yup.string().trim().default(""),
-    designation: yup.string().trim().default(""),
-    department: yup.string().trim().default(""),
-    nid: yup.string().trim().default(""),
-    tin: yup.string().trim().default(""),
-    bloodGroup: yup.string().default(""),
-    emergencyContactName: yup.string().trim().default(""),
-    emergencyContactPhone: yup.string().trim().default(""),
-    probationEndsAt: yup.mixed<Dayjs>().nullable().default(null),
-  })
-  .required();
+const createSchema = yup.object({
+  firstName: yup.string().trim().required("First name is required").max(60, "Too long"),
+  lastName: yup.string().trim().max(60, "Too long").default(""),
+  phone: yup.string().trim().max(20, "Too long").default(""),
+  branchId: yup.string().required("Branch is required"),
+  email: yup.string().trim().email("Enter a valid email address").required("Email is required"),
+  employmentType: yup.string().required("Employment type is required"),
+  joiningDate: yup.mixed<Dayjs>().nullable().required("Joining date is required"),
+  employeeCode: yup.string().trim().default(""),
+  designation: yup.string().trim().default(""),
+  department: yup.string().trim().default(""),
+  nid: yup.string().trim().default(""),
+  tin: yup.string().trim().default(""),
+  bloodGroup: yup.string().default(""),
+  emergencyContactName: yup.string().trim().default(""),
+  emergencyContactPhone: yup.string().trim().default(""),
+  probationEndsAt: yup.mixed<Dayjs>().nullable().default(null),
+}).required();
 
-export type EmployeeFormValues = yup.InferType<typeof employeeFormSchema>;
+const editSchema = yup.object({
+  firstName: yup.string().trim().default(""),
+  lastName: yup.string().trim().default(""),
+  phone: yup.string().trim().default(""),
+  branchId: yup.string().required("Branch is required"),
+  email: yup.string().trim().email("Enter a valid email address").default(""),
+  employmentType: yup.string().required("Employment type is required"),
+  joiningDate: yup.mixed<Dayjs>().nullable().required("Joining date is required"),
+  employeeCode: yup.string().trim().default(""),
+  designation: yup.string().trim().default(""),
+  department: yup.string().trim().default(""),
+  nid: yup.string().trim().default(""),
+  tin: yup.string().trim().default(""),
+  bloodGroup: yup.string().default(""),
+  emergencyContactName: yup.string().trim().default(""),
+  emergencyContactPhone: yup.string().trim().default(""),
+  probationEndsAt: yup.mixed<Dayjs>().nullable().default(null),
+}).required();
+
+export type EmployeeFormValues = yup.InferType<typeof createSchema>;
 
 const emptyValues: EmployeeFormValues = {
+  firstName: "",
+  lastName: "",
+  phone: "",
   branchId: "",
-  userId: "",
+  email: "",
   employmentType: "",
   joiningDate: null as unknown as Dayjs,
   employeeCode: "",
@@ -86,7 +109,6 @@ export type EmployeeFormDialogProps = {
   onClose: () => void;
   onSubmit: (values: EmployeeFormValues) => void;
   open: boolean;
-  userOptions: RhfSelectOption[];
 };
 
 export function EmployeeFormDialog({
@@ -98,10 +120,10 @@ export function EmployeeFormDialog({
   onClose,
   onSubmit,
   open,
-  userOptions,
 }: EmployeeFormDialogProps) {
   const { control, handleSubmit } = useForm<EmployeeFormValues>({
-    resolver: yupResolver(employeeFormSchema),
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    resolver: yupResolver(mode === "create" ? createSchema : editSchema as any),
     defaultValues: initialValues,
     mode: "onTouched",
   });
@@ -123,6 +145,55 @@ export function EmployeeFormDialog({
             {errorMessage ? (
               <Alert severity="error">{errorMessage}</Alert>
             ) : null}
+
+            {mode === "create" && (
+              <>
+                <Stack spacing={2}>
+                  <Typography variant="subtitle2" color="text.secondary">
+                    Account details
+                  </Typography>
+                  <Box
+                    sx={{
+                      display: "grid",
+                      gap: 2,
+                      gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr" },
+                    }}
+                  >
+                    <RhfTextField
+                      control={control}
+                      name="firstName"
+                      label="First name *"
+                      placeholder="e.g. Rafiul"
+                      trim
+                    />
+                    <RhfTextField
+                      control={control}
+                      name="lastName"
+                      label="Last name"
+                      placeholder="e.g. Hasan"
+                      trim
+                    />
+                    <RhfTextField
+                      control={control}
+                      name="email"
+                      label="Email *"
+                      placeholder="employee@example.com"
+                      type="email"
+                      trim
+                      helperText="Used to create the login account"
+                    />
+                    <RhfTextField
+                      control={control}
+                      name="phone"
+                      label="Phone"
+                      placeholder="+8801XXXXXXXXX"
+                      trim
+                    />
+                  </Box>
+                </Stack>
+                <Divider />
+              </>
+            )}
 
             <Stack spacing={2}>
               <Typography variant="subtitle2" color="text.secondary">
@@ -176,22 +247,17 @@ export function EmployeeFormDialog({
                   placeholder="e.g. Science"
                   trim
                 />
+                {mode === "edit" && (
+                  <RhfTextField
+                    control={control}
+                    name="email"
+                    label="Email"
+                    placeholder="employee@example.com"
+                    type="email"
+                    trim
+                  />
+                )}
               </Box>
-            </Stack>
-
-            <Divider />
-
-            <Stack spacing={2}>
-              <Typography variant="subtitle2" color="text.secondary">
-                Link user account
-              </Typography>
-              <RhfSelect
-                control={control}
-                name="userId"
-                label="User account"
-                options={[{ label: "None", value: "" }, ...userOptions]}
-                helperText="Connect this employee record to a platform user"
-              />
             </Stack>
 
             <Divider />
@@ -223,7 +289,10 @@ export function EmployeeFormDialog({
                   control={control}
                   name="bloodGroup"
                   label="Blood group"
-                  options={[{ label: "Not specified", value: "" }, ...bloodGroupOptions]}
+                  options={[
+                    { label: "Not specified", value: "" },
+                    ...bloodGroupOptions,
+                  ]}
                 />
                 <RhfDatePicker
                   control={control}

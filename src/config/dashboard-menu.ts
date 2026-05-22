@@ -1,12 +1,14 @@
 import type { ElementType } from "react";
 import {
   AccountTreeRounded,
+  AnnouncementRounded,
   ApartmentRounded,
   AutoStoriesRounded,
   BadgeRounded,
   CalendarMonthRounded,
   DashboardRounded,
   PaymentsRounded,
+  QuizRounded,
   SchoolRounded,
   SettingsRounded,
 } from "@mui/icons-material";
@@ -148,6 +150,7 @@ export const dashboardMenuMap = {
           moduleCode: "2.4",
           route: ["tenant-setup", "org-hierarchy"],
           icon: AccountTreeRounded,
+          status: "active",
         },
         {
           key: "tenant-roles",
@@ -179,12 +182,14 @@ export const dashboardMenuMap = {
           label: "Batches",
           moduleCode: "3.2",
           route: ["academic", "batches"],
+          status: "active",
         },
         {
           key: "session-scheduling",
           label: "Class Schedule",
           moduleCode: "3.3",
           route: ["academic", "sessions"],
+          status: "active",
         },
         {
           key: "study-materials",
@@ -192,6 +197,14 @@ export const dashboardMenuMap = {
           moduleCode: "3.4",
           useCases: ["UC-TC-01", "UC-TC-14"],
           route: ["academic", "materials"],
+        },
+        {
+          key: "exams-results",
+          label: "Exams & Results",
+          moduleCode: "3.5",
+          route: ["academic", "exams"],
+          icon: QuizRounded,
+          status: "active",
         },
       ],
     }),
@@ -219,6 +232,7 @@ export const dashboardMenuMap = {
           label: "Attendance",
           moduleCode: "4.3",
           route: ["students", "attendance"],
+          status: "active",
         },
         {
           key: "student-documents",
@@ -281,6 +295,7 @@ export const dashboardMenuMap = {
           label: "Hiring",
           moduleCode: "6.2",
           route: ["hr", "recruitment"],
+          status: "active",
         },
         {
           key: "leave-management",
@@ -297,16 +312,42 @@ export const dashboardMenuMap = {
           status: "active",
         },
         {
+          key: "leave-policy",
+          label: "Leave Policies",
+          moduleCode: "6.5",
+          route: ["hr", "leave-policy"],
+          status: "active",
+        },
+        {
           key: "payroll",
           label: "Payroll",
-          moduleCode: "6.5",
+          moduleCode: "6.6",
           route: ["hr", "payroll"],
+          status: "active",
         },
         {
           key: "performance-management",
           label: "Performance Reviews",
-          moduleCode: "6.6",
+          moduleCode: "6.7",
           route: ["hr", "performance"],
+          status: "active",
+        },
+      ],
+    }),
+    createSection({
+      key: "communications",
+      label: "Communications",
+      icon: AnnouncementRounded,
+      phase: "Phase 7",
+      route: ["notices"],
+      status: "active",
+      children: [
+        {
+          key: "notice-board",
+          label: "Notice Board",
+          moduleCode: "7.1",
+          route: ["notices"],
+          icon: AnnouncementRounded,
           status: "active",
         },
       ],

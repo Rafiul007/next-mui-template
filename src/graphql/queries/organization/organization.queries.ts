@@ -84,3 +84,35 @@ export const GET_TENANT_ROLES_QUERY = /* GraphQL */ `
     }
   }
 `;
+
+export const GET_ALL_NOTICES_QUERY = /* GraphQL */ `
+  query GetAllNotices {
+    getAllNotices {
+      id
+      title
+      body
+      status
+      publishedAt
+      expiresAt
+      targetBatchIds
+      createdBy
+      tenantId
+    }
+  }
+`;
+
+export const GET_NOTICES_FOR_BATCH_QUERY = /* GraphQL */ `
+  query GetNoticesForBatch($batchId: ID!) {
+    getNoticesForBatch(batchId: $batchId) {
+      id
+      title
+      body
+      status
+      publishedAt
+      expiresAt
+      targetBatchIds
+      createdBy
+      tenantId
+    }
+  }
+`;

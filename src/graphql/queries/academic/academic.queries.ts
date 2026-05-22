@@ -16,6 +16,7 @@ export const GET_ALL_BATCHES_QUERY = /* GraphQL */ `
     getAllBatches {
       id
       name
+      courseName
       branchId
       programId
       headTeacherId
@@ -35,10 +36,13 @@ export const GET_ALL_BATCHES_QUERY = /* GraphQL */ `
       certificateTemplateName
       prerequisites
       notes
+      deleted
       feePlans {
         id
         amount
         feeTypeId
+        feeTypeName
+        feeTypeKeyName
         frequency
         isActive
       }
@@ -161,6 +165,37 @@ export const GET_SESSIONS_BY_BATCH_QUERY = /* GraphQL */ `
       status
       type
       cancelReason
+      tenantId
+    }
+  }
+`;
+
+export const GET_EXAMS_BY_BATCH_QUERY = /* GraphQL */ `
+  query GetExamsByBatch($batchId: ID!) {
+    getExamsByBatch(batchId: $batchId) {
+      id
+      title
+      batchId
+      subjectId
+      examDate
+      totalMarks
+      passMark
+      published
+      tenantId
+    }
+  }
+`;
+
+export const GET_RESULTS_BY_EXAM_QUERY = /* GraphQL */ `
+  query GetResultsByExam($examId: ID!) {
+    getResultsByExam(examId: $examId) {
+      id
+      examId
+      studentId
+      marksObtained
+      grade
+      remarks
+      publishedAt
       tenantId
     }
   }

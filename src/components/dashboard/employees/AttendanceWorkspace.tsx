@@ -3,9 +3,12 @@
 import { useState } from "react";
 import dayjs, { type Dayjs } from "dayjs";
 import {
+  AddRounded,
   CheckCircleRounded,
   EventBusyRounded,
   HourglassTopRounded,
+  LoginRounded,
+  LogoutRounded,
   ScheduleRounded,
 } from "@mui/icons-material";
 import { useMutation, useQuery } from "@apollo/client/react";
@@ -25,6 +28,7 @@ import {
   Paper,
   Select,
   Stack,
+  TextField,
   Tooltip,
   Typography,
   alpha,
@@ -38,6 +42,9 @@ import {
   GetEmployeesDocument,
   GetMonthlyAttendanceSheetDocument,
   GetUsersDocument,
+  RecordCheckInDocument,
+  RecordCheckOutDocument,
+  RequestManualAttendanceDocument,
   type GetEmployeesQuery,
   type GetMonthlyAttendanceSheetQuery,
   type GetUsersQuery,
@@ -171,9 +178,21 @@ const buildAttendanceColumns = ({
   },
 ];
 
+type ManualRequestForm = {
+  attendanceDate: string;
+  status: string;
+  reason: string;
+};
+
 export function AttendanceWorkspace() {
   const [selectedMonth, setSelectedMonth] = useState<Dayjs>(dayjs());
   const [selectedEmployeeId, setSelectedEmployeeId] = useState<string>("");
+  const [isManualRequestOpen, setIsManualRequestOpen] = useState(false);
+  const [manualForm, setManualForm] = useState<ManualRequestForm>({
+    attendanceDate: dayjs().format("YYYY-MM-DD"),
+    status: "present",
+    reason: "",
+  });
 
   const { data: usersData } = useQuery(GetUsersDocument, {
     variables: { page: 1, limit: 500 },
@@ -198,6 +217,11 @@ export function AttendanceWorkspace() {
 
   const [approveManualAttendance, approveState] = useMutation(
     ApproveManualAttendanceDocument,
+  );
+  const [recordCheckIn, checkInState] = useMutation(RecordCheckInDocument);
+  const [recordCheckOut, checkOutState] = useMutation(RecordCheckOutDocument);
+  const [requestManualAttendance, manualRequestState] = useMutation(
+    RequestManualAttendanceDocument,
   );
 
   const employees = employeesData?.getEmployees ?? [];
@@ -229,9 +253,7 @@ export function AttendanceWorkspace() {
 
   const handleApprove = async (attendanceId: string) => {
     try {
-      const result = await approveManualAttendance({
-        variables: { attendanceId },
-      });
+      const result = await approveManualAttendance({ variables: { attendanceId } });
       if (result.error) throw result.error;
       await refetchAttendance();
       toast.success("Attendance approved.");
@@ -240,9 +262,72 @@ export function AttendanceWorkspace() {
     }
   };
 
+  const handleCheckIn = async () => {
+    if (!selectedEmployeeId) return;
+    try {
+      const result = await recordCheckIn({
+        variables: {
+          input: {
+            employeeId: selectedEmployeeId,
+            checkInTime: new Date().toISOString(),
+          },
+        },
+      });
+      if (result.error) throw result.error;
+      await refetchAttendance();
+      toast.success("Check-in recorded.");
+    } catch (error) {
+      toast.error(getErrorMessage(error, "Unable to record check-in."));
+    }
+  };
+
+  const handleCheckOut = async () => {
+    if (!selectedEmployeeId) return;
+    try {
+      const result = await recordCheckOut({
+        variables: {
+          input: {
+            employeeId: selectedEmployeeId,
+            checkOutTime: new Date().toISOString(),
+          },
+        },
+      });
+      if (result.error) throw result.error;
+      await refetchAttendance();
+      toast.success("Check-out recorded.");
+    } catch (error) {
+      toast.error(getErrorMessage(error, "Unable to record check-out."));
+    }
+  };
+
+  const handleManualRequest = async () => {
+    if (!selectedEmployeeId) return;
+    try {
+      const result = await requestManualAttendance({
+        variables: {
+          input: {
+            employeeId: selectedEmployeeId,
+            attendanceDate: manualForm.attendanceDate,
+            status: manualForm.status,
+            reason: manualForm.reason || undefined,
+          },
+        },
+      });
+      if (result.error) throw result.error;
+      await refetchAttendance();
+      toast.success("Manual attendance request submitted.");
+      setIsManualRequestOpen(false);
+      setManualForm({ attendanceDate: dayjs().format("YYYY-MM-DD"), status: "present", reason: "" });
+    } catch (error) {
+      toast.error(getErrorMessage(error, "Unable to submit request."));
+    }
+  };
+
   const isLoading = isAttendanceLoading || isEmployeesLoading;
+  const isActionLoading = checkInState.loading || checkOutState.loading;
 
   return (
+    <>
     <Stack spacing={3}>
       <Paper
         elevation={0}
@@ -268,7 +353,7 @@ export function AttendanceWorkspace() {
               View monthly attendance records and approve manual requests.
             </Typography>
           </Box>
-          <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
+          <Stack direction={{ xs: "column", sm: "row" }} spacing={2} flexWrap="wrap">
             <DatePicker
               label="Month"
               value={selectedMonth}
@@ -295,6 +380,48 @@ export function AttendanceWorkspace() {
                 ))}
               </Select>
             </FormControl>
+            {selectedEmployeeId ? (
+              <Stack direction="row" spacing={1}>
+                <Tooltip title="Record today's check-in">
+                  <span>
+                    <Button
+                      size="small"
+                      variant="outlined"
+                      color="success"
+                      startIcon={<LoginRounded />}
+                      disabled={isActionLoading}
+                      onClick={handleCheckIn}
+                    >
+                      Check-in
+                    </Button>
+                  </span>
+                </Tooltip>
+                <Tooltip title="Record today's check-out">
+                  <span>
+                    <Button
+                      size="small"
+                      variant="outlined"
+                      color="warning"
+                      startIcon={<LogoutRounded />}
+                      disabled={isActionLoading}
+                      onClick={handleCheckOut}
+                    >
+                      Check-out
+                    </Button>
+                  </span>
+                </Tooltip>
+                <Tooltip title="Submit manual attendance correction">
+                  <Button
+                    size="small"
+                    variant="outlined"
+                    startIcon={<AddRounded />}
+                    onClick={() => setIsManualRequestOpen(true)}
+                  >
+                    Manual request
+                  </Button>
+                </Tooltip>
+              </Stack>
+            ) : null}
           </Stack>
         </Stack>
       </Paper>
@@ -438,5 +565,64 @@ export function AttendanceWorkspace() {
         />
       )}
     </Stack>
+
+      <Dialog
+        open={isManualRequestOpen}
+        onClose={() => !manualRequestState.loading && setIsManualRequestOpen(false)}
+        fullWidth
+        maxWidth="xs"
+      >
+        <DialogTitle>Request manual attendance</DialogTitle>
+        <DialogContent>
+          <Stack spacing={2} sx={{ pt: 1 }}>
+            <TextField
+              label="Date"
+              type="date"
+              value={manualForm.attendanceDate}
+              onChange={(e) => setManualForm((f) => ({ ...f, attendanceDate: e.target.value }))}
+              size="small"
+              fullWidth
+              InputLabelProps={{ shrink: true }}
+            />
+            <FormControl size="small" fullWidth>
+              <InputLabel>Status</InputLabel>
+              <Select
+                label="Status"
+                value={manualForm.status}
+                onChange={(e) => setManualForm((f) => ({ ...f, status: e.target.value }))}
+              >
+                <MenuItem value="present">Present</MenuItem>
+                <MenuItem value="late">Late</MenuItem>
+              </Select>
+            </FormControl>
+            <TextField
+              label="Reason (optional)"
+              value={manualForm.reason}
+              onChange={(e) => setManualForm((f) => ({ ...f, reason: e.target.value }))}
+              multiline
+              rows={2}
+              size="small"
+              fullWidth
+            />
+          </Stack>
+        </DialogContent>
+        <DialogActions sx={{ px: 3, py: 2 }}>
+          <Button
+            color="inherit"
+            onClick={() => setIsManualRequestOpen(false)}
+            disabled={manualRequestState.loading}
+          >
+            Cancel
+          </Button>
+          <Button
+            variant="contained"
+            onClick={handleManualRequest}
+            disabled={manualRequestState.loading}
+          >
+            Submit request
+          </Button>
+        </DialogActions>
+      </Dialog>
+    </>
   );
 }

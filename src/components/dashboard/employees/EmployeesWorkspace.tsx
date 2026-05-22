@@ -10,6 +10,7 @@ import {
   GroupsRounded,
   HourglassTopRounded,
   PersonOffRounded,
+  UploadFileRounded,
 } from "@mui/icons-material";
 import { useMutation, useQuery } from "@apollo/client/react";
 import {
@@ -21,9 +22,14 @@ import {
   DialogActions,
   DialogContent,
   DialogTitle,
+  FormControl,
   IconButton,
+  InputLabel,
+  MenuItem,
   Paper,
+  Select,
   Stack,
+  TextField,
   Tooltip,
   Typography,
   alpha,
@@ -37,11 +43,14 @@ import {
   GetCenterDocument,
   GetEmployeesDocument,
   GetUsersDocument,
-  OnboardEmployeeDocument,
+  OnboardEmployeeWithUserDocument,
   UpdateEmployeeDocument,
   type GetEmployeesQuery,
   type GetUsersQuery,
 } from "@/graphql/generated";
+import {
+  UploadEmployeeDocumentDocument,
+} from "@/graphql/hr-extended";
 import { getErrorMessage } from "@/lib/errors";
 import { primaryGradient } from "@/theme/theme";
 import {
@@ -82,8 +91,11 @@ const getEmployeeFormValues = (
 ): EmployeeFormValues => {
   if (!employee) {
     return {
+      firstName: "",
+      lastName: "",
+      phone: "",
       branchId: "",
-      userId: "",
+      email: "",
       employmentType: "",
       joiningDate: null as unknown as Dayjs,
       employeeCode: "",
@@ -99,8 +111,11 @@ const getEmployeeFormValues = (
   }
 
   return {
+    firstName: "",
+    lastName: "",
+    phone: "",
     branchId: employee.branchId,
-    userId: employee.userId ?? "",
+    email: "",
     employmentType: employee.employmentType
       ? employee.employmentType.toLowerCase().replace(/_/g, "-")
       : "",
@@ -131,7 +146,9 @@ const buildEmployeeColumns = ({
   {
     id: "name",
     accessorFn: (emp) =>
-      emp.userId ? (userLookup.get(emp.userId) ?? "No user linked") : "No user linked",
+      emp.userId
+        ? (userLookup.get(emp.userId) ?? "No user linked")
+        : "No user linked",
     header: "Staff member",
     size: 220,
     Cell: ({ row }) => {
@@ -236,19 +253,22 @@ export function EmployeesWorkspace() {
     useState<EmployeeRecord | null>(null);
   const [formDialogKey, setFormDialogKey] = useState(0);
   const [formErrorMessage, setFormErrorMessage] = useState<string | null>(null);
+  const [uploadTarget, setUploadTarget] = useState<EmployeeRecord | null>(null);
+  const [uploadDocType, setUploadDocType] = useState("certificate");
+  const [uploadFilePath, setUploadFilePath] = useState("");
 
   const { data: centerData } = useQuery(GetCenterDocument);
-  const {
-    data: usersData,
-    loading: isUsersLoading,
-  } = useQuery(GetUsersDocument, { variables: { page: 1, limit: 500 } });
-  const {
-    data: branchesData,
-    loading: isBranchesLoading,
-  } = useQuery(GetBranchesDocument, {
-    skip: !centerData?.getCenter?.id,
-    variables: { centerId: centerData?.getCenter?.id ?? "" },
-  });
+  const { data: usersData, loading: isUsersLoading } = useQuery(
+    GetUsersDocument,
+    { variables: { page: 1, limit: 500 } },
+  );
+  const { data: branchesData, loading: isBranchesLoading } = useQuery(
+    GetBranchesDocument,
+    {
+      skip: !centerData?.getCenter?.id,
+      variables: { centerId: centerData?.getCenter?.id ?? "" },
+    },
+  );
   const {
     data: employeesData,
     loading: isEmployeesLoading,
@@ -256,13 +276,12 @@ export function EmployeesWorkspace() {
     refetch: refetchEmployees,
   } = useQuery(GetEmployeesDocument);
 
-  const [onboardEmployee, onboardState] = useMutation(OnboardEmployeeDocument);
+  const [onboardEmployeeWithUser, onboardState] = useMutation(OnboardEmployeeWithUserDocument);
   const [updateEmployee, updateState] = useMutation(UpdateEmployeeDocument);
+  const [uploadEmployeeDocument, uploadState] = useMutation(UploadEmployeeDocumentDocument);
 
   const employees = employeesData?.getEmployees ?? [];
-  const users = (usersData?.getUsers ?? []).filter(
-    (u): u is UserRecord => !!u,
-  );
+  const users = (usersData?.getUsers ?? []).filter((u): u is UserRecord => !!u);
   const branches = branchesData?.getBranches ?? [];
 
   const userLookup = new Map(users.map((u) => [u.id, formatPersonName(u)]));
@@ -272,11 +291,6 @@ export function EmployeesWorkspace() {
     label: b.name,
     value: b.id,
   }));
-  const userOptions: RhfSelectOption[] = users.map((u) => ({
-    label: `${formatPersonName(u)} — ${u.email}`,
-    value: u.id,
-  }));
-
   const activeCount = employees.filter(
     (e) => e.status?.toLowerCase() === "active",
   ).length;
@@ -289,6 +303,28 @@ export function EmployeesWorkspace() {
 
   const isSaving = onboardState.loading || updateState.loading;
   const isLoading = isUsersLoading || isBranchesLoading || isEmployeesLoading;
+
+  const handleUploadDocument = async () => {
+    if (!uploadTarget || !uploadFilePath.trim()) return;
+    try {
+      const result = await uploadEmployeeDocument({
+        variables: {
+          input: {
+            employeeId: uploadTarget.id,
+            documentType: uploadDocType,
+            filePath: uploadFilePath.trim(),
+          },
+        },
+      });
+      if (result.error) throw result.error;
+      toast.success("Document uploaded successfully.");
+      setUploadTarget(null);
+      setUploadFilePath("");
+      setUploadDocType("certificate");
+    } catch (error) {
+      toast.error(getErrorMessage(error, "Unable to upload document."));
+    }
+  };
 
   const openCreateDialog = () => {
     setFormMode("create");
@@ -327,19 +363,26 @@ export function EmployeesWorkspace() {
               nid: toOptionalString(values.nid ?? ""),
               tin: toOptionalString(values.tin ?? ""),
               bloodGroup: toOptionalString(values.bloodGroup ?? ""),
-              emergencyContactName: toOptionalString(values.emergencyContactName ?? ""),
-              emergencyContactPhone: toOptionalString(values.emergencyContactPhone ?? ""),
+              emergencyContactName: toOptionalString(
+                values.emergencyContactName ?? "",
+              ),
+              emergencyContactPhone: toOptionalString(
+                values.emergencyContactPhone ?? "",
+              ),
             },
           },
         });
         if (result.error) throw result.error;
         toast.success("Employee profile updated.");
       } else {
-        const result = await onboardEmployee({
+        const result = await onboardEmployeeWithUser({
           variables: {
             input: {
+              firstName: values.firstName ?? "",
+              lastName: toOptionalString(values.lastName ?? ""),
+              email: values.email?.trim() ?? "",
+              phone: toOptionalString(values.phone ?? ""),
               branchId: values.branchId,
-              userId: toOptionalString(values.userId ?? ""),
               employmentType: toApiEnum(values.employmentType),
               joiningDate: values.joiningDate!.format("YYYY-MM-DD"),
               employeeCode: toOptionalString(values.employeeCode ?? ""),
@@ -348,8 +391,12 @@ export function EmployeesWorkspace() {
               nid: toOptionalString(values.nid ?? ""),
               tin: toOptionalString(values.tin ?? ""),
               bloodGroup: toOptionalString(values.bloodGroup ?? ""),
-              emergencyContactName: toOptionalString(values.emergencyContactName ?? ""),
-              emergencyContactPhone: toOptionalString(values.emergencyContactPhone ?? ""),
+              emergencyContactName: toOptionalString(
+                values.emergencyContactName ?? "",
+              ),
+              emergencyContactPhone: toOptionalString(
+                values.emergencyContactPhone ?? "",
+              ),
               probationEndsAt: values.probationEndsAt
                 ? values.probationEndsAt.format("YYYY-MM-DD")
                 : undefined,
@@ -362,7 +409,10 @@ export function EmployeesWorkspace() {
       await refetchEmployees();
       closeFormDialog();
     } catch (error) {
-      const message = getErrorMessage(error, "Unable to save employee. Please try again.");
+      const message = getErrorMessage(
+        error,
+        "Unable to save employee. Please try again.",
+      );
       setFormErrorMessage(message);
       toast.error(message);
     }
@@ -391,7 +441,8 @@ export function EmployeesWorkspace() {
                 Staff directory
               </Typography>
               <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
-                Manage employee profiles, employment types, and branch assignments.
+                Manage employee profiles, employment types, and branch
+                assignments.
               </Typography>
             </Box>
             <Box
@@ -495,7 +546,8 @@ export function EmployeesWorkspace() {
           }}
           muiTableBodyRowProps={({ row }) => ({
             sx: {
-              opacity: row.original.status?.toLowerCase() === "inactive" ? 0.76 : 1,
+              opacity:
+                row.original.status?.toLowerCase() === "inactive" ? 0.76 : 1,
               bgcolor: "#ffffff",
               transition:
                 "background-color 140ms ease, transform 140ms ease, box-shadow 140ms ease",
@@ -514,7 +566,9 @@ export function EmployeesWorkspace() {
               py: 2.25,
             },
           }}
-          muiTableContainerProps={{ sx: { maxHeight: 640, bgcolor: "#ffffff" } }}
+          muiTableContainerProps={{
+            sx: { maxHeight: 640, bgcolor: "#ffffff" },
+          }}
           muiTableHeadCellProps={{
             sx: {
               bgcolor: "#ffffff",
@@ -559,7 +613,9 @@ export function EmployeesWorkspace() {
                 sx: {
                   pr: 2,
                   bgcolor: "#ffffff",
-                  "& .Mui-TableHeadCell-Content": { justifyContent: "flex-end" },
+                  "& .Mui-TableHeadCell-Content": {
+                    justifyContent: "flex-end",
+                  },
                 },
               },
             },
@@ -590,7 +646,20 @@ export function EmployeesWorkspace() {
                   <EditRounded fontSize="small" />
                 </IconButton>
               </Tooltip>
-              <Tooltip title="Deactivate employee">
+              <Tooltip title="Upload document">
+                <IconButton
+                  size="small"
+                  onClick={() => {
+                    setUploadTarget(row.original);
+                    setUploadFilePath("");
+                    setUploadDocType("certificate");
+                  }}
+                  sx={{ bgcolor: alpha("#3b82f6", 0.08), color: "#1d4ed8" }}
+                >
+                  <UploadFileRounded fontSize="small" />
+                </IconButton>
+              </Tooltip>
+              <Tooltip title={row.original.status?.toLowerCase() === "inactive" ? "Already inactive" : "Deactivate employee"}>
                 <span>
                   <IconButton
                     size="small"
@@ -623,7 +692,6 @@ export function EmployeesWorkspace() {
         onClose={closeFormDialog}
         onSubmit={handleSubmitEmployee}
         open={isFormOpen}
-        userOptions={userOptions}
       />
 
       <Dialog
@@ -638,20 +706,66 @@ export function EmployeesWorkspace() {
             This will mark the employee as inactive. Their records and history
             will be preserved.
           </Typography>
+          <Alert severity="info" sx={{ mt: 2 }}>
+            Employee deactivation will be available once the backend mutation is deployed.
+          </Alert>
         </DialogContent>
         <DialogActions sx={{ px: 3, py: 2 }}>
           <Button color="inherit" onClick={() => setEmployeeToDeactivate(null)}>
+            Close
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      <Dialog
+        open={!!uploadTarget}
+        onClose={() => !uploadState.loading && setUploadTarget(null)}
+        fullWidth
+        maxWidth="xs"
+      >
+        <DialogTitle>Upload employee document</DialogTitle>
+        <DialogContent>
+          <Stack spacing={2} sx={{ pt: 1 }}>
+            <FormControl size="small" fullWidth>
+              <InputLabel>Document type</InputLabel>
+              <Select
+                label="Document type"
+                value={uploadDocType}
+                onChange={(e) => setUploadDocType(e.target.value)}
+              >
+                <MenuItem value="certificate">Certificate</MenuItem>
+                <MenuItem value="national_id">National ID</MenuItem>
+                <MenuItem value="contract">Contract</MenuItem>
+                <MenuItem value="resume">Resume / CV</MenuItem>
+                <MenuItem value="tax_document">Tax Document</MenuItem>
+                <MenuItem value="other">Other</MenuItem>
+              </Select>
+            </FormControl>
+            <TextField
+              label="File path or URL"
+              placeholder="https://example.com/doc.pdf"
+              value={uploadFilePath}
+              onChange={(e) => setUploadFilePath(e.target.value)}
+              size="small"
+              fullWidth
+              helperText="Enter the URL or server path to the document"
+            />
+          </Stack>
+        </DialogContent>
+        <DialogActions sx={{ px: 3, py: 2 }}>
+          <Button
+            color="inherit"
+            onClick={() => setUploadTarget(null)}
+            disabled={uploadState.loading}
+          >
             Cancel
           </Button>
           <Button
             variant="contained"
-            color="error"
-            onClick={() => {
-              toast("Deactivation requires a backend mutation — coming soon.");
-              setEmployeeToDeactivate(null);
-            }}
+            onClick={handleUploadDocument}
+            disabled={uploadState.loading || !uploadFilePath.trim()}
           >
-            Deactivate
+            Upload
           </Button>
         </DialogActions>
       </Dialog>

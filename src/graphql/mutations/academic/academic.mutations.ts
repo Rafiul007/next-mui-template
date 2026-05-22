@@ -33,6 +33,7 @@ export const CREATE_BATCH_MUTATION = /* GraphQL */ `
     createBatch(batch: $batch) {
       id
       name
+      courseName
       branchId
       programId
       headTeacherId
@@ -55,6 +56,8 @@ export const CREATE_BATCH_MUTATION = /* GraphQL */ `
         id
         amount
         feeTypeId
+        feeTypeName
+        feeTypeKeyName
         frequency
         isActive
       }
@@ -68,6 +71,7 @@ export const UPDATE_BATCH_MUTATION = /* GraphQL */ `
     updateBatch(batch: $batch) {
       id
       name
+      courseName
       branchId
       programId
       headTeacherId
@@ -90,6 +94,8 @@ export const UPDATE_BATCH_MUTATION = /* GraphQL */ `
         id
         amount
         feeTypeId
+        feeTypeName
+        feeTypeKeyName
         frequency
         isActive
       }
@@ -338,6 +344,59 @@ export const GIVE_FEEDBACK_MUTATION = /* GraphQL */ `
       feedback
       feedbackAt
       late
+      tenantId
+    }
+  }
+`;
+
+export const DELETE_BATCH_MUTATION = /* GraphQL */ `
+  mutation DeleteBatch($batchId: ID!) {
+    deleteBatch(batchId: $batchId)
+  }
+`;
+
+export const CREATE_EXAM_MUTATION = /* GraphQL */ `
+  mutation CreateExam($exam: CreateExamInput!) {
+    createExam(exam: $exam) {
+      id
+      title
+      batchId
+      subjectId
+      examDate
+      totalMarks
+      passMark
+      published
+      tenantId
+    }
+  }
+`;
+
+export const ENTER_MARKS_MUTATION = /* GraphQL */ `
+  mutation EnterMarks($marks: [EnterMarksInput!]!) {
+    enterMarks(marks: $marks) {
+      id
+      examId
+      studentId
+      marksObtained
+      grade
+      remarks
+      publishedAt
+      tenantId
+    }
+  }
+`;
+
+export const PUBLISH_RESULTS_MUTATION = /* GraphQL */ `
+  mutation PublishResults($examId: ID!) {
+    publishResults(examId: $examId) {
+      id
+      title
+      batchId
+      subjectId
+      examDate
+      totalMarks
+      passMark
+      published
       tenantId
     }
   }

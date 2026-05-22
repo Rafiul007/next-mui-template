@@ -8,6 +8,7 @@ import {
   CancelRounded,
   HourglassTopRounded,
   EventNoteRounded,
+  BalanceRounded,
 } from "@mui/icons-material";
 import { useMutation, useQuery } from "@apollo/client/react";
 import {
@@ -37,10 +38,12 @@ import {
   CancelLeaveDocument,
   GetEmployeesDocument,
   GetLeaveApplicationsDocument,
+  GetLeaveBalanceDocument,
   GetUsersDocument,
   RejectLeaveDocument,
   type GetEmployeesQuery,
   type GetLeaveApplicationsQuery,
+  type GetLeaveBalanceQuery,
   type GetUsersQuery,
 } from "@/graphql/generated";
 import { getErrorMessage } from "@/lib/errors";
@@ -48,6 +51,7 @@ import { primaryGradient } from "@/theme/theme";
 import { LeaveFormDialog, type LeaveFormValues } from "./LeaveFormDialog";
 
 type LeaveRecord = GetLeaveApplicationsQuery["getLeaveApplications"][number];
+type LeaveBalance = GetLeaveBalanceQuery["getLeaveBalance"][number];
 type EmployeeRecord = GetEmployeesQuery["getEmployees"][number];
 type UserRecord = NonNullable<GetUsersQuery["getUsers"][number]>;
 
@@ -243,6 +247,12 @@ export function LeaveWorkspace() {
     fetchPolicy: "cache-and-network",
   });
 
+  const { data: balanceData } = useQuery(GetLeaveBalanceDocument, {
+    skip: !selectedEmployeeId,
+    variables: { employeeId: selectedEmployeeId, year: new Date().getFullYear() },
+    fetchPolicy: "cache-and-network",
+  });
+
   const [applyLeave, applyState] = useMutation(ApplyLeaveDocument);
   const [approveLeave, approveState] = useMutation(ApproveLeaveDocument);
   const [rejectLeave, rejectState] = useMutation(RejectLeaveDocument);
@@ -253,6 +263,7 @@ export function LeaveWorkspace() {
     (u): u is UserRecord => !!u,
   );
   const leaveRecords = leaveData?.getLeaveApplications ?? [];
+  const leaveBalances: LeaveBalance[] = balanceData?.getLeaveBalance ?? [];
 
   const userLookup = new Map(users.map((u) => [u.id, formatPersonName(u)]));
   const employeeLookup = new Map(employees.map((e) => [e.id, e]));
@@ -433,6 +444,55 @@ export function LeaveWorkspace() {
           <Alert severity="error">
             {leaveError.message || "Unable to load leave records."}
           </Alert>
+        ) : null}
+
+        {selectedEmployeeId && leaveBalances.length > 0 ? (
+          <Paper
+            elevation={0}
+            sx={{ p: 2.5, border: "1px solid", borderColor: "divider" }}
+          >
+            <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 2 }}>
+              <BalanceRounded sx={{ color: "text.secondary", fontSize: 18 }} />
+              <Typography variant="subtitle2">
+                Leave balance — {new Date().getFullYear()}
+              </Typography>
+            </Stack>
+            <Box
+              sx={{
+                display: "grid",
+                gap: 1.5,
+                gridTemplateColumns: {
+                  xs: "repeat(2, 1fr)",
+                  sm: "repeat(3, 1fr)",
+                  md: "repeat(5, 1fr)",
+                },
+              }}
+            >
+              {leaveBalances.map((bal) => (
+                <Box
+                  key={bal.id}
+                  sx={{
+                    p: 1.5,
+                    borderRadius: 2,
+                    border: "1px solid",
+                    borderColor: alpha("#0f172a", 0.08),
+                    bgcolor: alpha("#f8fafc", 0.8),
+                    textAlign: "center",
+                  }}
+                >
+                  <Typography variant="caption" color="text.secondary" sx={{ textTransform: "capitalize" }}>
+                    {LEAVE_TYPE_LABEL[bal.leaveType.toLowerCase()] ?? bal.leaveType}
+                  </Typography>
+                  <Typography variant="h5" sx={{ my: 0.5, color: bal.remainingDays <= 0 ? "error.main" : "success.main" }}>
+                    {bal.remainingDays}
+                  </Typography>
+                  <Typography variant="caption" color="text.secondary">
+                    of {bal.totalBalance} days left
+                  </Typography>
+                </Box>
+              ))}
+            </Box>
+          </Paper>
         ) : null}
 
         {!selectedEmployeeId ? (

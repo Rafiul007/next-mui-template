@@ -36,7 +36,6 @@ import {
   AdmitStudentDocument,
   AddGuardianDocument,
   ChangeStudentStatusDocument,
-  EnrollStudentDocument,
   GetAllBatchesDocument,
   GetStudentsDocument,
   UpdateStudentDocument,
@@ -304,7 +303,6 @@ export function AdmissionsWorkspace() {
 
   const [admitStudent, { loading: isAdmitting }] = useMutation(AdmitStudentDocument);
   const [addGuardian] = useMutation(AddGuardianDocument);
-  const [enrollStudent] = useMutation(EnrollStudentDocument);
   const [updateStudent, { loading: isUpdating }] = useMutation(UpdateStudentDocument);
   const [changeStudentStatus, { loading: isWithdrawing }] = useMutation(
     ChangeStudentStatusDocument,
@@ -390,6 +388,7 @@ export function AdmissionsWorkspace() {
               address: values.address || undefined,
               notes: values.notes || undefined,
               qualifications: qualifications?.length ? qualifications : undefined,
+              batchId: values.batchId,
             },
           },
         });
@@ -410,12 +409,6 @@ export function AdmissionsWorkspace() {
                 nid: values.guardianNid || undefined,
               },
             },
-          });
-        }
-
-        if (studentId && values.batchId) {
-          await enrollStudent({
-            variables: { studentId, batchId: values.batchId },
           });
         }
 

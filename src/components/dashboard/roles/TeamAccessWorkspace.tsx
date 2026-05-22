@@ -36,9 +36,12 @@ import { toast } from "react-hot-toast";
 import {
   AssignRoleToUserDocument,
   CreateCustomRoleDocument,
+  GetEmployeesDocument,
   GetTenantRolesDocument,
   GetUsersDocument,
   SetActiveStatusDocument,
+  type GetEmployeesQuery,
+  type GetTenantRolesQuery,
   type GetUsersQuery,
 } from "@/graphql/generated";
 import { getErrorMessage } from "@/lib/errors";
@@ -50,22 +53,68 @@ import {
 } from "./CreateRoleDialog";
 import { formatPermissionLabel } from "./permission-registry";
 
+type EmployeeRecord = GetEmployeesQuery["getEmployees"][number];
 type UserRecord = NonNullable<GetUsersQuery["getUsers"][number]>;
+type RoleRecord = GetTenantRolesQuery["getTenantRoles"][number];
+
+type EmployeeRow = {
+  employeeId: string;
+  employeeCode: string;
+  designation: string | null;
+  department: string | null;
+  employeeStatus: string;
+  userId: string | null;
+  name: string;
+  email: string | null;
+  phone: string | null;
+  profilePicture: string | null;
+  isActivated: boolean;
+  isVerified: boolean;
+  roles: string[];
+  user: UserRecord | null;
+};
 
 type StatusActionState = {
+  userId: string;
+  name: string;
   nextStatus: boolean;
-  user: UserRecord;
 };
 
 const formatPersonName = (user: UserRecord) =>
   `${user.firstName} ${user.lastName}`.trim() || user.email;
 
-const formatInitials = (user: UserRecord) => {
-  const source = formatPersonName(user).trim().split(/\s+/);
-  return source
+const formatInitials = (name: string) =>
+  name
+    .trim()
+    .split(/\s+/)
     .slice(0, 2)
-    .map((segment) => segment[0]?.toUpperCase() ?? "")
+    .map((s) => s[0]?.toUpperCase() ?? "")
     .join("");
+
+const buildEmployeeRow = (
+  emp: EmployeeRecord,
+  userById: Map<string, UserRecord>,
+): EmployeeRow => {
+  const user = emp.userId ? (userById.get(emp.userId) ?? null) : null;
+  const name = user
+    ? formatPersonName(user)
+    : emp.employeeCode || "Unknown";
+  return {
+    employeeId: emp.id,
+    employeeCode: emp.employeeCode,
+    designation: emp.designation,
+    department: emp.department,
+    employeeStatus: emp.status,
+    userId: emp.userId,
+    name,
+    email: user?.email ?? null,
+    phone: user?.phone ?? null,
+    profilePicture: user?.profilePicture ?? null,
+    isActivated: user?.isActivated ?? false,
+    isVerified: user?.isVerified ?? false,
+    roles: user?.roles ?? [],
+    user,
+  };
 };
 
 function SummaryCard({
@@ -126,10 +175,10 @@ function SummaryCard({
   );
 }
 
-const buildEmployeeColumns = (): MRT_ColumnDef<UserRecord>[] => [
+const buildColumns = (): MRT_ColumnDef<EmployeeRow>[] => [
   {
     id: "employee",
-    accessorFn: (user) => formatPersonName(user),
+    accessorFn: (row) => row.name,
     header: "Employee",
     size: 260,
     Cell: ({ row }) => (
@@ -144,14 +193,14 @@ const buildEmployeeColumns = (): MRT_ColumnDef<UserRecord>[] => [
             fontWeight: 700,
           }}
         >
-          {formatInitials(row.original)}
+          {formatInitials(row.original.name)}
         </Avatar>
         <Box sx={{ minWidth: 0 }}>
           <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
-            {formatPersonName(row.original)}
+            {row.original.name}
           </Typography>
           <Typography variant="body2" color="text.secondary" noWrap>
-            {row.original.email}
+            {row.original.email ?? row.original.employeeCode}
           </Typography>
         </Box>
       </Stack>
@@ -159,7 +208,7 @@ const buildEmployeeColumns = (): MRT_ColumnDef<UserRecord>[] => [
   },
   {
     id: "roles",
-    accessorFn: (user) => user.roles.join(", "),
+    accessorFn: (row) => row.roles.join(", "),
     header: "Roles",
     size: 240,
     Cell: ({ row }) => (
@@ -177,25 +226,32 @@ const buildEmployeeColumns = (): MRT_ColumnDef<UserRecord>[] => [
     ),
   },
   {
-    id: "isActivated",
-    accessorFn: (user) => (user.isActivated ? "Active" : "Inactive"),
+    id: "status",
+    accessorFn: (row) => {
+      const s = row.employeeStatus?.toLowerCase() ?? "";
+      return s.charAt(0).toUpperCase() + s.slice(1);
+    },
     header: "Status",
     size: 120,
     filterVariant: "select",
     filterFn: "equals",
-    filterSelectOptions: ["Active", "Inactive"],
-    Cell: ({ row }) => (
-      <Chip
-        label={row.original.isActivated ? "Active" : "Inactive"}
-        color={row.original.isActivated ? "success" : "default"}
-        variant={row.original.isActivated ? "filled" : "outlined"}
-        size="small"
-      />
-    ),
+    filterSelectOptions: ["Active", "Inactive", "Probation"],
+    Cell: ({ row }) => {
+      const s = row.original.employeeStatus?.toLowerCase() ?? "";
+      const label = s.charAt(0).toUpperCase() + s.slice(1);
+      return (
+        <Chip
+          label={label}
+          color={s === "active" ? "success" : s === "probation" ? "warning" : "default"}
+          variant={s === "inactive" ? "outlined" : "filled"}
+          size="small"
+        />
+      );
+    },
   },
   {
     id: "isVerified",
-    accessorFn: (user) => (user.isVerified ? "Verified" : "Pending"),
+    accessorFn: (row) => (row.isVerified ? "Verified" : "Pending"),
     header: "Verified",
     size: 120,
     filterVariant: "select",
@@ -211,7 +267,8 @@ const buildEmployeeColumns = (): MRT_ColumnDef<UserRecord>[] => [
     ),
   },
   {
-    accessorKey: "phone",
+    id: "phone",
+    accessorFn: (row) => row.phone ?? "",
     header: "Phone",
     size: 150,
     Cell: ({ row }) => (
@@ -224,7 +281,7 @@ export function TeamAccessWorkspace() {
   const [activeTab, setActiveTab] = useState(0);
   const [isCreateRoleOpen, setIsCreateRoleOpen] = useState(false);
   const [createRoleDialogKey, setCreateRoleDialogKey] = useState(0);
-  const [selectedUser, setSelectedUser] = useState<UserRecord | null>(null);
+  const [selectedRow, setSelectedRow] = useState<EmployeeRow | null>(null);
   const [assignRoleDialogKey, setAssignRoleDialogKey] = useState(0);
   const [pendingStatusAction, setPendingStatusAction] =
     useState<StatusActionState | null>(null);
@@ -232,16 +289,19 @@ export function TeamAccessWorkspace() {
   const [assignRoleError, setAssignRoleError] = useState<string | null>(null);
 
   const {
+    data: employeesData,
+    error: employeesError,
+    loading: isEmployeesLoading,
+  } = useQuery(GetEmployeesDocument);
+
+  const {
     data: usersData,
-    error: usersError,
     loading: isUsersLoading,
     refetch: refetchUsers,
   } = useQuery(GetUsersDocument, {
-    variables: {
-      page: 1,
-      limit: 200,
-    },
+    variables: { page: 1, limit: 500 },
   });
+
   const {
     data: rolesData,
     error: rolesError,
@@ -259,40 +319,50 @@ export function TeamAccessWorkspace() {
     SetActiveStatusDocument,
   );
 
+  const employees = employeesData?.getEmployees ?? [];
   const users = (usersData?.getUsers ?? []).filter(
-    (user): user is UserRecord => !!user,
+    (u): u is UserRecord => !!u,
   );
   const roles = rolesData?.getTenantRoles ?? [];
-  const customRolesCount = roles.filter((role) => !role.system).length;
-  const activeEmployeesCount = users.filter((user) => user.isActivated).length;
-  const inactiveEmployeesCount = users.length - activeEmployeesCount;
-  const pageError = usersError ?? rolesError;
-  const isWorkspaceLoading = isUsersLoading || isRolesLoading;
+
+  const userById = new Map(users.map((u) => [u.id, u]));
+  const employeeRows = employees.map((emp) => buildEmployeeRow(emp, userById));
+
+  const activeCount = employees.filter(
+    (e) => e.status?.toLowerCase() === "active",
+  ).length;
+  const inactiveCount = employees.filter(
+    (e) => e.status?.toLowerCase() === "inactive",
+  ).length;
+  const customRolesCount = roles.filter((r) => !r.system).length;
 
   const roleMemberCounts = new Map<string, number>();
-
   users.forEach((user) => {
     user.roles.forEach((roleName) => {
       roleMemberCounts.set(roleName, (roleMemberCounts.get(roleName) ?? 0) + 1);
     });
   });
 
-  const openAssignRoleDialog = (user: UserRecord) => {
-    setSelectedUser(user);
+  const pageError = employeesError ?? rolesError;
+  const isWorkspaceLoading =
+    isEmployeesLoading || isUsersLoading || isRolesLoading;
+
+  const openAssignRoleDialog = (row: EmployeeRow) => {
+    setSelectedRow(row);
     setAssignRoleError(null);
-    setAssignRoleDialogKey((current) => current + 1);
+    setAssignRoleDialogKey((k) => k + 1);
   };
 
   const closeAssignRoleDialog = () => {
     if (!assignRoleState.loading) {
-      setSelectedUser(null);
+      setSelectedRow(null);
       setAssignRoleError(null);
     }
   };
 
   const openCreateRoleDialog = () => {
     setCreateRoleError(null);
-    setCreateRoleDialogKey((current) => current + 1);
+    setCreateRoleDialogKey((k) => k + 1);
     setIsCreateRoleOpen(true);
   };
 
@@ -304,88 +374,63 @@ export function TeamAccessWorkspace() {
   };
 
   const handleAssignRole = async (roleName: string) => {
-    if (!selectedUser) {
-      return;
-    }
+    if (!selectedRow?.userId) return;
 
     setAssignRoleError(null);
 
     try {
       const result = await assignRoleToUser({
-        variables: {
-          userId: selectedUser.id,
-          roleName,
-        },
+        variables: { userId: selectedRow.userId, roleName },
       });
 
-      if (result.error) {
-        throw result.error;
-      }
+      if (result.error) throw result.error;
 
       await Promise.all([refetchUsers(), refetchRoles()]);
-      toast.success(
-        `${formatPersonName(selectedUser)} received the ${roleName} role.`,
-      );
+      toast.success(`${selectedRow.name} received the ${roleName} role.`);
       closeAssignRoleDialog();
     } catch (error) {
       const message = getErrorMessage(error, "Unable to assign role.");
-
       setAssignRoleError(message);
       toast.error(message);
     }
   };
 
-  const handleCreateRole = async ({
-    name,
-    permissions,
-  }: CreateRoleFormValues) => {
+  const handleCreateRole = async ({ name, permissions }: CreateRoleFormValues) => {
     setCreateRoleError(null);
 
     try {
       const result = await createCustomRole({
-        variables: {
-          role: {
-            name: name.trim(),
-            permissions,
-          },
-        },
+        variables: { role: { name: name.trim(), permissions } },
       });
 
-      if (result.error) {
-        throw result.error;
-      }
+      if (result.error) throw result.error;
 
       await refetchRoles();
       toast.success(`${name.trim()} was created successfully.`);
       closeCreateRoleDialog();
     } catch (error) {
       const message = getErrorMessage(error, "Unable to create role.");
-
       setCreateRoleError(message);
       toast.error(message);
     }
   };
 
   const handleChangeEmployeeStatus = async () => {
-    if (!pendingStatusAction) {
-      return;
-    }
+    if (!pendingStatusAction) return;
 
     try {
       const result = await setActiveStatus({
         variables: {
-          id: pendingStatusAction.user.id,
+          id: pendingStatusAction.userId,
           newStatus: pendingStatusAction.nextStatus,
         },
       });
 
-      if (result.error) {
-        throw result.error;
-      }
+      if (result.error) throw result.error;
 
       await refetchUsers();
       toast.success(
-        `${formatPersonName(pendingStatusAction.user)} is now ${
+        `${pendingStatusAction.name} is now ${
           pendingStatusAction.nextStatus ? "active" : "inactive"
         }.`,
       );
@@ -408,21 +453,15 @@ export function TeamAccessWorkspace() {
               "linear-gradient(135deg, rgba(255,255,255,0.94) 0%, rgba(240,253,250,0.98) 100%)",
           }}
         >
-          <Stack
-            direction={{ xs: "column", lg: "row" }}
-            justifyContent="space-between"
-            spacing={3}
-          >
-            <Box sx={{ maxWidth: 760 }}>
-              <Typography variant="h4" component="h1" sx={{ mt: 0.5 }}>
-                Roles & Permissions
-              </Typography>
-              <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
-                Manage employee access, workspace roles, and operational
-                permissions across your tenant workspace.
-              </Typography>
-            </Box>
-          </Stack>
+          <Box sx={{ maxWidth: 760 }}>
+            <Typography variant="h4" component="h1" sx={{ mt: 0.5 }}>
+              Roles & Permissions
+            </Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
+              Manage employee access, workspace roles, and operational
+              permissions across your tenant workspace.
+            </Typography>
+          </Box>
         </Paper>
 
         <Box
@@ -438,18 +477,18 @@ export function TeamAccessWorkspace() {
         >
           <SummaryCard
             caption="Total Employees"
-            title={String(users.length)}
+            title={String(employees.length)}
             icon={<GroupsRounded />}
           />
           <SummaryCard
             caption="Active Employees"
-            title={String(activeEmployeesCount)}
+            title={String(activeCount)}
             icon={<HowToRegRounded />}
             tone="success"
           />
           <SummaryCard
             caption="Inactive Employees"
-            title={String(inactiveEmployeesCount)}
+            title={String(inactiveCount)}
             icon={<PersonOffRounded />}
             tone="muted"
           />
@@ -478,15 +517,16 @@ export function TeamAccessWorkspace() {
               bgcolor: "#ffffff",
             }}
           >
-            <Tab label={`Employees (${users.length})`} />
+            <Tab label={`Employees (${employeeRows.length})`} />
             <Tab label={`Roles (${roles.length})`} />
           </Tabs>
 
           <Box sx={{ bgcolor: "#f8fafc", p: { xs: 2, md: 3 } }}>
             {activeTab === 0 ? (
               <MaterialReactTable
-                columns={buildEmployeeColumns()}
-                data={users}
+                columns={buildColumns()}
+                data={employeeRows}
+                getRowId={(row) => row.employeeId}
                 enableColumnFilters
                 enableDensityToggle={false}
                 enableFullScreenToggle={false}
@@ -494,7 +534,6 @@ export function TeamAccessWorkspace() {
                 enableRowActions
                 enableSorting
                 enableStickyHeader
-                getRowId={(row) => row.id}
                 initialState={{
                   pagination: { pageIndex: 0, pageSize: 10 },
                   showColumnFilters: true,
@@ -519,13 +558,14 @@ export function TeamAccessWorkspace() {
                 }}
                 muiTableBodyRowProps={({ row }) => ({
                   sx: {
-                    opacity: row.original.isActivated ? 1 : 0.82,
+                    opacity:
+                      row.original.employeeStatus?.toLowerCase() === "inactive"
+                        ? 0.82
+                        : 1,
                     bgcolor: "#ffffff",
                     transition:
                       "background-color 140ms ease, transform 140ms ease, box-shadow 140ms ease",
-                    "&:hover td": {
-                      bgcolor: alpha("#ecfdf5", 0.9),
-                    },
+                    "&:hover td": { bgcolor: alpha("#ecfdf5", 0.9) },
                     "&:hover": {
                       transform: "translateY(-1px)",
                       boxShadow: `inset 0 0 0 1px ${alpha("#10b981", 0.12)}`,
@@ -540,12 +580,7 @@ export function TeamAccessWorkspace() {
                     py: 2.25,
                   },
                 }}
-                muiTableContainerProps={{
-                  sx: {
-                    maxHeight: 640,
-                    bgcolor: "#ffffff",
-                  },
-                }}
+                muiTableContainerProps={{ sx: { maxHeight: 640, bgcolor: "#ffffff" } }}
                 muiTableHeadCellProps={{
                   sx: {
                     bgcolor: "#ffffff",
@@ -585,12 +620,7 @@ export function TeamAccessWorkspace() {
                   "mrt-row-actions": {
                     header: "Actions",
                     size: 108,
-                    muiTableBodyCellProps: {
-                      sx: {
-                        pr: 2,
-                        bgcolor: "#ffffff",
-                      },
-                    },
+                    muiTableBodyCellProps: { sx: { pr: 2, bgcolor: "#ffffff" } },
                     muiTableHeadCellProps: {
                       sx: {
                         pr: 2,
@@ -603,13 +633,7 @@ export function TeamAccessWorkspace() {
                   },
                 }}
                 renderEmptyRowsFallback={() => (
-                  <Box
-                    sx={{
-                      px: 3,
-                      py: 6,
-                      textAlign: "center",
-                    }}
-                  >
+                  <Box sx={{ px: 3, py: 6, textAlign: "center" }}>
                     <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>
                       No employees found
                     </Typography>
@@ -623,75 +647,84 @@ export function TeamAccessWorkspace() {
                     </Typography>
                   </Box>
                 )}
-                renderRowActions={({ row }) => (
-                  <Stack
-                    direction="row"
-                    spacing={0.5}
-                    justifyContent="flex-end"
-                    sx={{ width: "100%" }}
-                  >
-                    <Tooltip
-                      title={
-                        roles.length
-                          ? "Assign role"
-                          : "Create a role before assigning access"
-                      }
+                renderRowActions={({ row }) => {
+                  const hasUser = !!row.original.userId;
+                  const isActive = row.original.isActivated;
+                  return (
+                    <Stack
+                      direction="row"
+                      spacing={0.5}
+                      justifyContent="flex-end"
+                      sx={{ width: "100%" }}
                     >
-                      <span>
-                        <IconButton
-                          size="small"
-                          disabled={!roles.length}
-                          onClick={() => openAssignRoleDialog(row.original)}
-                          sx={{
-                            bgcolor: alpha("#0f172a", 0.04),
-                          }}
-                        >
-                          <AdminPanelSettingsRounded fontSize="small" />
-                        </IconButton>
-                      </span>
-                    </Tooltip>
-
-                    <Tooltip
-                      title={
-                        row.original.isActivated
-                          ? "Deactivate employee"
-                          : "Activate employee"
-                      }
-                    >
-                      <IconButton
-                        size="small"
-                        onClick={() =>
-                          setPendingStatusAction({
-                            user: row.original,
-                            nextStatus: !row.original.isActivated,
-                          })
+                      <Tooltip
+                        title={
+                          !hasUser
+                            ? "No user account linked to this employee"
+                            : !roles.length
+                              ? "Create a role before assigning access"
+                              : "Assign role"
                         }
-                        sx={{
-                          bgcolor: row.original.isActivated
-                            ? alpha("#ef4444", 0.08)
-                            : alpha("#10b981", 0.1),
-                          color: row.original.isActivated
-                            ? "#b91c1c"
-                            : "#047857",
-                        }}
                       >
-                        {row.original.isActivated ? (
-                          <PersonOffRounded fontSize="small" />
-                        ) : (
-                          <CheckCircleRounded fontSize="small" />
-                        )}
-                      </IconButton>
-                    </Tooltip>
-                  </Stack>
-                )}
+                        <span>
+                          <IconButton
+                            size="small"
+                            disabled={!hasUser || !roles.length}
+                            onClick={() => openAssignRoleDialog(row.original)}
+                            sx={{ bgcolor: alpha("#0f172a", 0.04) }}
+                          >
+                            <AdminPanelSettingsRounded fontSize="small" />
+                          </IconButton>
+                        </span>
+                      </Tooltip>
+
+                      <Tooltip
+                        title={
+                          !hasUser
+                            ? "No user account linked"
+                            : isActive
+                              ? "Deactivate employee"
+                              : "Activate employee"
+                        }
+                      >
+                        <span>
+                          <IconButton
+                            size="small"
+                            disabled={!hasUser}
+                            onClick={() => {
+                              if (!row.original.userId) return;
+                              setPendingStatusAction({
+                                userId: row.original.userId,
+                                name: row.original.name,
+                                nextStatus: !isActive,
+                              });
+                            }}
+                            sx={{
+                              bgcolor: isActive
+                                ? alpha("#ef4444", 0.08)
+                                : alpha("#10b981", 0.1),
+                              color: isActive ? "#b91c1c" : "#047857",
+                            }}
+                          >
+                            {isActive ? (
+                              <PersonOffRounded fontSize="small" />
+                            ) : (
+                              <CheckCircleRounded fontSize="small" />
+                            )}
+                          </IconButton>
+                        </span>
+                      </Tooltip>
+                    </Stack>
+                  );
+                }}
                 renderTopToolbarCustomActions={() => (
                   <Typography variant="body2" color="text.secondary">
-                    {users.length} employee{users.length === 1 ? "" : "s"} in
-                    your workspace
+                    {employeeRows.length} employee
+                    {employeeRows.length === 1 ? "" : "s"} in your workspace
                   </Typography>
                 )}
                 state={{
-                  isLoading: isWorkspaceLoading,
+                  isLoading: isWorkspaceLoading && employeeRows.length === 0,
                   showProgressBars: isWorkspaceLoading,
                 }}
               />
@@ -763,9 +796,7 @@ export function TeamAccessWorkspace() {
                                 flexWrap="wrap"
                                 useFlexGap
                               >
-                                <Typography variant="h6">
-                                  {role.name}
-                                </Typography>
+                                <Typography variant="h6">{role.name}</Typography>
                                 <Chip
                                   size="small"
                                   label={role.system ? "System" : "Custom"}
@@ -773,10 +804,7 @@ export function TeamAccessWorkspace() {
                                   variant={role.system ? "outlined" : "filled"}
                                 />
                               </Stack>
-                              <Typography
-                                variant="body2"
-                                color="text.secondary"
-                              >
+                              <Typography variant="body2" color="text.secondary">
                                 {membersCount} member
                                 {membersCount === 1 ? "" : "s"} assigned
                               </Typography>
@@ -807,10 +835,7 @@ export function TeamAccessWorkspace() {
                             }}
                           >
                             <Box>
-                              <Typography
-                                variant="caption"
-                                color="text.secondary"
-                              >
+                              <Typography variant="caption" color="text.secondary">
                                 Permissions
                               </Typography>
                               <Typography variant="body2" sx={{ mt: 0.5 }}>
@@ -818,10 +843,7 @@ export function TeamAccessWorkspace() {
                               </Typography>
                             </Box>
                             <Box>
-                              <Typography
-                                variant="caption"
-                                color="text.secondary"
-                              >
+                              <Typography variant="caption" color="text.secondary">
                                 Type
                               </Typography>
                               <Typography variant="body2" sx={{ mt: 0.5 }}>
@@ -894,9 +916,7 @@ export function TeamAccessWorkspace() {
                       >
                         <ShieldRounded />
                       </Avatar>
-                      <Typography variant="h6">
-                        No roles available yet
-                      </Typography>
+                      <Typography variant="h6">No roles available yet</Typography>
                       <Typography variant="body2" color="text.secondary">
                         Create the first custom role to start delegating access
                         across your team.
@@ -923,9 +943,11 @@ export function TeamAccessWorkspace() {
         isSubmitting={assignRoleState.loading}
         onClose={closeAssignRoleDialog}
         onSubmit={handleAssignRole}
-        open={!!selectedUser}
+        open={!!selectedRow}
         roles={roles}
-        user={selectedUser}
+        user={selectedRow?.user ?? null}
+        displayName={selectedRow?.name}
+        displayEmail={selectedRow?.email ?? undefined}
       />
 
       <CreateRoleDialog
@@ -941,9 +963,7 @@ export function TeamAccessWorkspace() {
       <Dialog
         open={!!pendingStatusAction}
         onClose={() =>
-          setActiveStatusState.loading
-            ? undefined
-            : setPendingStatusAction(null)
+          setActiveStatusState.loading ? undefined : setPendingStatusAction(null)
         }
         fullWidth
         maxWidth="xs"
@@ -957,12 +977,8 @@ export function TeamAccessWorkspace() {
           <Typography variant="body2" color="text.secondary">
             {pendingStatusAction
               ? pendingStatusAction.nextStatus
-                ? `This will restore workspace access for ${formatPersonName(
-                    pendingStatusAction.user,
-                  )}.`
-                : `This will remove workspace access for ${formatPersonName(
-                    pendingStatusAction.user,
-                  )} until they are reactivated.`
+                ? `This will restore workspace access for ${pendingStatusAction.name}.`
+                : `This will remove workspace access for ${pendingStatusAction.name} until they are reactivated.`
               : ""}
           </Typography>
         </DialogContent>

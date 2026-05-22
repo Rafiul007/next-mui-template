@@ -161,3 +161,51 @@ export const ADD_ROLE_MUTATION = /* GraphQL */ `
     }
   }
 `;
+
+export const CREATE_NOTICE_MUTATION = /* GraphQL */ `
+  mutation CreateNotice($notice: CreateNoticeInput!) {
+    createNotice(notice: $notice) {
+      id
+      title
+      body
+      status
+      publishedAt
+      expiresAt
+      targetBatchIds
+      createdBy
+      tenantId
+    }
+  }
+`;
+
+export const PUBLISH_NOTICE_MUTATION = /* GraphQL */ `
+  mutation PublishNotice($noticeId: ID!) {
+    publishNotice(noticeId: $noticeId) {
+      id
+      title
+      body
+      status
+      publishedAt
+      expiresAt
+      targetBatchIds
+      createdBy
+      tenantId
+    }
+  }
+`;
+
+export const ARCHIVE_NOTICE_MUTATION = /* GraphQL */ `
+  mutation ArchiveNotice($noticeId: ID!) {
+    archiveNotice(noticeId: $noticeId) {
+      id
+      title
+      body
+      status
+      publishedAt
+      expiresAt
+      targetBatchIds
+      createdBy
+      tenantId
+    }
+  }
+`;

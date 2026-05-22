@@ -611,10 +611,11 @@ export function AdmissionFormDialog({
                 subtitle="Select the batch this student is being admitted into."
               />
 
-              {batches.length === 0 ? (
+              {batchOptions.length === 0 ? (
                 <Alert severity="warning">
-                  No active batches available. Create a batch first before
-                  admitting students.
+                  {batches.length === 0
+                    ? "No batches found. Create a batch first before admitting students."
+                    : "All batches are completed or cancelled. Create or reactivate a batch to proceed."}
                 </Alert>
               ) : (
                 <RhfSelect

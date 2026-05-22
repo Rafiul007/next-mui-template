@@ -32,6 +32,8 @@ const assignRoleSchema = yup
 type AssignRoleFormValues = yup.InferType<typeof assignRoleSchema>;
 
 type AssignRoleDialogProps = {
+  displayEmail?: string;
+  displayName?: string;
   errorMessage?: string | null;
   isSubmitting: boolean;
   onClose: () => void;
@@ -45,6 +47,8 @@ const formatPersonName = (user: UserRecord) =>
   `${user.firstName} ${user.lastName}`.trim() || user.email;
 
 export function AssignRoleDialog({
+  displayEmail,
+  displayName,
   errorMessage,
   isSubmitting,
   onClose,
@@ -85,16 +89,16 @@ export function AssignRoleDialog({
       >
         <DialogContent dividers>
           <Stack spacing={3}>
-            {user ? (
+            {(user ?? displayName) ? (
               <Box>
                 <Typography variant="body2" color="text.secondary">
                   Employee
                 </Typography>
                 <Typography variant="h6" sx={{ mt: 0.75 }}>
-                  {formatPersonName(user)}
+                  {user ? formatPersonName(user) : displayName}
                 </Typography>
                 <Typography variant="body2" color="text.secondary">
-                  {user.email}
+                  {user?.email ?? displayEmail}
                 </Typography>
               </Box>
             ) : null}
@@ -123,8 +127,8 @@ export function AssignRoleDialog({
                     Current roles
                   </Typography>
                   <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
-                    {user?.roles.length ? (
-                      user.roles.map((role) => (
+                    {(user?.roles ?? []).length ? (
+                      user!.roles.map((role) => (
                         <Chip key={role} label={role} size="small" />
                       ))
                     ) : (

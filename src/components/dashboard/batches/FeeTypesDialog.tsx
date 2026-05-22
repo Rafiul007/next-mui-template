@@ -35,6 +35,12 @@ const schema = yup
       .trim()
       .required("Name is required")
       .max(80, "Too long"),
+    keyName: yup
+      .string()
+      .trim()
+      .matches(/^[a-z0-9_]*$/, "Only lowercase letters, numbers and underscores")
+      .max(60, "Too long")
+      .default(""),
     isRecurring: yup.boolean().required().default(false),
   })
   .required();
@@ -62,7 +68,7 @@ export function FeeTypesDialog({ open, onClose }: FeeTypesDialogProps) {
   const { control, handleSubmit, reset, watch, setValue } =
     useForm<FormValues>({
       resolver: yupResolver(schema),
-      defaultValues: { typeName: "", isRecurring: false },
+      defaultValues: { typeName: "", keyName: "", isRecurring: false },
     });
 
   const isRecurring = watch("isRecurring");
@@ -73,12 +79,13 @@ export function FeeTypesDialog({ open, onClose }: FeeTypesDialogProps) {
         variables: {
           input: {
             typeName: values.typeName.trim(),
+            keyName: values.keyName?.trim() || undefined,
             isRecurring: values.isRecurring,
           },
         },
       });
       toast.success(`"${values.typeName.trim()}" created.`);
-      reset({ typeName: "", isRecurring: false });
+      reset({ typeName: "", keyName: "", isRecurring: false });
       setIsAdding(false);
     } catch (error) {
       toast.error(getErrorMessage(error, "Failed to create fee type."));
@@ -121,6 +128,11 @@ export function FeeTypesDialog({ open, onClose }: FeeTypesDialogProps) {
                   <Typography variant="body2" fontWeight={600}>
                     {ft.typeName}
                   </Typography>
+                  {ft.keyName && (
+                    <Typography variant="caption" color="text.disabled" sx={{ fontFamily: "monospace" }}>
+                      {ft.keyName}
+                    </Typography>
+                  )}
                   <Stack direction="row" spacing={0.75} alignItems="center">
                     {ft.isRecurring ? (
                       <Chip
@@ -183,6 +195,16 @@ export function FeeTypesDialog({ open, onClose }: FeeTypesDialogProps) {
                 fullWidth
                 trim
                 autoFocus
+              />
+
+              <RhfTextField
+                control={control}
+                name="keyName"
+                label="Key name (optional)"
+                placeholder="e.g. admission_fee, monthly_tuition"
+                fullWidth
+                trim
+                helperText="Machine-readable identifier — lowercase, numbers, underscores only"
               />
 
               <FormControlLabel

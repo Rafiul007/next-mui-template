@@ -32,6 +32,7 @@ export const GET_FEE_TYPES_QUERY = /* GraphQL */ `
     getFeeTypes {
       id
       typeName
+      keyName
       isRecurring
       isActive
       tenantId
