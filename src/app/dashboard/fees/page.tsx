@@ -1,5 +1,5 @@
-import { FeesWorkspace } from "@/components/dashboard/fees/FeesWorkspace";
+import { redirect } from "next/navigation";
 
-const FeesPage = () => <FeesWorkspace />;
-
-export default FeesPage;
+export default function FeesPage() {
+  redirect("/dashboard/fees/invoices");
+}

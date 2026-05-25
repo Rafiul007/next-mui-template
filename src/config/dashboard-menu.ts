@@ -1,16 +1,36 @@
 import type { ElementType } from "react";
 import {
+  AccountBalanceWalletRounded,
   AccountTreeRounded,
+  AdminPanelSettingsRounded,
   AnnouncementRounded,
-  ApartmentRounded,
+  AssessmentRounded,
   AutoStoriesRounded,
   BadgeRounded,
+  BeachAccessRounded,
+  BusinessRounded,
   CalendarMonthRounded,
+  CampaignRounded,
+  CorporateFareRounded,
   DashboardRounded,
+  DescriptionRounded,
+  EventAvailableRounded,
+  EventNoteRounded,
+  FactCheckRounded,
+  FolderOpenRounded,
+  GroupsRounded,
+  HowToRegRounded,
+  LibraryBooksRounded,
+  MonetizationOnRounded,
   PaymentsRounded,
-  QuizRounded,
+  PeopleRounded,
+  PolicyRounded,
+  PriceCheckRounded,
+  ReceiptLongRounded,
   SchoolRounded,
-  SettingsRounded,
+  StorefrontRounded,
+  TrendingUpRounded,
+  WorkRounded,
 } from "@mui/icons-material";
 
 export type SidebarSubMenuItem = {
@@ -18,7 +38,6 @@ export type SidebarSubMenuItem = {
   label: string;
   href?: string;
   icon?: ElementType;
-  moduleCode?: string;
   useCases?: string[];
   status?: "active" | "planned";
 };
@@ -29,7 +48,6 @@ export type SidebarMenuItem = {
   href?: string;
   icon: ElementType;
   phase?: string;
-  moduleCode?: string;
   useCases?: string[];
   status?: "active" | "planned";
   children?: SidebarSubMenuItem[];
@@ -44,7 +62,6 @@ export type DashboardPlaceholderContent = {
 type MenuModuleInput = {
   key: string;
   label: string;
-  moduleCode: string;
   useCases?: string[];
   route?: string[];
   icon?: ElementType;
@@ -72,7 +89,6 @@ const buildDashboardHref = (segments?: string[]) => {
 const createModule = ({
   key,
   label,
-  moduleCode,
   useCases,
   route,
   icon,
@@ -80,7 +96,6 @@ const createModule = ({
 }: MenuModuleInput): SidebarSubMenuItem => ({
   key,
   label,
-  moduleCode,
   useCases,
   icon,
   status,
@@ -117,37 +132,33 @@ export const dashboardMenuMap = {
     createSection({
       key: "tenant-setup",
       label: "Profile Setup",
-      icon: ApartmentRounded,
+      icon: BusinessRounded,
       phase: "Phase 2",
       route: ["tenant-setup"],
       children: [
         {
           key: "center-profile",
           label: "Center Details",
-          icon: ApartmentRounded,
-          moduleCode: "2.1",
+          icon: CorporateFareRounded,
           useCases: ["UC-CA-01", "UC-CA-10"],
           route: ["tenant-setup", "center-profile"],
         },
         {
           key: "branch-management",
-          icon: ApartmentRounded,
+          icon: StorefrontRounded,
           label: "Branches",
-          moduleCode: "2.2",
           useCases: ["UC-BM-01"],
           route: ["tenant-setup", "branches"],
         },
         {
           key: "holiday-calendar",
           label: "Calendar & Holidays",
-          moduleCode: "2.3",
           route: ["tenant-setup", "calendar"],
           icon: CalendarMonthRounded,
         },
         {
           key: "org-hierarchy",
           label: "Organization Structure",
-          moduleCode: "2.4",
           route: ["tenant-setup", "org-hierarchy"],
           icon: AccountTreeRounded,
           status: "active",
@@ -155,9 +166,8 @@ export const dashboardMenuMap = {
         {
           key: "tenant-roles",
           label: "Roles & Permissions",
-          moduleCode: "2.5",
           route: ["tenant-setup", "roles"],
-          icon: SettingsRounded,
+          icon: AdminPanelSettingsRounded,
         },
       ],
     }),
@@ -172,7 +182,7 @@ export const dashboardMenuMap = {
         {
           key: "subject-program-catalog",
           label: "Subjects & Programs",
-          moduleCode: "3.1",
+          icon: LibraryBooksRounded,
           useCases: ["UC-HT-01", "UC-HT-06"],
           route: ["academic", "catalog"],
           status: "active",
@@ -180,30 +190,29 @@ export const dashboardMenuMap = {
         {
           key: "batch-management",
           label: "Batches",
-          moduleCode: "3.2",
+          icon: GroupsRounded,
           route: ["academic", "batches"],
           status: "active",
         },
         {
           key: "session-scheduling",
           label: "Class Schedule",
-          moduleCode: "3.3",
+          icon: EventNoteRounded,
           route: ["academic", "sessions"],
           status: "active",
         },
         {
           key: "study-materials",
           label: "Materials & Homework",
-          moduleCode: "3.4",
+          icon: FolderOpenRounded,
           useCases: ["UC-TC-01", "UC-TC-14"],
           route: ["academic", "materials"],
         },
         {
           key: "exams-results",
           label: "Exams & Results",
-          moduleCode: "3.5",
           route: ["academic", "exams"],
-          icon: QuizRounded,
+          icon: AssessmentRounded,
           status: "active",
         },
       ],
@@ -218,27 +227,16 @@ export const dashboardMenuMap = {
         {
           key: "student-profile",
           label: "Admissions & Profiles",
-          moduleCode: "4.1",
+          icon: HowToRegRounded,
           route: ["students", "profiles"],
-        },
-        {
-          key: "student-enrollment",
-          label: "Enrollments",
-          moduleCode: "4.2",
-          route: ["students", "enrollments"],
+          status: "active",
         },
         {
           key: "student-attendance",
           label: "Attendance",
-          moduleCode: "4.3",
+          icon: EventAvailableRounded,
           route: ["students", "attendance"],
           status: "active",
-        },
-        {
-          key: "student-documents",
-          label: "Documents",
-          moduleCode: "4.4",
-          route: ["students", "documents"],
         },
       ],
     }),
@@ -247,31 +245,33 @@ export const dashboardMenuMap = {
       label: "Billing & Payments",
       icon: PaymentsRounded,
       phase: "Phase 5",
-      route: ["fees"],
+      status: "active",
       children: [
         {
-          key: "fee-structure",
-          label: "Fee Setup",
-          moduleCode: "5.1",
-          route: ["fees", "structure"],
+          key: "bills-and-invoices",
+          label: "Bills & Invoices",
+          icon: DescriptionRounded,
+          route: ["fees", "invoices"],
+          status: "active",
         },
         {
-          key: "invoicing",
-          label: "Invoices",
-          moduleCode: "5.2",
-          route: ["fees", "invoices"],
+          key: "academic-transactions",
+          label: "Academic Fees",
+          icon: PriceCheckRounded,
+          route: ["fees", "academic-fees"],
+          status: "active",
         },
         {
           key: "payment-collection",
           label: "Collections",
-          moduleCode: "5.3",
+          icon: AccountBalanceWalletRounded,
           route: ["fees", "payments"],
         },
         {
-          key: "payment-gateway",
-          label: "Online Payments",
-          moduleCode: "5.4",
-          route: ["fees", "gateway"],
+          key: "transactions",
+          label: "Transactions",
+          icon: ReceiptLongRounded,
+          route: ["fees", "transactions"],
         },
       ],
     }),
@@ -286,49 +286,49 @@ export const dashboardMenuMap = {
         {
           key: "employee-profile",
           label: "Staff Directory",
-          moduleCode: "6.1",
+          icon: PeopleRounded,
           route: ["hr", "employees"],
           status: "active",
         },
         {
           key: "recruitment",
           label: "Hiring",
-          moduleCode: "6.2",
+          icon: WorkRounded,
           route: ["hr", "recruitment"],
           status: "active",
         },
         {
           key: "leave-management",
           label: "Leave & Time Off",
-          moduleCode: "6.3",
+          icon: BeachAccessRounded,
           route: ["hr", "leave"],
           status: "active",
         },
         {
           key: "employee-attendance",
           label: "Staff Attendance",
-          moduleCode: "6.4",
+          icon: FactCheckRounded,
           route: ["hr", "attendance"],
           status: "active",
         },
         {
           key: "leave-policy",
           label: "Leave Policies",
-          moduleCode: "6.5",
+          icon: PolicyRounded,
           route: ["hr", "leave-policy"],
           status: "active",
         },
         {
           key: "payroll",
           label: "Payroll",
-          moduleCode: "6.6",
+          icon: MonetizationOnRounded,
           route: ["hr", "payroll"],
           status: "active",
         },
         {
           key: "performance-management",
           label: "Performance Reviews",
-          moduleCode: "6.7",
+          icon: TrendingUpRounded,
           route: ["hr", "performance"],
           status: "active",
         },
@@ -345,9 +345,8 @@ export const dashboardMenuMap = {
         {
           key: "notice-board",
           label: "Notice Board",
-          moduleCode: "7.1",
+          icon: CampaignRounded,
           route: ["notices"],
-          icon: AnnouncementRounded,
           status: "active",
         },
       ],
@@ -412,9 +411,7 @@ export const getDashboardPlaceholderContent = (
     }
 
     return {
-      eyebrow: match.module.moduleCode
-        ? `${match.section.label} • Module ${match.module.moduleCode}`
-        : match.section.label,
+      eyebrow: match.section.label,
       title: `${match.module.label} is coming soon`,
       description:
         "This module is available in the navigation, but the working screen is still under construction.",

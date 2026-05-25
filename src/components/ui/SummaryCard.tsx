@@ -12,19 +12,36 @@ export function SummaryCard({
   caption: string;
   icon: ReactNode;
   title: string;
-  tone?: "default" | "success" | "muted";
+  tone?: "default" | "success" | "muted" | "error" | "warning";
 }) {
   const borderColor =
     tone === "success"
       ? alpha("#10b981", 0.22)
-      : tone === "muted"
-        ? alpha("#64748b", 0.16)
-        : alpha("#0f172a", 0.08);
+      : tone === "error"
+        ? alpha("#ef4444", 0.22)
+        : tone === "warning"
+          ? alpha("#f59e0b", 0.22)
+          : tone === "muted"
+            ? alpha("#64748b", 0.16)
+            : alpha("#0f172a", 0.08);
 
   const iconBackground =
-    tone === "success" ? alpha("#10b981", 0.12) : alpha("#0f172a", 0.06);
+    tone === "success"
+      ? alpha("#10b981", 0.12)
+      : tone === "error"
+        ? alpha("#ef4444", 0.10)
+        : tone === "warning"
+          ? alpha("#f59e0b", 0.10)
+          : alpha("#0f172a", 0.06);
 
-  const iconColor = tone === "success" ? "#047857" : "#0f172a";
+  const iconColor =
+    tone === "success"
+      ? "#047857"
+      : tone === "error"
+        ? "#b91c1c"
+        : tone === "warning"
+          ? "#b45309"
+          : "#0f172a";
 
   return (
     <Paper

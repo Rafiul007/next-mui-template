@@ -87,15 +87,25 @@ export const GET_STUDENT_QUERY = /* GraphQL */ `
       previousInstitution
       previousResult
       admissionSource
+      address
       village
       upazila
       district
       division
       referrerId
+      notes
       photo
       status
       userId
       tenantId
+      qualifications {
+        id
+        institution
+        exam
+        gradeGpa
+        passingYear
+        board
+      }
     }
   }
 `;
@@ -117,15 +127,25 @@ export const GET_STUDENTS_QUERY = /* GraphQL */ `
       previousInstitution
       previousResult
       admissionSource
+      address
       village
       upazila
       district
       division
       referrerId
+      notes
       photo
       status
       userId
       tenantId
+      qualifications {
+        id
+        institution
+        exam
+        gradeGpa
+        passingYear
+        board
+      }
     }
   }
 `;

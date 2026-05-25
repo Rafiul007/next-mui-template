@@ -18,6 +18,13 @@ export const GET_EMPLOYEES_QUERY = /* GraphQL */ `
       bloodGroup
       emergencyContactName
       emergencyContactPhone
+      userInfo {
+        firstName
+        lastName
+        email
+        phone
+        profilePicture
+      }
     }
   }
 `;
@@ -42,6 +49,13 @@ export const GET_EMPLOYEE_QUERY = /* GraphQL */ `
       bloodGroup
       emergencyContactName
       emergencyContactPhone
+      userInfo {
+        firstName
+        lastName
+        email
+        phone
+        profilePicture
+      }
     }
   }
 `;

@@ -429,6 +429,7 @@ export type Employee = {
   tenantId: Scalars['ID']['output'];
   tin?: Maybe<Scalars['String']['output']>;
   userId?: Maybe<Scalars['ID']['output']>;
+  userInfo?: Maybe<EmployeeUserInfo>;
 };
 
 export type EmployeeAttendance = {
@@ -451,6 +452,15 @@ export type EmployeeDocument = {
   tenantId: Scalars['ID']['output'];
   type: Scalars['String']['output'];
   uploadedAt: Scalars['String']['output'];
+};
+
+export type EmployeeUserInfo = {
+  __typename?: 'EmployeeUserInfo';
+  email?: Maybe<Scalars['String']['output']>;
+  firstName?: Maybe<Scalars['String']['output']>;
+  lastName?: Maybe<Scalars['String']['output']>;
+  phone?: Maybe<Scalars['String']['output']>;
+  profilePicture?: Maybe<Scalars['String']['output']>;
 };
 
 export type Enrollment = {
@@ -1574,6 +1584,7 @@ export type Query = {
   getLeaveBalance: Array<LeaveBalance>;
   getMaterialsByBatch: Array<StudyMaterial>;
   getMonthlyAttendanceSheet: Array<EmployeeAttendance>;
+  getMyEmployeeProfile: Employee;
   getMyPlan: SubscriptionPlan;
   getNoticesForBatch: Array<Notice>;
   getOrgChart: Array<OrgNode>;
@@ -1652,6 +1663,11 @@ export type QueryGetBranchesArgs = {
 
 export type QueryGetEmployeeArgs = {
   employeeId: Scalars['ID']['input'];
+};
+
+
+export type QueryGetEmployeesArgs = {
+  role?: InputMaybe<Scalars['String']['input']>;
 };
 
 

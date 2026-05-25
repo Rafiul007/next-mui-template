@@ -12,7 +12,6 @@ import { usePathname } from "next/navigation";
 import {
   Box,
   Collapse,
-  IconButton,
   List,
   ListItemButton,
   ListItemIcon,
@@ -139,11 +138,9 @@ export function Sidebar({ logoText, menuItems }: SidebarProps) {
                     return (
                       <>
                         <ListItemButton
-                          component={item.href ? Link : "button"}
+                          component={item.href ? Link : "div"}
                           href={item.href}
-                          onClick={
-                            item.href ? undefined : () => toggleMenu(item.key)
-                          }
+                          onClick={() => toggleMenu(item.key)}
                           sx={{
                             minHeight: 48,
                             px: 1.5,
@@ -164,21 +161,28 @@ export function Sidebar({ logoText, menuItems }: SidebarProps) {
                             <ItemIcon />
                           </ListItemIcon>
                           <ListItemText primary={item.label} />
-                          <IconButton
-                            size="small"
+                          <Box
+                            component="span"
                             onClick={(event) => {
                               event.preventDefault();
                               event.stopPropagation();
                               toggleMenu(item.key);
                             }}
-                            sx={{ color: "inherit" }}
+                            sx={{
+                              display: "flex",
+                              alignItems: "center",
+                              color: "inherit",
+                              cursor: "pointer",
+                              borderRadius: 1,
+                              p: 0.5,
+                            }}
                           >
                             {expanded ? (
                               <ExpandLessRounded fontSize="small" />
                             ) : (
                               <ExpandMoreRounded fontSize="small" />
                             )}
-                          </IconButton>
+                          </Box>
                         </ListItemButton>
 
                         <Collapse in={expanded} timeout="auto" unmountOnExit>

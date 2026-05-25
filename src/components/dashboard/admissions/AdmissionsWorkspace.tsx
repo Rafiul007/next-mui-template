@@ -10,6 +10,7 @@ import {
   GroupsRounded,
   PersonAddRounded,
   SchoolRounded,
+  StickyNote2Rounded,
 } from "@mui/icons-material";
 import {
   Box,
@@ -20,6 +21,7 @@ import {
   DialogActions,
   DialogContent,
   DialogTitle,
+  Divider,
   IconButton,
   Paper,
   Stack,
@@ -47,6 +49,7 @@ import {
   emptyAdmissionFormValues,
   type AdmissionFormValues,
   type BatchSummary,
+  type PaymentEntry,
   type QualificationEntry,
 } from "./AdmissionFormDialog";
 
@@ -55,16 +58,37 @@ import {
 type AdmissionStatus = "active" | "graduated" | "withdrawn" | "suspended";
 type Gender = "male" | "female" | "other";
 
+type QualificationRecord = {
+  id: string;
+  institution: string;
+  exam: string;
+  gradeGpa: string | null;
+  passingYear: string | null;
+  board: string | null;
+};
+
 type StudentRecord = {
   id: string;
   studentId: string;
   firstName: string;
   lastName: string;
+  firstNameBangla: string;
   gender: Gender;
   bloodGroup: string;
   phone: string;
   email: string;
+  classLevel: string;
+  address: string;
+  division: string;
+  district: string;
+  upazila: string;
+  village: string;
+  previousInstitution: string;
+  previousResult: string;
+  admissionSource: string;
+  notes: string;
   status: AdmissionStatus;
+  qualifications: QualificationRecord[];
 };
 
 type ApiStudent = GetStudentsQuery["getStudents"][number];
@@ -102,24 +126,53 @@ const mapApiStudent = (s: ApiStudent): StudentRecord => ({
   studentId: s.studentCode,
   firstName: s.firstName,
   lastName: s.lastName ?? "",
+  firstNameBangla: s.firstNameBangla ?? "",
   gender: (s.gender as Gender) ?? "other",
   bloodGroup: s.bloodGroup ?? "",
   phone: s.phone ?? "",
   email: s.email ?? "",
+  classLevel: s.classLevel ?? "",
+  address: s.address ?? "",
+  division: s.division ?? "",
+  district: s.district ?? "",
+  upazila: s.upazila ?? "",
+  village: s.village ?? "",
+  previousInstitution: s.previousInstitution ?? "",
+  previousResult: s.previousResult ?? "",
+  admissionSource: s.admissionSource ?? "",
+  notes: s.notes ?? "",
   status: (s.status as AdmissionStatus) ?? "active",
+  qualifications: (s.qualifications ?? []).map((q) => ({
+    id: q.id,
+    institution: q.institution,
+    exam: q.exam,
+    gradeGpa: q.gradeGpa,
+    passingYear: q.passingYear,
+    board: q.board,
+  })),
 });
 
-const mapApiBatchToSummary = (batch: ApiBatch): BatchSummary => ({
-  id: batch.id,
-  displayName: batch.name,
-  type: (batch.type ?? "course") as "course" | "class",
-  status: batch.status.toLowerCase() as "upcoming" | "ongoing" | "completed" | "cancelled",
-  totalSeats: batch.capacity,
-  enrolledCount: batch.enrolledCount,
-  oneTimePayments: [],
-  monthlyPayments: [],
-  discounts: [],
-});
+const mapApiBatchToSummary = (batch: ApiBatch): BatchSummary => {
+  const activePlans = (batch.feePlans ?? []).filter((fp) => fp.isActive);
+  const oneTimePayments: PaymentEntry[] = activePlans
+    .filter((fp) => fp.frequency?.toUpperCase() !== "MONTHLY")
+    .map((fp) => ({ name: fp.feeTypeName ?? fp.feeTypeId, amount: fp.amount }));
+  const monthlyPayments: PaymentEntry[] = activePlans
+    .filter((fp) => fp.frequency?.toUpperCase() === "MONTHLY")
+    .map((fp) => ({ name: fp.feeTypeName ?? fp.feeTypeId, amount: fp.amount }));
+
+  return {
+    id: batch.id,
+    displayName: batch.name,
+    type: (batch.type ?? "course") as "course" | "class",
+    status: batch.status.toLowerCase() as "upcoming" | "ongoing" | "completed" | "cancelled",
+    totalSeats: batch.capacity,
+    enrolledCount: batch.enrolledCount,
+    oneTimePayments,
+    monthlyPayments,
+    discounts: [],
+  };
+};
 
 const getFullName = (s: StudentRecord) =>
   `${s.firstName} ${s.lastName}`.trim();
@@ -127,12 +180,21 @@ const getFullName = (s: StudentRecord) =>
 const getStudentFormValues = (s: StudentRecord): AdmissionFormValues => ({
   firstName: s.firstName,
   lastName: s.lastName,
+  firstNameBangla: s.firstNameBangla,
   dob: "",
   gender: s.gender,
   bloodGroup: s.bloodGroup,
   phone: s.phone,
   email: s.email,
-  address: "",
+  classLevel: s.classLevel,
+  address: s.address,
+  division: s.division,
+  district: s.district,
+  upazila: s.upazila,
+  village: s.village,
+  previousInstitution: s.previousInstitution,
+  previousResult: s.previousResult,
+  admissionSource: s.admissionSource,
   guardianName: "",
   guardianRelation: "",
   guardianPhone: "",
@@ -142,7 +204,7 @@ const getStudentFormValues = (s: StudentRecord): AdmissionFormValues => ({
   qualifications: [],
   appliedDiscountIndexes: [],
   batchId: "",
-  notes: "",
+  notes: s.notes,
 });
 
 // ── Columns ──────────────────────────────────────────────────────────────────
@@ -152,17 +214,46 @@ const buildStudentColumns = (): MRT_ColumnDef<StudentRecord>[] => [
     id: "student",
     accessorFn: getFullName,
     header: "Student",
-    size: 220,
-    Cell: ({ row }) => (
-      <Stack spacing={0.25}>
-        <Typography variant="subtitle2" fontWeight={700}>
-          {getFullName(row.original)}
-        </Typography>
-        <Typography variant="caption" color="text.secondary">
-          {row.original.studentId}
-        </Typography>
-      </Stack>
-    ),
+    size: 260,
+    Cell: ({ row }) => {
+      const s = row.original;
+      return (
+        <Stack spacing={0.4}>
+          <Stack direction="row" spacing={0.75} alignItems="center">
+            <Typography variant="subtitle2" fontWeight={700}>
+              {getFullName(s)}
+            </Typography>
+            {s.notes && (
+              <Tooltip title={s.notes} placement="top" arrow>
+                <StickyNote2Rounded sx={{ fontSize: 14, color: "#d97706", flexShrink: 0 }} />
+              </Tooltip>
+            )}
+          </Stack>
+          <Typography variant="caption" color="text.secondary">
+            {s.studentId}
+          </Typography>
+          {s.qualifications.length > 0 && (
+            <Stack direction="row" spacing={0.4} flexWrap="wrap" useFlexGap>
+              {s.qualifications.map((q) => (
+                <Chip
+                  key={q.id}
+                  label={q.exam.replace(/_/g, " ").toUpperCase()}
+                  size="small"
+                  sx={{
+                    height: 17,
+                    fontSize: 10,
+                    fontWeight: 700,
+                    bgcolor: alpha("#8b5cf6", 0.1),
+                    color: "#5b21b6",
+                    "& .MuiChip-label": { px: 0.75 },
+                  }}
+                />
+              ))}
+            </Stack>
+          )}
+        </Stack>
+      );
+    },
   },
   {
     id: "gender",
@@ -353,10 +444,16 @@ export function AdmissionsWorkspace() {
           variables: {
             student: {
               id: selectedStudent.id,
-              firstName: values.firstName,
+              firstName: values.firstName || undefined,
               lastName: values.lastName || undefined,
+              firstNameBangla: values.firstNameBangla || undefined,
               email: values.email || undefined,
               phone: values.phone || undefined,
+              classLevel: values.classLevel || undefined,
+              division: values.division || undefined,
+              district: values.district || undefined,
+              upazila: values.upazila || undefined,
+              village: values.village || undefined,
             },
           },
         });
@@ -378,17 +475,26 @@ export function AdmissionsWorkspace() {
         const admitResult = await admitStudent({
           variables: {
             student: {
+              batchId: values.batchId,
               firstName: values.firstName,
               lastName: values.lastName || undefined,
+              firstNameBangla: values.firstNameBangla || undefined,
               email: values.email || undefined,
               phone: values.phone || undefined,
               dateOfBirth: values.dob || undefined,
               gender: values.gender ? values.gender.toUpperCase() : undefined,
               bloodGroup: values.bloodGroup || undefined,
+              classLevel: values.classLevel || undefined,
               address: values.address || undefined,
+              division: values.division || undefined,
+              district: values.district || undefined,
+              upazila: values.upazila || undefined,
+              village: values.village || undefined,
+              previousInstitution: values.previousInstitution || undefined,
+              previousResult: values.previousResult || undefined,
+              admissionSource: values.admissionSource ? values.admissionSource.toUpperCase() : undefined,
               notes: values.notes || undefined,
               qualifications: qualifications?.length ? qualifications : undefined,
-              batchId: values.batchId,
             },
           },
         });
@@ -414,9 +520,12 @@ export function AdmissionsWorkspace() {
 
         const studentCode = admitResult.data?.admitStudent?.studentCode ?? "";
         toast.success(
-          `${values.firstName} ${values.lastName} admitted${studentCode ? ` as ${studentCode}` : ""}.`,
+          `${values.firstName} ${values.lastName} admitted${studentCode ? ` as ${studentCode}` : ""}. Go to Billing & Payments to generate their invoice.`,
+          { duration: 5000 },
         );
         await refetchStudents();
+        closeFormDialog();
+        return;
       }
 
       closeFormDialog();
@@ -538,6 +647,7 @@ export function AdmissionsWorkspace() {
           data={students}
           enableColumnFilters
           enableDensityToggle={false}
+          enableExpanding
           enableFullScreenToggle={false}
           enableHiding={false}
           enableRowActions
@@ -628,7 +738,13 @@ export function AdmissionsWorkspace() {
               borderColor: alpha("#0f172a", 0.08),
             },
           }}
+          muiDetailPanelProps={{ sx: { bgcolor: alpha("#f8fafc", 0.8) } }}
           displayColumnDefOptions={{
+            "mrt-row-expand": {
+              size: 40,
+              muiTableBodyCellProps: { sx: { bgcolor: "#ffffff" } },
+              muiTableHeadCellProps: { sx: { bgcolor: "#ffffff" } },
+            },
             "mrt-row-actions": {
               header: "Actions",
               size: 108,
@@ -643,6 +759,136 @@ export function AdmissionsWorkspace() {
                 },
               },
             },
+          }}
+          renderDetailPanel={({ row }) => {
+            const s = row.original;
+            const addressParts = [s.address, s.village, s.upazila, s.district, s.division].filter(Boolean);
+            const fullAddress = addressParts.join(", ");
+            const hasPrevious = s.previousInstitution || s.previousResult;
+            return (
+              <Box sx={{ px: 3, py: 2.5, bgcolor: alpha("#f8fafc", 0.8) }}>
+                <Stack
+                  direction={{ xs: "column", md: "row" }}
+                  spacing={3}
+                  divider={<Divider orientation="vertical" flexItem sx={{ display: { xs: "none", md: "block" } }} />}
+                >
+                  {/* Education / Qualifications */}
+                  <Box sx={{ flex: 1, minWidth: 0 }}>
+                    <Typography variant="overline" color="text.secondary" sx={{ fontSize: 10, letterSpacing: 1.2 }}>
+                      Education Background
+                    </Typography>
+                    {s.qualifications.length > 0 ? (
+                      <Stack spacing={1} sx={{ mt: 0.75 }}>
+                        {s.qualifications.map((q) => (
+                          <Stack key={q.id} direction="row" spacing={1} alignItems="center" flexWrap="wrap" useFlexGap>
+                            <Chip
+                              label={q.exam.replace(/_/g, " ").toUpperCase()}
+                              size="small"
+                              sx={{
+                                height: 20,
+                                fontSize: 10,
+                                fontWeight: 700,
+                                bgcolor: alpha("#8b5cf6", 0.12),
+                                color: "#5b21b6",
+                                "& .MuiChip-label": { px: 1 },
+                              }}
+                            />
+                            <Typography variant="body2" sx={{ flex: 1 }}>
+                              {q.institution}
+                            </Typography>
+                            {q.gradeGpa && (
+                              <Typography variant="caption" color="text.secondary">
+                                GPA {q.gradeGpa}
+                              </Typography>
+                            )}
+                            {q.passingYear && (
+                              <Typography variant="caption" color={alpha("#0f172a", 0.4)}>
+                                · {q.passingYear}
+                              </Typography>
+                            )}
+                            {q.board && (
+                              <Typography variant="caption" color={alpha("#0f172a", 0.35)}>
+                                · {q.board.toUpperCase()} board
+                              </Typography>
+                            )}
+                          </Stack>
+                        ))}
+                      </Stack>
+                    ) : (
+                      <Typography variant="body2" color="text.secondary" sx={{ mt: 0.75 }}>
+                        No qualifications on record
+                      </Typography>
+                    )}
+                    {hasPrevious && (
+                      <Stack spacing={0.25} sx={{ mt: 1.5 }}>
+                        {s.previousInstitution && (
+                          <Typography variant="caption" color="text.secondary">
+                            Previous: {s.previousInstitution}
+                            {s.previousResult ? ` — ${s.previousResult}` : ""}
+                          </Typography>
+                        )}
+                      </Stack>
+                    )}
+                  </Box>
+
+                  {/* Address & Details */}
+                  <Box sx={{ flex: 1, minWidth: 0 }}>
+                    <Typography variant="overline" color="text.secondary" sx={{ fontSize: 10, letterSpacing: 1.2 }}>
+                      Address & Details
+                    </Typography>
+                    <Stack spacing={0.75} sx={{ mt: 0.75 }}>
+                      {fullAddress ? (
+                        <Typography variant="body2">{fullAddress}</Typography>
+                      ) : (
+                        <Typography variant="body2" color="text.secondary">No address on record</Typography>
+                      )}
+                      {s.classLevel && (
+                        <Stack direction="row" spacing={0.75} alignItems="center">
+                          <Typography variant="caption" color="text.secondary">Class level:</Typography>
+                          <Chip
+                            label={s.classLevel}
+                            size="small"
+                            variant="outlined"
+                            sx={{ height: 18, fontSize: 11, "& .MuiChip-label": { px: 0.75 } }}
+                          />
+                        </Stack>
+                      )}
+                      {s.admissionSource && (
+                        <Stack direction="row" spacing={0.75} alignItems="center">
+                          <Typography variant="caption" color="text.secondary">Source:</Typography>
+                          <Typography variant="caption">
+                            {s.admissionSource.replace(/_/g, " ").toLowerCase().replace(/\b\w/g, (c) => c.toUpperCase())}
+                          </Typography>
+                        </Stack>
+                      )}
+                    </Stack>
+                  </Box>
+
+                  {/* Notes */}
+                  {s.notes && (
+                    <Box sx={{ flex: 1, minWidth: 0 }}>
+                      <Typography variant="overline" color="text.secondary" sx={{ fontSize: 10, letterSpacing: 1.2 }}>
+                        Notes
+                      </Typography>
+                      <Box
+                        sx={{
+                          mt: 0.75,
+                          p: 1.5,
+                          bgcolor: alpha("#f59e0b", 0.07),
+                          borderRadius: 1.5,
+                          borderLeft: "3px solid",
+                          borderColor: "#f59e0b",
+                        }}
+                      >
+                        <Typography variant="body2" sx={{ fontStyle: "italic", color: "text.secondary" }}>
+                          {s.notes}
+                        </Typography>
+                      </Box>
+                    </Box>
+                  )}
+                </Stack>
+              </Box>
+            );
           }}
           renderEmptyRowsFallback={() => (
             <Box sx={{ px: 3, py: 6, textAlign: "center" }}>
@@ -735,6 +981,7 @@ export function AdmissionsWorkspace() {
         onSubmit={handleSubmit}
         open={isFormOpen}
       />
+
 
       <Dialog
         open={!!studentToWithdraw}

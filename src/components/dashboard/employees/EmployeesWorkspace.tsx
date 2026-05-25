@@ -15,6 +15,7 @@ import {
 import { useMutation, useQuery } from "@apollo/client/react";
 import {
   Alert,
+  Avatar,
   Box,
   Button,
   Chip,
@@ -115,7 +116,7 @@ const getEmployeeFormValues = (
     lastName: "",
     phone: "",
     branchId: employee.branchId,
-    email: "",
+    email: employee.userInfo?.email ?? "",
     employmentType: employee.employmentType
       ? employee.employmentType.toLowerCase().replace(/_/g, "-")
       : "",
@@ -136,33 +137,74 @@ const getEmployeeFormValues = (
   };
 };
 
+const getEmployeeDisplayName = (emp: EmployeeRecord): string => {
+  const { userInfo } = emp;
+  if (userInfo?.firstName) {
+    return `${userInfo.firstName} ${userInfo.lastName ?? ""}`.trim();
+  }
+  return "No user linked";
+};
+
 const buildEmployeeColumns = ({
-  userLookup,
   branchLookup,
 }: {
-  userLookup: Map<string, string>;
   branchLookup: Map<string, string>;
 }): MRT_ColumnDef<EmployeeRecord>[] => [
   {
     id: "name",
-    accessorFn: (emp) =>
-      emp.userId
-        ? (userLookup.get(emp.userId) ?? "No user linked")
-        : "No user linked",
+    accessorFn: getEmployeeDisplayName,
     header: "Staff member",
-    size: 220,
+    size: 280,
     Cell: ({ row }) => {
-      const name = row.original.userId
-        ? (userLookup.get(row.original.userId) ?? "No user linked")
-        : "No user linked";
+      const emp = row.original;
+      const name = getEmployeeDisplayName(emp);
+      const initials = [emp.userInfo?.firstName?.[0], emp.userInfo?.lastName?.[0]]
+        .filter(Boolean)
+        .join("")
+        .toUpperCase() || emp.employeeCode?.[0]?.toUpperCase() || "?";
       return (
-        <Stack spacing={0.5}>
-          <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
-            {name}
-          </Typography>
-          <Typography variant="body2" color="text.secondary">
-            {row.original.employeeCode}
-          </Typography>
+        <Stack direction="row" spacing={1.5} alignItems="center">
+          <Avatar
+            src={emp.userInfo?.profilePicture ?? undefined}
+            sx={{
+              width: 38,
+              height: 38,
+              fontSize: 13,
+              fontWeight: 700,
+              bgcolor: alpha("#10b981", 0.18),
+              color: "#047857",
+              flexShrink: 0,
+            }}
+          >
+            {initials}
+          </Avatar>
+          <Stack spacing={0.2}>
+            <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
+              {name}
+            </Typography>
+            <Stack direction="row" spacing={0.75} alignItems="center">
+              {emp.userInfo?.email && (
+                <Typography variant="caption" color="text.secondary" noWrap sx={{ maxWidth: 160 }}>
+                  {emp.userInfo.email}
+                </Typography>
+              )}
+              {emp.userInfo?.phone && (
+                <>
+                  {emp.userInfo?.email && (
+                    <Typography variant="caption" color={alpha("#0f172a", 0.3)}>·</Typography>
+                  )}
+                  <Typography variant="caption" color="text.secondary">
+                    {emp.userInfo.phone}
+                  </Typography>
+                </>
+              )}
+              {!emp.userInfo?.email && !emp.userInfo?.phone && (
+                <Typography variant="caption" color="text.secondary">
+                  {emp.employeeCode}
+                </Typography>
+              )}
+            </Stack>
+          </Stack>
         </Stack>
       );
     },
@@ -512,7 +554,7 @@ export function EmployeesWorkspace() {
         ) : null}
 
         <MaterialReactTable
-          columns={buildEmployeeColumns({ userLookup, branchLookup })}
+          columns={buildEmployeeColumns({ branchLookup })}
           data={employees}
           enableColumnFilters
           enableDensityToggle={false}

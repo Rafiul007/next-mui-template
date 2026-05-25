@@ -85,6 +85,27 @@ const GUARDIAN_RELATION_OPTIONS = [
   { label: "Other", value: "other" },
 ];
 
+const ADMISSION_SOURCE_OPTIONS = [
+  { label: "Walk-in", value: "walk_in" },
+  { label: "Referral", value: "referral" },
+  { label: "Social media", value: "social_media" },
+  { label: "Website", value: "website" },
+  { label: "Banner / flyer", value: "banner" },
+  { label: "Previous student", value: "previous_student" },
+  { label: "Other", value: "other" },
+];
+
+const DIVISION_OPTIONS = [
+  { label: "Dhaka", value: "dhaka" },
+  { label: "Chittagong", value: "chittagong" },
+  { label: "Rajshahi", value: "rajshahi" },
+  { label: "Khulna", value: "khulna" },
+  { label: "Sylhet", value: "sylhet" },
+  { label: "Barisal", value: "barisal" },
+  { label: "Rangpur", value: "rangpur" },
+  { label: "Mymensingh", value: "mymensingh" },
+];
+
 const EXAM_OPTIONS = [
   { label: "PSC / PEC", value: "psc" },
   { label: "JSC / JDC", value: "jsc" },
@@ -137,26 +158,31 @@ const admissionFormSchema = yup
       .trim()
       .required("First name is required")
       .max(50, "Too long"),
-    lastName: yup
-      .string()
-      .trim()
-      .required("Last name is required")
-      .max(50, "Too long"),
-    dob: yup.string().required("Date of birth is required"),
-    gender: yup.string().required("Gender is required").default(""),
+    lastName: yup.string().trim().max(50, "Too long").default(""),
+    firstNameBangla: yup.string().trim().max(60, "Too long").default(""),
+    dob: yup.string().default(""),
+    gender: yup.string().default(""),
     bloodGroup: yup.string().default(""),
     phone: yup
       .string()
       .trim()
-      .required("Phone number is required")
-      .matches(/^[0-9+\-() ]+$/, "Use numbers and basic characters only")
-      .max(20, "Too long"),
+      .matches(/^$|^[0-9+\-() ]+$/, "Use numbers and basic characters only")
+      .max(20, "Too long")
+      .default(""),
     email: yup.string().email("Invalid email address").trim().default(""),
-    address: yup
-      .string()
-      .trim()
-      .required("Address is required")
-      .max(300, "Too long"),
+    classLevel: yup.string().trim().max(60, "Too long").default(""),
+
+    // Address
+    address: yup.string().trim().max(300, "Too long").default(""),
+    division: yup.string().default(""),
+    district: yup.string().trim().max(60, "Too long").default(""),
+    upazila: yup.string().trim().max(60, "Too long").default(""),
+    village: yup.string().trim().max(60, "Too long").default(""),
+
+    // Academic background
+    previousInstitution: yup.string().trim().max(150, "Too long").default(""),
+    previousResult: yup.string().trim().max(100, "Too long").default(""),
+    admissionSource: yup.string().default(""),
 
     // Guardian
     guardianName: yup
@@ -182,7 +208,6 @@ const admissionFormSchema = yup
     // Qualifications (dynamic)
     qualifications: yup
       .array(qualificationSchema)
-      .min(1, "At least one qualification is required")
       .default([
         { institution: "", exam: "", gradeGpa: "", passingYear: "", board: "" },
       ]),
@@ -203,12 +228,21 @@ export type AdmissionFormValues = yup.InferType<typeof admissionFormSchema>;
 export const emptyAdmissionFormValues: AdmissionFormValues = {
   firstName: "",
   lastName: "",
+  firstNameBangla: "",
   dob: "",
   gender: "",
   bloodGroup: "",
   phone: "",
   email: "",
+  classLevel: "",
   address: "",
+  division: "",
+  district: "",
+  upazila: "",
+  village: "",
+  previousInstitution: "",
+  previousResult: "",
+  admissionSource: "",
   guardianName: "",
   guardianRelation: "",
   guardianPhone: "",
@@ -354,7 +388,7 @@ export function AdmissionFormDialog({
                 <RhfTextField
                   control={control}
                   name="firstName"
-                  label="First name"
+                  label="First name *"
                   placeholder="e.g. Rafiul"
                   fullWidth
                   trim
@@ -364,6 +398,22 @@ export function AdmissionFormDialog({
                   name="lastName"
                   label="Last name"
                   placeholder="e.g. Hasan"
+                  fullWidth
+                  trim
+                />
+                <RhfTextField
+                  control={control}
+                  name="firstNameBangla"
+                  label="Name in Bangla"
+                  placeholder="e.g. রাফিউল"
+                  fullWidth
+                  trim
+                />
+                <RhfTextField
+                  control={control}
+                  name="classLevel"
+                  label="Class / Level"
+                  placeholder="e.g. Class 9, HSC 1st Year"
                   fullWidth
                   trim
                 />
@@ -406,11 +456,101 @@ export function AdmissionFormDialog({
                   fullWidth
                   trim
                 />
+                <RhfSelect
+                  control={control}
+                  name="admissionSource"
+                  label="How did they hear about us?"
+                  options={[{ label: "Not specified", value: "" }, ...ADMISSION_SOURCE_OPTIONS]}
+                  fullWidth
+                />
+              </Box>
+            </Stack>
+
+            <Divider />
+
+            {/* ── Address ── */}
+            <Stack spacing={2}>
+              <SectionHeading
+                title="Address"
+                subtitle="Student's home address and location details."
+              />
+              <RhfTextField
+                control={control}
+                name="address"
+                label="Full address"
+                placeholder="Road, area, city"
+                fullWidth
+                trim
+              />
+              <Box
+                sx={{
+                  display: "grid",
+                  gap: 2,
+                  gridTemplateColumns: { xs: "1fr", md: "1fr 1fr" },
+                }}
+              >
+                <RhfSelect
+                  control={control}
+                  name="division"
+                  label="Division"
+                  options={[{ label: "Select division", value: "" }, ...DIVISION_OPTIONS]}
+                  fullWidth
+                />
                 <RhfTextField
                   control={control}
-                  name="address"
-                  label="Address"
-                  placeholder="Road, area, city"
+                  name="district"
+                  label="District"
+                  placeholder="e.g. Dhaka"
+                  fullWidth
+                  trim
+                />
+                <RhfTextField
+                  control={control}
+                  name="upazila"
+                  label="Upazila / Thana"
+                  placeholder="e.g. Dhanmondi"
+                  fullWidth
+                  trim
+                />
+                <RhfTextField
+                  control={control}
+                  name="village"
+                  label="Village / Area"
+                  placeholder="e.g. Jigatola"
+                  fullWidth
+                  trim
+                />
+              </Box>
+            </Stack>
+
+            <Divider />
+
+            {/* ── Academic background ── */}
+            <Stack spacing={2}>
+              <SectionHeading
+                title="Academic background"
+                subtitle="Previous institution and result before joining."
+              />
+              <Box
+                sx={{
+                  display: "grid",
+                  gap: 2,
+                  gridTemplateColumns: { xs: "1fr", md: "1fr 1fr" },
+                }}
+              >
+                <RhfTextField
+                  control={control}
+                  name="previousInstitution"
+                  label="Previous institution"
+                  placeholder="e.g. Dhaka Residential Model College"
+                  fullWidth
+                  trim
+                />
+                <RhfTextField
+                  control={control}
+                  name="previousResult"
+                  label="Previous result / GPA"
+                  placeholder="e.g. GPA 5.00, A+"
                   fullWidth
                   trim
                 />
