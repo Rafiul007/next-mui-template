@@ -43,7 +43,7 @@ export default async function BongoDashboardLayout({
           overflow: "hidden",
         }}
       >
-        <Topbar title="Bongo Platform" />
+        <Topbar />
 
         <Box
           sx={{

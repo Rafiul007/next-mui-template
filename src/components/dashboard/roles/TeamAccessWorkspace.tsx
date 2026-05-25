@@ -5,11 +5,13 @@ import {
   AddRounded,
   AdminPanelSettingsRounded,
   CheckCircleRounded,
+  CloseRounded,
   GroupsRounded,
   HowToRegRounded,
   LockPersonRounded,
   PersonOffRounded,
   ShieldRounded,
+  VisibilityRounded,
 } from "@mui/icons-material";
 import { useMutation, useQuery } from "@apollo/client/react";
 import {
@@ -51,7 +53,10 @@ import {
   CreateRoleDialog,
   type CreateRoleFormValues,
 } from "./CreateRoleDialog";
-import { formatPermissionLabel } from "./permission-registry";
+import {
+  formatPermissionLabel,
+  permissionGroups,
+} from "./permission-registry";
 
 type EmployeeRecord = GetEmployeesQuery["getEmployees"][number];
 type UserRecord = NonNullable<GetUsersQuery["getUsers"][number]>;
@@ -62,6 +67,8 @@ type EmployeeRow = {
   employeeCode: string;
   designation: string | null;
   department: string | null;
+  employmentType: string | null;
+  isOnProbation: boolean;
   employeeStatus: string;
   userId: string | null;
   name: string;
@@ -96,20 +103,25 @@ const buildEmployeeRow = (
   userById: Map<string, UserRecord>,
 ): EmployeeRow => {
   const user = emp.userId ? (userById.get(emp.userId) ?? null) : null;
+  const ui = emp.userInfo;
   const name = user
     ? formatPersonName(user)
-    : emp.employeeCode || "Unknown";
+    : ui?.firstName
+      ? `${ui.firstName} ${ui.lastName ?? ""}`.trim()
+      : emp.employeeCode || "Unknown";
   return {
     employeeId: emp.id,
     employeeCode: emp.employeeCode,
-    designation: emp.designation,
-    department: emp.department,
+    designation: emp.designation ?? null,
+    department: emp.department ?? null,
+    employmentType: emp.employmentType ?? null,
+    isOnProbation: emp.isOnProbation ?? false,
     employeeStatus: emp.status,
     userId: emp.userId,
     name,
-    email: user?.email ?? null,
-    phone: user?.phone ?? null,
-    profilePicture: user?.profilePicture ?? null,
+    email: user?.email ?? ui?.email ?? null,
+    phone: user?.phone ?? ui?.phone ?? null,
+    profilePicture: user?.profilePicture ?? ui?.profilePicture ?? null,
     isActivated: user?.isActivated ?? false,
     isVerified: user?.isVerified ?? false,
     roles: user?.roles ?? [],
@@ -226,6 +238,61 @@ const buildColumns = (): MRT_ColumnDef<EmployeeRow>[] => [
     ),
   },
   {
+    id: "designation",
+    accessorKey: "designation",
+    header: "Designation",
+    size: 150,
+    Cell: ({ cell }) => (
+      <Typography variant="body2">{cell.getValue<string | null>() ?? "—"}</Typography>
+    ),
+  },
+  {
+    id: "department",
+    accessorKey: "department",
+    header: "Department",
+    size: 140,
+    Cell: ({ cell }) => (
+      <Typography variant="body2">{cell.getValue<string | null>() ?? "—"}</Typography>
+    ),
+  },
+  {
+    id: "employmentType",
+    accessorKey: "employmentType",
+    header: "Type",
+    size: 130,
+    filterVariant: "select",
+    filterSelectOptions: ["Full-time", "Part-time", "Contractual", "Intern"],
+    Cell: ({ row }) => {
+      const raw = row.original.employmentType ?? "";
+      const label: Record<string, string> = {
+        FULL_TIME: "Full-time",
+        PART_TIME: "Part-time",
+        CONTRACTUAL: "Contractual",
+        INTERN: "Intern",
+      };
+      return raw ? (
+        <Chip label={label[raw] ?? raw} size="small" variant="outlined" />
+      ) : (
+        <Typography variant="body2" color="text.secondary">—</Typography>
+      );
+    },
+  },
+  {
+    id: "isOnProbation",
+    accessorFn: (row) => (row.isOnProbation ? "Yes" : "No"),
+    header: "Probation",
+    size: 110,
+    filterVariant: "select",
+    filterFn: "equals",
+    filterSelectOptions: ["Yes", "No"],
+    Cell: ({ row }) =>
+      row.original.isOnProbation ? (
+        <Chip label="On probation" color="warning" size="small" />
+      ) : (
+        <Typography variant="body2" color="text.secondary">—</Typography>
+      ),
+  },
+  {
     id: "status",
     accessorFn: (row) => {
       const s = row.employeeStatus?.toLowerCase() ?? "";
@@ -287,6 +354,7 @@ export function TeamAccessWorkspace() {
     useState<StatusActionState | null>(null);
   const [createRoleError, setCreateRoleError] = useState<string | null>(null);
   const [assignRoleError, setAssignRoleError] = useState<string | null>(null);
+  const [viewingRole, setViewingRole] = useState<RoleRecord | null>(null);
 
   const {
     data: employeesData,
@@ -810,21 +878,36 @@ export function TeamAccessWorkspace() {
                               </Typography>
                             </Stack>
 
-                            <Box
-                              sx={{
-                                width: 40,
-                                height: 40,
-                                borderRadius: 2,
-                                display: "grid",
-                                placeItems: "center",
-                                bgcolor: role.system
-                                  ? alpha("#0f172a", 0.06)
-                                  : alpha("#10b981", 0.12),
-                                color: role.system ? "#0f172a" : "#047857",
-                              }}
-                            >
-                              <LockPersonRounded />
-                            </Box>
+                            <Stack direction="row" spacing={0.75} alignItems="center">
+                              <Tooltip title="View all permissions">
+                                <IconButton
+                                  size="small"
+                                  onClick={() => setViewingRole(role)}
+                                  sx={{
+                                    bgcolor: alpha("#0f172a", 0.04),
+                                    color: alpha("#0f172a", 0.6),
+                                    "&:hover": { bgcolor: alpha("#0f172a", 0.08) },
+                                  }}
+                                >
+                                  <VisibilityRounded fontSize="small" />
+                                </IconButton>
+                              </Tooltip>
+                              <Box
+                                sx={{
+                                  width: 40,
+                                  height: 40,
+                                  borderRadius: 2,
+                                  display: "grid",
+                                  placeItems: "center",
+                                  bgcolor: role.system
+                                    ? alpha("#0f172a", 0.06)
+                                    : alpha("#10b981", 0.12),
+                                  color: role.system ? "#0f172a" : "#047857",
+                                }}
+                              >
+                                <LockPersonRounded />
+                              </Box>
+                            </Stack>
                           </Stack>
 
                           <Box
@@ -959,6 +1042,110 @@ export function TeamAccessWorkspace() {
         onSubmit={handleCreateRole}
         open={isCreateRoleOpen}
       />
+
+      <Dialog
+        open={!!viewingRole}
+        onClose={() => setViewingRole(null)}
+        fullWidth
+        maxWidth="sm"
+      >
+        <DialogTitle sx={{ pr: 6 }}>
+          <Stack direction="row" spacing={1} alignItems="center">
+            <Typography variant="h6">{viewingRole?.name}</Typography>
+            <Chip
+              size="small"
+              label={viewingRole?.system ? "System" : "Custom"}
+              color={viewingRole?.system ? "default" : "success"}
+              variant={viewingRole?.system ? "outlined" : "filled"}
+            />
+          </Stack>
+          <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+            {viewingRole?.permissions.length ?? 0} permission
+            {viewingRole?.permissions.length === 1 ? "" : "s"} granted
+          </Typography>
+        </DialogTitle>
+        <IconButton
+          onClick={() => setViewingRole(null)}
+          size="small"
+          sx={{ position: "absolute", top: 12, right: 12 }}
+        >
+          <CloseRounded fontSize="small" />
+        </IconButton>
+        <DialogContent dividers sx={{ pt: 2 }}>
+          {viewingRole?.permissions.length === 0 ? (
+            <Typography variant="body2" color="text.secondary">
+              No permissions defined for this role.
+            </Typography>
+          ) : (
+            <Stack spacing={2.5}>
+              {permissionGroups
+                .filter((group) =>
+                  group.options.some((opt) =>
+                    viewingRole?.permissions.includes(opt.value),
+                  ),
+                )
+                .map((group) => {
+                  const granted = group.options.filter((opt) =>
+                    viewingRole?.permissions.includes(opt.value),
+                  );
+                  return (
+                    <Box key={group.key}>
+                      <Typography
+                        variant="caption"
+                        sx={{ fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.6, color: "text.secondary" }}
+                      >
+                        {group.title}
+                      </Typography>
+                      <Stack spacing={1} sx={{ mt: 1 }}>
+                        {granted.map((opt) => (
+                          <Stack key={opt.value} direction="row" spacing={1.5} alignItems="flex-start">
+                            <CheckCircleRounded
+                              sx={{ fontSize: 18, color: "#10b981", mt: 0.15, flexShrink: 0 }}
+                            />
+                            <Box>
+                              <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                                {opt.label}
+                              </Typography>
+                              <Typography variant="caption" color="text.secondary">
+                                {opt.description}
+                              </Typography>
+                            </Box>
+                          </Stack>
+                        ))}
+                      </Stack>
+                    </Box>
+                  );
+                })}
+              {/* Show any unknown permissions not in the registry */}
+              {(() => {
+                const known = new Set(
+                  permissionGroups.flatMap((g) => g.options.map((o) => o.value)),
+                );
+                const unknown = viewingRole?.permissions.filter((p) => !known.has(p)) ?? [];
+                if (!unknown.length) return null;
+                return (
+                  <Box>
+                    <Typography
+                      variant="caption"
+                      sx={{ fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.6, color: "text.secondary" }}
+                    >
+                      Other
+                    </Typography>
+                    <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap sx={{ mt: 1 }}>
+                      {unknown.map((p) => (
+                        <Chip key={p} label={formatPermissionLabel(p)} size="small" variant="outlined" />
+                      ))}
+                    </Stack>
+                  </Box>
+                );
+              })()}
+            </Stack>
+          )}
+        </DialogContent>
+        <DialogActions sx={{ px: 3, py: 2 }}>
+          <Button onClick={() => setViewingRole(null)}>Close</Button>
+        </DialogActions>
+      </Dialog>
 
       <Dialog
         open={!!pendingStatusAction}

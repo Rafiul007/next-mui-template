@@ -1,25 +1,28 @@
 /**
- * New billing GraphQL operations.
+ * Billing GraphQL operations using the current backend schema.
  *
- * These are hand-crafted TypedDocumentNodes that map to the NEW backend schema
- * described in docs/backend-billing-requirements.md.
- *
- * Once the backend ships and codegen is re-run, delete this file and import
- * everything from @/graphql/generated instead.
+ * NOTE: invoiceType, enrollmentId, student (nested), getAllStudentInvoices, and
+ * StudentInvoiceFiltersInput do NOT exist in the current StudentInvoice type.
+ * Use getStudentInvoices(studentId) to fetch per-student invoices.
  */
 
 import { gql, type TypedDocumentNode } from "@apollo/client";
 
-// ── Shared enums / types ──────────────────────────────────────────────────────
+// ── Types ─────────────────────────────────────────────────────────────────────
 
+// InvoiceType is a planned field — NOT yet in the backend StudentInvoice schema.
 export type InvoiceType = "ADMISSION" | "MONTHLY_FEE" | "FINE" | "MISC";
 
-export type InvoiceStatus = "UNPAID" | "PARTIAL" | "OVERDUE" | "PAID" | "WAIVED";
+export type InvoiceStatus =
+  | "ISSUED"
+  | "UNPAID"
+  | "PARTIAL"
+  | "OVERDUE"
+  | "PAID"
+  | "WAIVED";
 
 export type StudentInvoiceNew = {
   id: string;
-  invoiceType: InvoiceType;
-  enrollmentId: string | null;
   batchId: string;
   studentId: string;
   month: string;
@@ -34,20 +37,11 @@ export type StudentInvoiceNew = {
   pdfPath: string | null;
   tenantId: string;
   lineItems: Array<{ feeTypeId: string; description: string; amount: number }>;
-  student: {
-    id: string;
-    firstName: string;
-    lastName: string | null;
-    studentCode: string | null;
-    classLevel: string | null;
-  };
 };
 
-const STUDENT_INVOICE_FRAGMENT = /* GraphQL */ `
-  fragment StudentInvoiceNew on StudentInvoice {
+const STUDENT_INVOICE_FIELDS = /* GraphQL */ `
+  fragment StudentInvoiceFields on StudentInvoice {
     id
-    invoiceType
-    enrollmentId
     batchId
     studentId
     month
@@ -66,79 +60,10 @@ const STUDENT_INVOICE_FRAGMENT = /* GraphQL */ `
       description
       amount
     }
-    student {
-      id
-      firstName
-      lastName
-      studentCode
-      classLevel
-    }
   }
 `;
 
-// ── GetAllStudentInvoices ─────────────────────────────────────────────────────
-
-export type GetAllStudentInvoicesFilters = {
-  invoiceType?: InvoiceType;
-  status?: InvoiceStatus;
-  month?: string;
-  batchId?: string;
-  studentId?: string;
-};
-
-export type GetAllStudentInvoicesVariables = {
-  filters?: GetAllStudentInvoicesFilters;
-};
-
-export type GetAllStudentInvoicesResult = {
-  getAllStudentInvoices: StudentInvoiceNew[];
-};
-
-export const GetAllStudentInvoicesDocument: TypedDocumentNode<
-  GetAllStudentInvoicesResult,
-  GetAllStudentInvoicesVariables
-> = gql`
-  ${STUDENT_INVOICE_FRAGMENT}
-  query GetAllStudentInvoices($filters: StudentInvoiceFiltersInput) {
-    getAllStudentInvoices(filters: $filters) {
-      ...StudentInvoiceNew
-    }
-  }
-`;
-
-// ── GenerateAdmissionInvoice ─────────────────────────────────────────────────
-
-export type GenerateAdmissionInvoiceVariables = {
-  studentId: string;
-  batchId: string;
-  enrollmentId: string;
-};
-
-export type GenerateAdmissionInvoiceResult = {
-  generateAdmissionInvoice: StudentInvoiceNew;
-};
-
-export const GenerateAdmissionInvoiceDocument: TypedDocumentNode<
-  GenerateAdmissionInvoiceResult,
-  GenerateAdmissionInvoiceVariables
-> = gql`
-  ${STUDENT_INVOICE_FRAGMENT}
-  mutation GenerateAdmissionInvoice(
-    $studentId: ID!
-    $batchId: ID!
-    $enrollmentId: ID!
-  ) {
-    generateAdmissionInvoice(
-      studentId: $studentId
-      batchId: $batchId
-      enrollmentId: $enrollmentId
-    ) {
-      ...StudentInvoiceNew
-    }
-  }
-`;
-
-// ── GetStudentInvoicesNew (per-student, with new fields) ──────────────────────
+// ── GetStudentInvoicesNew ─────────────────────────────────────────────────────
 
 export type GetStudentInvoicesNewVariables = {
   studentId: string;
@@ -152,15 +77,15 @@ export const GetStudentInvoicesNewDocument: TypedDocumentNode<
   GetStudentInvoicesNewResult,
   GetStudentInvoicesNewVariables
 > = gql`
-  ${STUDENT_INVOICE_FRAGMENT}
+  ${STUDENT_INVOICE_FIELDS}
   query GetStudentInvoicesNew($studentId: ID!) {
     getStudentInvoices(studentId: $studentId) {
-      ...StudentInvoiceNew
+      ...StudentInvoiceFields
     }
   }
 `;
 
-// ── RecordStudentPaymentNew (re-export with extended return) ──────────────────
+// ── RecordStudentPaymentNew ───────────────────────────────────────────────────
 
 export type RecordStudentPaymentNewVariables = {
   payment: {

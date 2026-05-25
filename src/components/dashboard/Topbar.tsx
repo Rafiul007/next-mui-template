@@ -1,12 +1,15 @@
+"use client";
+
 import { NotificationsNoneRounded } from "@mui/icons-material";
-import { Box, IconButton, Stack, Typography, alpha } from "@mui/material";
+import { Box, IconButton, Skeleton, Stack, Typography, alpha } from "@mui/material";
+import { useQuery } from "@apollo/client/react";
+import { GetCenterDocument } from "@/graphql/generated";
 import { UserProfile } from "@/components/dashboard/UserProfile";
 
-type TopbarProps = {
-  title: string;
-};
+export function Topbar() {
+  const { data } = useQuery(GetCenterDocument);
+  const centerName = data?.getCenter?.name;
 
-export function Topbar({ title }: TopbarProps) {
   return (
     <Box
       sx={{
@@ -23,9 +26,18 @@ export function Topbar({ title }: TopbarProps) {
         justifyContent="space-between"
         spacing={2}
       >
-        <Typography variant="h5" sx={{ color: "#f8fafc" }}>
-          {title}
-        </Typography>
+        {centerName ? (
+          <Typography variant="h5" sx={{ color: "#f8fafc" }}>
+            {centerName}
+          </Typography>
+        ) : (
+          <Skeleton
+            variant="text"
+            width={220}
+            height={36}
+            sx={{ bgcolor: alpha("#ffffff", 0.1), borderRadius: 1 }}
+          />
+        )}
 
         <Stack direction="row" spacing={1.5} alignItems="center">
           <IconButton
