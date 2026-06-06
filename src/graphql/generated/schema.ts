@@ -258,6 +258,14 @@ export type CreateBranchInput = {
   workingDays?: InputMaybe<Array<Scalars['String']['input']>>;
 };
 
+export type CreateDepartmentInput = {
+  code: Scalars['String']['input'];
+  defaultRoles?: InputMaybe<Array<Scalars['String']['input']>>;
+  description?: InputMaybe<Scalars['String']['input']>;
+  name: Scalars['String']['input'];
+  parentDepartmentId?: InputMaybe<Scalars['ID']['input']>;
+};
+
 export type CreateDiscountInput = {
   applicableRuleJson?: InputMaybe<Scalars['String']['input']>;
   discountType: Scalars['String']['input'];
@@ -300,6 +308,8 @@ export type CreateHolidayInput = {
 
 export type CreateLeavePolicyInput = {
   carryForwardDays: Scalars['Int']['input'];
+  customName?: InputMaybe<Scalars['String']['input']>;
+  departmentId?: InputMaybe<Scalars['ID']['input']>;
   description?: InputMaybe<Scalars['String']['input']>;
   leaveType: Scalars['String']['input'];
   name: Scalars['String']['input'];
@@ -394,6 +404,18 @@ export type CreateTenantRoleInput = {
   permissions: Array<Scalars['String']['input']>;
 };
 
+export type DepartmentDto = {
+  __typename?: 'DepartmentDto';
+  code: Scalars['String']['output'];
+  defaultRoles?: Maybe<Array<Scalars['String']['output']>>;
+  description?: Maybe<Scalars['String']['output']>;
+  id: Scalars['ID']['output'];
+  name: Scalars['String']['output'];
+  parentDepartmentId?: Maybe<Scalars['ID']['output']>;
+  status: Scalars['String']['output'];
+  tenantId: Scalars['ID']['output'];
+};
+
 export type Discount = {
   __typename?: 'Discount';
   applicableRuleJson?: Maybe<Scalars['String']['output']>;
@@ -408,6 +430,7 @@ export type Discount = {
 
 /**
  * # Phase 6 — HR Module (Employee, Recruitment, Leave, Attendance, Payroll, Performance)
+ * # Phase 6b — Department CRUD
  *  ─── Types ──────────────────────────────────────────────────────────────────
  */
 export type Employee = {
@@ -415,6 +438,7 @@ export type Employee = {
   bloodGroup?: Maybe<Scalars['String']['output']>;
   branchId: Scalars['ID']['output'];
   department?: Maybe<Scalars['String']['output']>;
+  departmentId?: Maybe<Scalars['ID']['output']>;
   designation?: Maybe<Scalars['String']['output']>;
   emergencyContactName?: Maybe<Scalars['String']['output']>;
   emergencyContactPhone?: Maybe<Scalars['String']['output']>;
@@ -692,6 +716,8 @@ export type LeaveBalance = {
 export type LeavePolicy = {
   __typename?: 'LeavePolicy';
   carryForwardDays: Scalars['Int']['output'];
+  customName?: Maybe<Scalars['String']['output']>;
+  departmentId?: Maybe<Scalars['ID']['output']>;
   description?: Maybe<Scalars['String']['output']>;
   id: Scalars['ID']['output'];
   leaveType: Scalars['String']['output'];
@@ -740,6 +766,7 @@ export type Mutation = {
   approvePayroll: PayrollRun;
   approveWaiver: StudentInvoice;
   archiveNotice: Notice;
+  assignEmployeeToDepartment: Employee;
   assignRoleToUser: TenantRole;
   assignSubstitute: Session;
   cancelLeave: LeaveApplication;
@@ -753,6 +780,7 @@ export type Mutation = {
   createBatch: Batch;
   createBranch: Branch;
   createCustomRole: TenantRole;
+  createDepartment: DepartmentDto;
   createDiscount: Discount;
   createExam: Exam;
   createFeePlan: FeePlan;
@@ -779,6 +807,7 @@ export type Mutation = {
   giveFeedback: Submission;
   hireApplicant: Employee;
   impersonateTenant: ImpersonationResult;
+  initLeaveBalancesForEmployee: Array<LeaveBalance>;
   inviteBongoUser: User;
   launchReviewCycle: ReviewCycle;
   login: AuthResponse;
@@ -798,6 +827,7 @@ export type Mutation = {
   recordStudentPayment: StudentPayment;
   refresh: AuthResponse;
   rejectLeave: LeaveApplication;
+  removeEmployeeFromDepartment: Employee;
   requestManualAttendance: EmployeeAttendance;
   requestWaiver: StudentInvoice;
   resendOtp?: Maybe<OtpResendStatus>;
@@ -818,6 +848,7 @@ export type Mutation = {
   updateBatch: Batch;
   updateBranch: Branch;
   updateCenter: Center;
+  updateDepartment: DepartmentDto;
   updateEmployee: Employee;
   updatePIPProgress: Pip;
   updateProfile?: Maybe<User>;
@@ -909,6 +940,12 @@ export type MutationArchiveNoticeArgs = {
 };
 
 
+export type MutationAssignEmployeeToDepartmentArgs = {
+  departmentId: Scalars['ID']['input'];
+  employeeId: Scalars['ID']['input'];
+};
+
+
 export type MutationAssignRoleToUserArgs = {
   roleName: Scalars['String']['input'];
   userId: Scalars['ID']['input'];
@@ -982,6 +1019,11 @@ export type MutationCreateBranchArgs = {
 
 export type MutationCreateCustomRoleArgs = {
   role: CreateTenantRoleInput;
+};
+
+
+export type MutationCreateDepartmentArgs = {
+  input: CreateDepartmentInput;
 };
 
 
@@ -1115,6 +1157,11 @@ export type MutationImpersonateTenantArgs = {
 };
 
 
+export type MutationInitLeaveBalancesForEmployeeArgs = {
+  employeeId: Scalars['ID']['input'];
+};
+
+
 export type MutationInviteBongoUserArgs = {
   user: InviteBongoUserInput;
 };
@@ -1205,6 +1252,11 @@ export type MutationRefreshArgs = {
 export type MutationRejectLeaveArgs = {
   applicationId: Scalars['ID']['input'];
   reason: Scalars['String']['input'];
+};
+
+
+export type MutationRemoveEmployeeFromDepartmentArgs = {
+  employeeId: Scalars['ID']['input'];
 };
 
 
@@ -1310,6 +1362,12 @@ export type MutationUpdateBranchArgs = {
 
 export type MutationUpdateCenterArgs = {
   center: SetupCenterInput;
+};
+
+
+export type MutationUpdateDepartmentArgs = {
+  id: Scalars['ID']['input'];
+  input: UpdateDepartmentInput;
 };
 
 
@@ -1565,6 +1623,8 @@ export type Query = {
   getBranch?: Maybe<Branch>;
   getBranches: Array<Branch>;
   getCenter?: Maybe<Center>;
+  getDepartment: DepartmentDto;
+  getDepartments: Array<DepartmentDto>;
   getDiscounts: Array<Discount>;
   getEmployee: Employee;
   getEmployees: Array<Employee>;
@@ -1585,6 +1645,7 @@ export type Query = {
   getMaterialsByBatch: Array<StudyMaterial>;
   getMonthlyAttendanceSheet: Array<EmployeeAttendance>;
   getMyEmployeeProfile: Employee;
+  getMyLatestPayslip: PayrollEntry;
   getMyPlan: SubscriptionPlan;
   getNoticesForBatch: Array<Notice>;
   getOrgChart: Array<OrgNode>;
@@ -1658,6 +1719,11 @@ export type QueryGetBranchArgs = {
 
 export type QueryGetBranchesArgs = {
   centerId: Scalars['ID']['input'];
+};
+
+
+export type QueryGetDepartmentArgs = {
+  id: Scalars['ID']['input'];
 };
 
 
@@ -2211,6 +2277,13 @@ export type UpdateBranchInput = {
   openTime?: InputMaybe<Scalars['String']['input']>;
   phone?: InputMaybe<Scalars['String']['input']>;
   workingDays?: InputMaybe<Array<Scalars['String']['input']>>;
+};
+
+export type UpdateDepartmentInput = {
+  defaultRoles?: InputMaybe<Array<Scalars['String']['input']>>;
+  description?: InputMaybe<Scalars['String']['input']>;
+  name?: InputMaybe<Scalars['String']['input']>;
+  status?: InputMaybe<Scalars['String']['input']>;
 };
 
 export type UpdateEmployeeInput = {

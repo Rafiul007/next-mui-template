@@ -1,5 +1,5 @@
-import { OrgChartWorkspace } from "@/components/dashboard/org/OrgChartWorkspace";
+import { DepartmentsWorkspace } from "@/components/dashboard/org/DepartmentsWorkspace";
 
-const OrgHierarchyPage = () => <OrgChartWorkspace />;
+const OrgHierarchyPage = () => <DepartmentsWorkspace />;
 
 export default OrgHierarchyPage;

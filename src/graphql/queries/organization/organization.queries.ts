@@ -116,3 +116,33 @@ export const GET_NOTICES_FOR_BATCH_QUERY = /* GraphQL */ `
     }
   }
 `;
+
+export const GET_DEPARTMENTS_QUERY = /* GraphQL */ `
+  query GetDepartments {
+    getDepartments {
+      id
+      code
+      name
+      description
+      status
+      parentDepartmentId
+      defaultRoles
+      tenantId
+    }
+  }
+`;
+
+export const GET_DEPARTMENT_QUERY = /* GraphQL */ `
+  query GetDepartment($id: ID!) {
+    getDepartment(id: $id) {
+      id
+      code
+      name
+      description
+      status
+      parentDepartmentId
+      defaultRoles
+      tenantId
+    }
+  }
+`;

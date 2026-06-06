@@ -4,6 +4,7 @@ import { useState } from "react";
 import {
   AccountTreeRounded,
   AddRounded,
+  BusinessRounded,
   GroupsRounded,
   HubRounded,
   PersonRounded,
@@ -16,6 +17,8 @@ import {
   Chip,
   Paper,
   Stack,
+  Tab,
+  Tabs,
   Typography,
   alpha,
 } from "@mui/material";
@@ -25,6 +28,7 @@ import type { RhfSelectOption } from "@/components/form";
 import { SummaryCard } from "@/components/ui";
 import {
   AddOrgNodeDocument,
+  GetDepartmentsDocument,
   GetOrgChartDocument,
   GetUsersDocument,
   type GetOrgChartQuery,
@@ -33,6 +37,7 @@ import {
 import { getErrorMessage } from "@/lib/errors";
 import { primaryGradient } from "@/theme/theme";
 import { OrgNodeFormDialog, type OrgNodeFormValues } from "./OrgNodeFormDialog";
+import { DepartmentsWorkspace } from "./DepartmentsWorkspace";
 
 type OrgNodeData = Omit<GetOrgChartQuery["getOrgChart"][number], "children"> & {
   children?: OrgNodeData[];
@@ -161,6 +166,7 @@ const buildColumns = ({
 ];
 
 export function OrgChartWorkspace() {
+  const [activeTab, setActiveTab] = useState(0);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [formDialogKey, setFormDialogKey] = useState(0);
   const [formErrorMessage, setFormErrorMessage] = useState<string | null>(null);
@@ -178,6 +184,8 @@ export function OrgChartWorkspace() {
     loading: isUsersLoading,
   } = useQuery(GetUsersDocument, { variables: { page: 1, limit: 200 } });
 
+  const { data: deptData } = useQuery(GetDepartmentsDocument);
+
   const [addOrgNode, addOrgNodeState] = useMutation(AddOrgNodeDocument);
 
   const rootNodes = orgData?.getOrgChart ?? [];
@@ -192,6 +200,7 @@ export function OrgChartWorkspace() {
   const totalCount = flatNodes.length;
   const rootCount = rootNodes.length;
   const managedCount = flatNodes.filter((n) => !!n.managerId).length;
+  const deptCount = deptData?.getDepartments?.length ?? 0;
 
   const nodeOptions: RhfSelectOption[] = [
     { label: "None (root node)", value: "" },
@@ -264,34 +273,35 @@ export function OrgChartWorkspace() {
           >
             <Box sx={{ maxWidth: 760 }}>
               <Typography variant="h4" component="h1" sx={{ mt: 0.5 }}>
-                Organization Structure
+                Organization & Departments
               </Typography>
               <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
-                Define your center&apos;s departments, teams, and reporting
-                hierarchy.
+                Manage your reporting hierarchy and functional departments in one place.
               </Typography>
             </Box>
-            <Box
-              sx={{
-                minWidth: { lg: 240 },
-                display: "flex",
-                alignItems: "flex-start",
-                justifyContent: { xs: "stretch", lg: "flex-end" },
-              }}
-            >
-              <Button
-                variant="contained"
-                startIcon={<AddRounded />}
-                onClick={openForm}
-                fullWidth
+            {activeTab === 0 && (
+              <Box
                 sx={{
-                  maxWidth: { xs: "100%", lg: 220 },
-                  backgroundImage: primaryGradient,
+                  minWidth: { lg: 240 },
+                  display: "flex",
+                  alignItems: "flex-start",
+                  justifyContent: { xs: "stretch", lg: "flex-end" },
                 }}
               >
-                Add Node
-              </Button>
-            </Box>
+                <Button
+                  variant="contained"
+                  startIcon={<AddRounded />}
+                  onClick={openForm}
+                  fullWidth
+                  sx={{
+                    maxWidth: { xs: "100%", lg: 220 },
+                    backgroundImage: primaryGradient,
+                  }}
+                >
+                  Add Node
+                </Button>
+              </Box>
+            )}
           </Stack>
         </Paper>
 
@@ -301,17 +311,17 @@ export function OrgChartWorkspace() {
             gap: 2,
             gridTemplateColumns: {
               xs: "1fr",
-              sm: "repeat(3, minmax(0, 1fr))",
+              sm: "repeat(4, minmax(0, 1fr))",
             },
           }}
         >
           <SummaryCard
-            caption="Total Nodes"
+            caption="Org Nodes"
             title={String(totalCount)}
             icon={<AccountTreeRounded />}
           />
           <SummaryCard
-            caption="Root Departments"
+            caption="Root Nodes"
             title={String(rootCount)}
             icon={<HubRounded />}
             tone="success"
@@ -321,13 +331,37 @@ export function OrgChartWorkspace() {
             title={String(managedCount)}
             icon={<GroupsRounded />}
           />
+          <SummaryCard
+            caption="Departments"
+            title={String(deptCount)}
+            icon={<BusinessRounded />}
+            tone="success"
+          />
         </Box>
 
-        {loadError ? (
-          <Alert severity="error">
-            {loadError.message || "Unable to load organization data."}
-          </Alert>
-        ) : null}
+        <Paper elevation={0} sx={{ border: "1px solid", borderColor: "divider", borderRadius: 2, overflow: "hidden" }}>
+          <Tabs
+            value={activeTab}
+            onChange={(_, v) => setActiveTab(v)}
+            sx={{ px: 2.5, borderBottom: "1px solid", borderColor: "divider", bgcolor: "#fff" }}
+          >
+            <Tab label="Org Chart" icon={<AccountTreeRounded sx={{ fontSize: 18 }} />} iconPosition="start" />
+            <Tab label={`Departments${deptCount > 0 ? ` (${deptCount})` : ""}`} icon={<BusinessRounded sx={{ fontSize: 18 }} />} iconPosition="start" />
+          </Tabs>
+
+          {activeTab === 1 && (
+            <Box sx={{ p: 2 }}>
+              <DepartmentsWorkspace />
+            </Box>
+          )}
+
+          {activeTab === 0 && (
+            <Box sx={{ p: 2 }}>
+              {loadError ? (
+                <Alert severity="error" sx={{ mb: 2 }}>
+                  {loadError.message || "Unable to load organization data."}
+                </Alert>
+              ) : null}
 
         <MaterialReactTable
           columns={buildColumns({ userLookup })}
@@ -430,6 +464,9 @@ export function OrgChartWorkspace() {
           )}
           state={{ isLoading, showProgressBars: isLoading }}
         />
+            </Box>
+          )}
+        </Paper>
       </Stack>
 
       <OrgNodeFormDialog

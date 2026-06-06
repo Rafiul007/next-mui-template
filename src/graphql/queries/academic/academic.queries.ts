@@ -150,6 +150,22 @@ export const GET_SCHEDULES_BY_BATCH_QUERY = /* GraphQL */ `
   }
 `;
 
+export const GET_MY_ROUTINE_QUERY = /* GraphQL */ `
+  query GetMyRoutine($batchId: ID!) {
+    myRoutine(batchId: $batchId) {
+      id
+      batchId
+      dayOfWeek
+      startTime
+      endTime
+      roomName
+      teacherId
+      active
+      tenantId
+    }
+  }
+`;
+
 export const GET_SESSIONS_BY_BATCH_QUERY = /* GraphQL */ `
   query GetSessionsByBatch($batchId: ID!) {
     getSessionsByBatch(batchId: $batchId) {

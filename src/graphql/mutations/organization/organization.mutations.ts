@@ -209,3 +209,59 @@ export const ARCHIVE_NOTICE_MUTATION = /* GraphQL */ `
     }
   }
 `;
+
+export const CREATE_DEPARTMENT_MUTATION = /* GraphQL */ `
+  mutation CreateDepartment($input: CreateDepartmentInput!) {
+    createDepartment(input: $input) {
+      id
+      code
+      name
+      description
+      status
+      parentDepartmentId
+      defaultRoles
+      tenantId
+    }
+  }
+`;
+
+export const UPDATE_DEPARTMENT_MUTATION = /* GraphQL */ `
+  mutation UpdateDepartment($id: ID!, $input: UpdateDepartmentInput!) {
+    updateDepartment(id: $id, input: $input) {
+      id
+      code
+      name
+      description
+      status
+      parentDepartmentId
+      defaultRoles
+      tenantId
+    }
+  }
+`;
+
+export const ASSIGN_EMPLOYEE_TO_DEPARTMENT_MUTATION = /* GraphQL */ `
+  mutation AssignEmployeeToDepartment($employeeId: ID!, $departmentId: ID!) {
+    assignEmployeeToDepartment(employeeId: $employeeId, departmentId: $departmentId) {
+      id
+      employeeCode
+      designation
+      department
+      status
+      tenantId
+    }
+  }
+`;
+
+export const REMOVE_EMPLOYEE_FROM_DEPARTMENT_MUTATION = /* GraphQL */ `
+  mutation RemoveEmployeeFromDepartment($employeeId: ID!) {
+    removeEmployeeFromDepartment(employeeId: $employeeId) {
+      id
+      employeeCode
+      designation
+      department
+      status
+      tenantId
+    }
+  }
+`;

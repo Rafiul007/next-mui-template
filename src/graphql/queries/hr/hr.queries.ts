@@ -8,6 +8,7 @@ export const GET_EMPLOYEES_QUERY = /* GraphQL */ `
       employeeCode
       designation
       department
+      departmentId
       employmentType
       joiningDate
       status
@@ -112,6 +113,48 @@ export const GET_PERFORMANCE_DASHBOARD_QUERY = /* GraphQL */ `
       averageScore
       reviewCount
       reviewerTypes
+    }
+  }
+`;
+
+export const GET_PIPS_QUERY = /* GraphQL */ `
+  query GetPIPs($employeeId: ID!) {
+    getPIPs(employeeId: $employeeId) {
+      id
+      employeeId
+      createdBy
+      goals
+      startDate
+      endDate
+      status
+      progressNotes
+    }
+  }
+`;
+
+export const GET_SKILL_MATRIX_QUERY = /* GraphQL */ `
+  query GetSkillMatrix($employeeId: ID!) {
+    getSkillMatrix(employeeId: $employeeId) {
+      id
+      employeeId
+      skill
+      proficiencyLevel
+      tenantId
+    }
+  }
+`;
+
+export const GET_EXPIRING_CERTIFICATIONS_QUERY = /* GraphQL */ `
+  query GetExpiringCertifications {
+    getExpiringCertifications {
+      id
+      employeeId
+      name
+      issuingOrganization
+      issueDate
+      expiryDate
+      certificateUrl
+      tenantId
     }
   }
 `;

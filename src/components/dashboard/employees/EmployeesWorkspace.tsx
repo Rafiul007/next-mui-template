@@ -40,8 +40,10 @@ import { toast } from "react-hot-toast";
 import type { RhfSelectOption } from "@/components/form";
 import { SummaryCard } from "@/components/ui";
 import {
+  AssignEmployeeToDepartmentDocument,
   GetBranchesDocument,
   GetCenterDocument,
+  GetDepartmentsDocument,
   GetEmployeesDocument,
   GetUsersDocument,
   OnboardEmployeeWithUserDocument,
@@ -101,7 +103,7 @@ const getEmployeeFormValues = (
       joiningDate: null as unknown as Dayjs,
       employeeCode: "",
       designation: "",
-      department: "",
+      departmentId: "",
       nid: "",
       tin: "",
       bloodGroup: "",
@@ -125,7 +127,7 @@ const getEmployeeFormValues = (
       : (null as unknown as Dayjs),
     employeeCode: employee.employeeCode ?? "",
     designation: employee.designation ?? "",
-    department: employee.department ?? "",
+    departmentId: employee.departmentId ?? "",
     nid: employee.nid ?? "",
     tin: employee.tin ?? "",
     bloodGroup: employee.bloodGroup ?? "",
@@ -147,8 +149,10 @@ const getEmployeeDisplayName = (emp: EmployeeRecord): string => {
 
 const buildEmployeeColumns = ({
   branchLookup,
+  deptLookup,
 }: {
   branchLookup: Map<string, string>;
+  deptLookup: Map<string, string>;
 }): MRT_ColumnDef<EmployeeRecord>[] => [
   {
     id: "name",
@@ -227,11 +231,12 @@ const buildEmployeeColumns = ({
     ),
   },
   {
-    accessorKey: "department",
+    id: "department",
+    accessorFn: (emp) => emp.departmentId ? (deptLookup.get(emp.departmentId) ?? emp.department ?? "—") : (emp.department ?? "—"),
     header: "Department",
     size: 140,
     Cell: ({ cell }) => (
-      <Typography variant="body2">{String(cell.getValue() ?? "—")}</Typography>
+      <Typography variant="body2">{String(cell.getValue())}</Typography>
     ),
   },
   {
@@ -320,19 +325,28 @@ export function EmployeesWorkspace() {
 
   const [onboardEmployeeWithUser, onboardState] = useMutation(OnboardEmployeeWithUserDocument);
   const [updateEmployee, updateState] = useMutation(UpdateEmployeeDocument);
+  const [assignEmployeeToDepartment] = useMutation(AssignEmployeeToDepartmentDocument);
   const [uploadEmployeeDocument, uploadState] = useMutation(UploadEmployeeDocumentDocument);
+
+  const { data: departmentsData } = useQuery(GetDepartmentsDocument, { fetchPolicy: "cache-and-network" });
 
   const employees = employeesData?.getEmployees ?? [];
   const users = (usersData?.getUsers ?? []).filter((u): u is UserRecord => !!u);
   const branches = branchesData?.getBranches ?? [];
+  const departments = departmentsData?.getDepartments ?? [];
 
   const userLookup = new Map(users.map((u) => [u.id, formatPersonName(u)]));
   const branchLookup = new Map(branches.map((b) => [b.id, b.name]));
+  const deptLookup = new Map(departments.map((d) => [d.id, d.name]));
 
   const branchOptions: RhfSelectOption[] = branches.map((b) => ({
     label: b.name,
     value: b.id,
   }));
+
+  const departmentOptions: RhfSelectOption[] = departments
+    .filter((d) => d.status === "ACTIVE")
+    .map((d) => ({ label: d.name, value: d.id }));
   const activeCount = employees.filter(
     (e) => e.status?.toLowerCase() === "active",
   ).length;
@@ -394,14 +408,16 @@ export function EmployeesWorkspace() {
 
   const handleSubmitEmployee = async (values: EmployeeFormValues) => {
     setFormErrorMessage(null);
+    const deptName = values.departmentId ? (deptLookup.get(values.departmentId) ?? "") : "";
     try {
+      let savedEmployeeId: string;
       if (formMode === "edit" && selectedEmployee) {
         const result = await updateEmployee({
           variables: {
             input: {
               employeeId: selectedEmployee.id,
               designation: toOptionalString(values.designation ?? ""),
-              department: toOptionalString(values.department ?? ""),
+              department: deptName || undefined,
               nid: toOptionalString(values.nid ?? ""),
               tin: toOptionalString(values.tin ?? ""),
               bloodGroup: toOptionalString(values.bloodGroup ?? ""),
@@ -415,6 +431,7 @@ export function EmployeesWorkspace() {
           },
         });
         if (result.error) throw result.error;
+        savedEmployeeId = selectedEmployee.id;
         toast.success("Employee profile updated.");
       } else {
         const result = await onboardEmployeeWithUser({
@@ -429,7 +446,7 @@ export function EmployeesWorkspace() {
               joiningDate: values.joiningDate!.format("YYYY-MM-DD"),
               employeeCode: toOptionalString(values.employeeCode ?? ""),
               designation: toOptionalString(values.designation ?? ""),
-              department: toOptionalString(values.department ?? ""),
+              department: deptName || undefined,
               nid: toOptionalString(values.nid ?? ""),
               tin: toOptionalString(values.tin ?? ""),
               bloodGroup: toOptionalString(values.bloodGroup ?? ""),
@@ -446,7 +463,13 @@ export function EmployeesWorkspace() {
           },
         });
         if (result.error) throw result.error;
+        savedEmployeeId = result.data!.onboardEmployeeWithUser.id;
         toast.success("Employee onboarded successfully.");
+      }
+      if (values.departmentId) {
+        await assignEmployeeToDepartment({
+          variables: { employeeId: savedEmployeeId, departmentId: values.departmentId },
+        });
       }
       await refetchEmployees();
       closeFormDialog();
@@ -554,7 +577,7 @@ export function EmployeesWorkspace() {
         ) : null}
 
         <MaterialReactTable
-          columns={buildEmployeeColumns({ branchLookup })}
+          columns={buildEmployeeColumns({ branchLookup, deptLookup })}
           data={employees}
           enableColumnFilters
           enableDensityToggle={false}
@@ -727,6 +750,7 @@ export function EmployeesWorkspace() {
       <EmployeeFormDialog
         key={formDialogKey}
         branchOptions={branchOptions}
+        departmentOptions={departmentOptions}
         errorMessage={formErrorMessage}
         initialValues={getEmployeeFormValues(selectedEmployee)}
         isSubmitting={isSaving}

@@ -4,12 +4,14 @@ import { useState } from "react";
 import {
   AddRounded,
   CalendarMonthRounded,
+  ContentCopyRounded,
   EventRounded,
   PersonRounded,
   RepeatRounded,
   RoomRounded,
   ScheduleRounded,
   SwapHorizRounded,
+  TimerRounded,
 } from "@mui/icons-material";
 import { useMutation, useQuery } from "@apollo/client/react";
 import {
@@ -106,6 +108,24 @@ const getSessionTypeColor = (
   return "default";
 };
 
+const calcDurationMinutes = (start: string, end: string) => {
+  const [sh, sm] = start.split(":").map(Number);
+  const [eh, em] = end.split(":").map(Number);
+  const startMins = sh * 60 + sm;
+  const endMins = eh * 60 + em;
+  const diff =
+    endMins >= startMins ? endMins - startMins : 1440 - startMins + endMins;
+  return diff;
+};
+
+const formatDuration = (mins: number) => {
+  const h = Math.floor(mins / 60);
+  const m = mins % 60;
+  if (h === 0) return `${m}m`;
+  if (m === 0) return `${h}h`;
+  return `${h}h ${m}m`;
+};
+
 const emptyScheduleValues: RecurringScheduleFormValues = {
   dayOfWeek: "",
   startTime: "",
@@ -137,6 +157,9 @@ export function ScheduleWorkspace() {
   );
   const [sessionFormError, setSessionFormError] = useState<string | null>(null);
   const [substituteError, setSubstituteError] = useState<string | null>(null);
+  const [scheduleFormInitialValues, setScheduleFormInitialValues] =
+    useState<RecurringScheduleFormValues>(emptyScheduleValues);
+
 
   const { data: batchesData, loading: isBatchesLoading } = useQuery(
     GetAllBatchesDocument,
@@ -208,9 +231,10 @@ export function ScheduleWorkspace() {
   const isSubmittingSession = addSessionState.loading;
   const isSubmittingSubstitute = assignSubstituteState.loading;
 
-  const openScheduleForm = () => {
+  const openScheduleForm = (prefill?: RecurringScheduleFormValues) => {
     setScheduleFormError(null);
     setScheduleFormKey((k) => k + 1);
+    setScheduleFormInitialValues(prefill ?? emptyScheduleValues);
     setIsScheduleFormOpen(true);
   };
 
@@ -328,13 +352,35 @@ export function ScheduleWorkspace() {
       ),
     },
     {
+      id: "duration",
+      header: "Duration",
+      size: 110,
+      enableSorting: false,
+      accessorFn: (row) =>
+        formatDuration(calcDurationMinutes(row.startTime, row.endTime)),
+      Cell: ({ cell }) => (
+        <Stack direction="row" spacing={0.75} alignItems="center">
+          <TimerRounded sx={{ fontSize: 15, color: "text.secondary" }} />
+          <Chip
+            label={String(cell.getValue())}
+            size="small"
+            variant="outlined"
+            sx={{ fontWeight: 600, fontSize: "0.75rem" }}
+          />
+        </Stack>
+      ),
+    },
+    {
       accessorKey: "roomName",
       header: "Room",
-      size: 140,
+      size: 130,
       Cell: ({ row }) => (
         <Stack direction="row" spacing={1} alignItems="center">
           <RoomRounded sx={{ fontSize: 16, color: "text.secondary" }} />
-          <Typography variant="body2">
+          <Typography
+            variant="body2"
+            color={row.original.roomName ? "text.primary" : "text.disabled"}
+          >
             {row.original.roomName || "Not set"}
           </Typography>
         </Stack>
@@ -359,9 +405,29 @@ export function ScheduleWorkspace() {
       ),
     },
     {
+      id: "linkedSessions",
+      header: "Sessions",
+      size: 100,
+      enableSorting: false,
+      accessorFn: (row) =>
+        sessions.filter((s) => s.recurringScheduleId === row.id).length,
+      Cell: ({ cell }) => {
+        const count = cell.getValue() as number;
+        return (
+          <Chip
+            label={`${count} session${count !== 1 ? "s" : ""}`}
+            size="small"
+            color={count > 0 ? "primary" : "default"}
+            variant={count > 0 ? "outlined" : "outlined"}
+            sx={{ fontSize: "0.72rem" }}
+          />
+        );
+      },
+    },
+    {
       accessorKey: "active",
       header: "Status",
-      size: 110,
+      size: 100,
       Cell: ({ cell }) => (
         <Chip
           label={cell.getValue() ? "Active" : "Inactive"}
@@ -369,6 +435,31 @@ export function ScheduleWorkspace() {
           variant={cell.getValue() ? "filled" : "outlined"}
           size="small"
         />
+      ),
+    },
+    {
+      id: "scheduleActions",
+      header: "Actions",
+      size: 90,
+      enableSorting: false,
+      Cell: ({ row }) => (
+        <Tooltip title="Duplicate schedule">
+          <IconButton
+            size="small"
+            onClick={() =>
+              openScheduleForm({
+                dayOfWeek: row.original.dayOfWeek,
+                startTime: row.original.startTime,
+                endTime: row.original.endTime,
+                roomName: row.original.roomName ?? "",
+                teacherId: row.original.teacherId ?? "",
+              })
+            }
+            sx={{ bgcolor: alpha("#0f172a", 0.04) }}
+          >
+            <ContentCopyRounded fontSize="small" />
+          </IconButton>
+        </Tooltip>
       ),
     },
   ];
@@ -459,22 +550,47 @@ export function ScheduleWorkspace() {
       id: "substitute",
       header: "Substitute",
       size: 180,
-      Cell: ({ row }) =>
-        row.original.substituteTeacherId ? (
-          <Typography variant="body2">
-            {userLookup.get(row.original.substituteTeacherId) ?? "Unknown"}
-          </Typography>
+      Cell: ({ row }) => {
+        const name = row.original.substituteTeacherId
+          ? (userLookup.get(row.original.substituteTeacherId) ?? "Unknown")
+          : null;
+        return name ? (
+          <Stack direction="row" spacing={1} alignItems="center">
+            <SwapHorizRounded sx={{ fontSize: 15, color: "text.secondary" }} />
+            <Typography variant="body2">{name}</Typography>
+          </Stack>
         ) : (
-          <Tooltip title="Assign substitute">
+          <Typography variant="body2" color="text.disabled">
+            —
+          </Typography>
+        );
+      },
+    },
+    {
+      id: "sessionActions",
+      header: "Actions",
+      size: 90,
+      enableSorting: false,
+      Cell: ({ row }) => (
+        <Tooltip
+          title={
+            row.original.substituteTeacherId
+              ? "Substitute already assigned"
+              : "Assign substitute teacher"
+          }
+        >
+          <span>
             <IconButton
               size="small"
+              disabled={!!row.original.substituteTeacherId}
               onClick={() => openSubstituteDialog(row.original)}
               sx={{ bgcolor: alpha("#0f172a", 0.04) }}
             >
               <SwapHorizRounded fontSize="small" />
             </IconButton>
-          </Tooltip>
-        ),
+          </span>
+        </Tooltip>
+      ),
     },
   ];
 
@@ -582,7 +698,7 @@ export function ScheduleWorkspace() {
                 variant="contained"
                 startIcon={<AddRounded />}
                 disabled={noBatchSelected}
-                onClick={activeTab === 0 ? openScheduleForm : openSessionForm}
+                onClick={activeTab === 0 ? () => openScheduleForm() : openSessionForm}
                 sx={{ backgroundImage: primaryGradient, minWidth: 200 }}
               >
                 {activeTab === 0 ? "Add Recurring Schedule" : "Add Session"}
@@ -686,7 +802,7 @@ export function ScheduleWorkspace() {
                       <Button
                         variant="outlined"
                         startIcon={<AddRounded />}
-                        onClick={openScheduleForm}
+                        onClick={() => openScheduleForm()}
                         sx={{ mt: 2 }}
                       >
                         Add schedule
@@ -781,7 +897,7 @@ export function ScheduleWorkspace() {
             key={`schedule-${scheduleFormKey}`}
             batchName={selectedBatch.name}
             errorMessage={scheduleFormError}
-            initialValues={emptyScheduleValues}
+            initialValues={scheduleFormInitialValues}
             isSubmitting={isSubmittingSchedule}
             teacherOptions={teacherOptions}
             onClose={() => {
@@ -830,6 +946,7 @@ export function ScheduleWorkspace() {
           open={!!substituteSession}
         />
       ) : null}
+
     </>
   );
 }

@@ -183,3 +183,59 @@ export const SUBMIT_REVIEW_MUTATION = /* GraphQL */ `
     }
   }
 `;
+
+export const CREATE_PIP_MUTATION = /* GraphQL */ `
+  mutation CreatePIP($input: CreatePIPInput!) {
+    createPIP(input: $input) {
+      id
+      employeeId
+      createdBy
+      goals
+      startDate
+      endDate
+      status
+      progressNotes
+    }
+  }
+`;
+
+export const UPDATE_PIP_PROGRESS_MUTATION = /* GraphQL */ `
+  mutation UpdatePIPProgress($input: UpdatePIPProgressInput!) {
+    updatePIPProgress(input: $input) {
+      id
+      employeeId
+      goals
+      startDate
+      endDate
+      status
+      progressNotes
+    }
+  }
+`;
+
+export const ADD_SKILL_TAG_MUTATION = /* GraphQL */ `
+  mutation AddSkillTag($input: AddSkillTagInput!) {
+    addSkillTag(input: $input) {
+      id
+      employeeId
+      skill
+      proficiencyLevel
+      tenantId
+    }
+  }
+`;
+
+export const ADD_CERTIFICATION_MUTATION = /* GraphQL */ `
+  mutation AddCertification($input: AddCertificationInput!) {
+    addCertification(input: $input) {
+      id
+      employeeId
+      name
+      issuingOrganization
+      issueDate
+      expiryDate
+      certificateUrl
+      tenantId
+    }
+  }
+`;

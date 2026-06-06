@@ -9,6 +9,7 @@ import {
   PeopleRounded,
   SaveRounded,
   WarningRounded,
+  InsightsRounded,
 } from "@mui/icons-material";
 import { useMutation, useQuery } from "@apollo/client/react";
 import {
@@ -20,17 +21,21 @@ import {
   Divider,
   FormControl,
   InputLabel,
+  LinearProgress,
   MenuItem,
   Paper,
   Select,
   Stack,
+  Tab,
   Table,
   TableBody,
   TableCell,
   TableHead,
   TableRow,
+  Tabs,
   ToggleButton,
   ToggleButtonGroup,
+  Tooltip,
   Typography,
   alpha,
 } from "@mui/material";
@@ -40,6 +45,7 @@ import {
   CorrectAttendanceDocument,
   GetAllBatchesDocument,
   GetAttendanceBySessionDocument,
+  GetAttendanceSummaryDocument,
   GetEnrollmentsByBatchDocument,
   GetSessionsByBatchDocument,
   GetStudentsDocument,
@@ -89,7 +95,133 @@ const statusIcons: Record<AttendanceStatus, React.ReactNode> = {
   LATE: <PauseCircleRounded fontSize="small" />,
 };
 
+// ── Per-student summary row ───────────────────────────────────────────────────
+
+function StudentSummaryRow({
+  studentId,
+  studentName,
+  studentCode,
+}: {
+  studentId: string;
+  studentName: string;
+  studentCode: string;
+}) {
+  const { data, loading } = useQuery(GetAttendanceSummaryDocument, {
+    variables: { studentId },
+  });
+
+  const s = data?.getAttendanceSummary;
+
+  return (
+    <TableRow
+      sx={{
+        "&:hover td": { bgcolor: alpha("#ecfdf5", 0.6) },
+        transition: "background 120ms",
+      }}
+    >
+      <TableCell>
+        <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
+          {studentName}
+        </Typography>
+        <Typography variant="caption" color="text.secondary">
+          {studentCode}
+        </Typography>
+      </TableCell>
+
+      {loading ? (
+        <TableCell colSpan={5}>
+          <CircularProgress size={16} />
+        </TableCell>
+      ) : s ? (
+        <>
+          <TableCell align="center">
+            <Typography variant="body2" sx={{ fontWeight: 600 }}>
+              {s.totalSessions}
+            </Typography>
+          </TableCell>
+          <TableCell>
+            <Stack spacing={0.5}>
+              <Stack
+                direction="row"
+                justifyContent="space-between"
+                alignItems="center"
+              >
+                <Typography variant="caption" sx={{ fontWeight: 600, color: "#059669" }}>
+                  {s.presentCount} present
+                </Typography>
+                <Typography variant="caption" color="text.secondary">
+                  {s.presentPercent.toFixed(0)}%
+                </Typography>
+              </Stack>
+              <LinearProgress
+                variant="determinate"
+                value={s.presentPercent}
+                sx={{
+                  height: 6,
+                  borderRadius: 1,
+                  bgcolor: alpha("#0f172a", 0.07),
+                  "& .MuiLinearProgress-bar": {
+                    backgroundImage: primaryGradient,
+                    borderRadius: 1,
+                  },
+                }}
+              />
+            </Stack>
+          </TableCell>
+          <TableCell align="center">
+            <Chip
+              label={`${s.absentCount} (${s.absentPercent.toFixed(0)}%)`}
+              size="small"
+              color={s.absentCount > 0 ? "error" : "default"}
+              variant={s.absentCount > 0 ? "outlined" : "outlined"}
+              sx={{ fontSize: "0.72rem" }}
+            />
+          </TableCell>
+          <TableCell align="center">
+            <Chip
+              label={`${s.lateCount} (${s.latePercent.toFixed(0)}%)`}
+              size="small"
+              color={s.lateCount > 0 ? "warning" : "default"}
+              variant="outlined"
+              sx={{ fontSize: "0.72rem" }}
+            />
+          </TableCell>
+          <TableCell align="center">
+            {s.shortageAlert ? (
+              <Tooltip title="Attendance below required threshold">
+                <Chip
+                  label="Low Attendance"
+                  color="error"
+                  size="small"
+                  icon={<WarningRounded />}
+                />
+              </Tooltip>
+            ) : (
+              <Chip
+                label="OK"
+                color="success"
+                size="small"
+                variant="outlined"
+                icon={<CheckCircleRounded />}
+              />
+            )}
+          </TableCell>
+        </>
+      ) : (
+        <TableCell colSpan={5}>
+          <Typography variant="caption" color="text.disabled">
+            No data
+          </Typography>
+        </TableCell>
+      )}
+    </TableRow>
+  );
+}
+
+// ── Main Workspace ────────────────────────────────────────────────────────────
+
 export function AttendanceWorkspace() {
+  const [activeTab, setActiveTab] = useState(0);
   const [selectedBatchId, setSelectedBatchId] = useState("");
   const [selectedSessionId, setSelectedSessionId] = useState("");
   const [pendingStatus, setPendingStatus] = useState<
@@ -339,7 +471,89 @@ export function AttendanceWorkspace() {
         </Stack>
       </Paper>
 
-      {selectedSessionId && !isSheetLoading ? (
+      {/* Tabs — only show when batch is selected */}
+      {selectedBatchId && (
+        <Tabs
+          value={activeTab}
+          onChange={(_, v) => setActiveTab(v)}
+          sx={{ borderBottom: 1, borderColor: "divider" }}
+        >
+          <Tab label="Mark Attendance" />
+          <Tab
+            label="Batch Summary"
+            icon={<InsightsRounded sx={{ fontSize: 16 }} />}
+            iconPosition="end"
+          />
+        </Tabs>
+      )}
+
+      {/* ── Batch Summary Tab ── */}
+      {activeTab === 1 && selectedBatchId && (
+        <Paper
+          elevation={0}
+          sx={{ border: "1px solid", borderColor: "divider", overflow: "hidden" }}
+        >
+          <Box
+            sx={{
+              px: 3,
+              py: 2,
+              borderBottom: "1px solid",
+              borderColor: "divider",
+              bgcolor: alpha("#f8fafc", 0.7),
+            }}
+          >
+            <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>
+              Attendance Summary — {batches.find((b) => b.id === selectedBatchId)?.name}
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              Lifetime attendance record per enrolled student.
+            </Typography>
+          </Box>
+          {enrolledStudents.length === 0 ? (
+            <Box sx={{ px: 3, py: 5, textAlign: "center" }}>
+              <Typography variant="subtitle2" color="text.secondary">
+                No enrolled students found.
+              </Typography>
+            </Box>
+          ) : (
+            <Table size="small">
+              <TableHead>
+                <TableRow sx={{ bgcolor: alpha("#f8fafc", 0.9) }}>
+                  <TableCell sx={{ fontWeight: 700, fontSize: 13 }}>Student</TableCell>
+                  <TableCell align="center" sx={{ fontWeight: 700, fontSize: 13 }}>
+                    Total Sessions
+                  </TableCell>
+                  <TableCell sx={{ fontWeight: 700, fontSize: 13, minWidth: 180 }}>
+                    Present Rate
+                  </TableCell>
+                  <TableCell align="center" sx={{ fontWeight: 700, fontSize: 13 }}>
+                    Absent
+                  </TableCell>
+                  <TableCell align="center" sx={{ fontWeight: 700, fontSize: 13 }}>
+                    Late
+                  </TableCell>
+                  <TableCell align="center" sx={{ fontWeight: 700, fontSize: 13 }}>
+                    Status
+                  </TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {enrolledStudents.map((s) => (
+                  <StudentSummaryRow
+                    key={s.id}
+                    studentId={s.id}
+                    studentName={`${s.firstName} ${s.lastName ?? ""}`.trim()}
+                    studentCode={s.studentCode}
+                  />
+                ))}
+              </TableBody>
+            </Table>
+          )}
+        </Paper>
+      )}
+
+      {/* ── Mark Attendance Tab ── */}
+      {(activeTab === 0 || !selectedBatchId) && selectedSessionId && !isSheetLoading ? (
         <>
           <Box
             sx={{
@@ -640,7 +854,7 @@ export function AttendanceWorkspace() {
             </Box>
           </Paper>
         </>
-      ) : selectedSessionId && isSheetLoading ? (
+      ) : (activeTab === 0 || !selectedBatchId) && selectedSessionId && isSheetLoading ? (
         <Paper
           elevation={0}
           sx={{
@@ -653,7 +867,7 @@ export function AttendanceWorkspace() {
         >
           <CircularProgress size={32} />
         </Paper>
-      ) : selectedBatchId && !selectedSessionId ? (
+      ) : (activeTab === 0 || !selectedBatchId) && selectedBatchId && !selectedSessionId ? (
         <Paper
           elevation={0}
           sx={{ p: { xs: 3, md: 4 }, border: "1px solid", borderColor: "divider" }}
@@ -678,7 +892,7 @@ export function AttendanceWorkspace() {
             </Stack>
           )}
         </Paper>
-      ) : !selectedBatchId ? (
+      ) : (activeTab === 0 || !selectedBatchId) && !selectedBatchId ? (
         <Paper
           elevation={0}
           sx={{ p: { xs: 3, md: 4 }, border: "1px solid", borderColor: "divider" }}

@@ -51,7 +51,7 @@ const createSchema = yup.object({
   joiningDate: yup.mixed<Dayjs>().nullable().required("Joining date is required"),
   employeeCode: yup.string().trim().default(""),
   designation: yup.string().trim().default(""),
-  department: yup.string().trim().default(""),
+  departmentId: yup.string().default(""),
   nid: yup.string().trim().default(""),
   tin: yup.string().trim().default(""),
   bloodGroup: yup.string().default(""),
@@ -70,7 +70,7 @@ const editSchema = yup.object({
   joiningDate: yup.mixed<Dayjs>().nullable().required("Joining date is required"),
   employeeCode: yup.string().trim().default(""),
   designation: yup.string().trim().default(""),
-  department: yup.string().trim().default(""),
+  departmentId: yup.string().default(""),
   nid: yup.string().trim().default(""),
   tin: yup.string().trim().default(""),
   bloodGroup: yup.string().default(""),
@@ -91,7 +91,7 @@ const emptyValues: EmployeeFormValues = {
   joiningDate: null as unknown as Dayjs,
   employeeCode: "",
   designation: "",
-  department: "",
+  departmentId: "",
   nid: "",
   tin: "",
   bloodGroup: "",
@@ -102,6 +102,7 @@ const emptyValues: EmployeeFormValues = {
 
 export type EmployeeFormDialogProps = {
   branchOptions: RhfSelectOption[];
+  departmentOptions: RhfSelectOption[];
   errorMessage: string | null;
   initialValues?: EmployeeFormValues;
   isSubmitting: boolean;
@@ -113,6 +114,7 @@ export type EmployeeFormDialogProps = {
 
 export function EmployeeFormDialog({
   branchOptions,
+  departmentOptions,
   errorMessage,
   initialValues = emptyValues,
   isSubmitting,
@@ -240,12 +242,12 @@ export function EmployeeFormDialog({
                   placeholder="e.g. Senior Teacher"
                   trim
                 />
-                <RhfTextField
+                <RhfSelect
                   control={control}
-                  name="department"
+                  name="departmentId"
                   label="Department"
-                  placeholder="e.g. Science"
-                  trim
+                  options={[{ label: "None", value: "" }, ...departmentOptions]}
+                  placeholder="Select department"
                 />
                 {mode === "edit" && (
                   <RhfTextField
