@@ -1080,13 +1080,17 @@ export function TeamAccessWorkspace() {
             <Stack spacing={2.5}>
               {permissionGroups
                 .filter((group) =>
-                  group.options.some((opt) =>
-                    viewingRole?.permissions.includes(opt.value),
+                  group.options.some(
+                    (opt) =>
+                      viewingRole?.permissions.includes(opt.readKey) ||
+                      viewingRole?.permissions.includes(opt.writeKey),
                   ),
                 )
                 .map((group) => {
-                  const granted = group.options.filter((opt) =>
-                    viewingRole?.permissions.includes(opt.value),
+                  const granted = group.options.filter(
+                    (opt) =>
+                      viewingRole?.permissions.includes(opt.readKey) ||
+                      viewingRole?.permissions.includes(opt.writeKey),
                   );
                   return (
                     <Box key={group.key}>
@@ -1097,29 +1101,53 @@ export function TeamAccessWorkspace() {
                         {group.title}
                       </Typography>
                       <Stack spacing={1} sx={{ mt: 1 }}>
-                        {granted.map((opt) => (
-                          <Stack key={opt.value} direction="row" spacing={1.5} alignItems="flex-start">
-                            <CheckCircleRounded
-                              sx={{ fontSize: 18, color: "#10b981", mt: 0.15, flexShrink: 0 }}
-                            />
-                            <Box>
-                              <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                                {opt.label}
-                              </Typography>
-                              <Typography variant="caption" color="text.secondary">
-                                {opt.description}
-                              </Typography>
-                            </Box>
-                          </Stack>
-                        ))}
+                        {granted.map((opt) => {
+                          const hasRead = viewingRole?.permissions.includes(opt.readKey);
+                          const hasWrite = viewingRole?.permissions.includes(opt.writeKey);
+                          return (
+                            <Stack key={opt.value} direction="row" spacing={1.5} alignItems="flex-start">
+                              <CheckCircleRounded
+                                sx={{ fontSize: 18, color: "#10b981", mt: 0.15, flexShrink: 0 }}
+                              />
+                              <Box sx={{ flex: 1, minWidth: 0 }}>
+                                <Stack direction="row" spacing={1} alignItems="center">
+                                  <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                                    {opt.label}
+                                  </Typography>
+                                  <Stack direction="row" spacing={0.5}>
+                                    {hasRead && (
+                                      <Chip
+                                        label="Read"
+                                        size="small"
+                                        sx={{ fontSize: 10, height: 18, bgcolor: alpha("#1976d2", 0.1), color: "#1565c0" }}
+                                      />
+                                    )}
+                                    {hasWrite && (
+                                      <Chip
+                                        label="Write"
+                                        size="small"
+                                        sx={{ fontSize: 10, height: 18, bgcolor: alpha("#10b981", 0.12), color: "#047857" }}
+                                      />
+                                    )}
+                                  </Stack>
+                                </Stack>
+                                <Typography variant="caption" color="text.secondary">
+                                  {opt.description}
+                                </Typography>
+                              </Box>
+                            </Stack>
+                          );
+                        })}
                       </Stack>
                     </Box>
                   );
                 })}
-              {/* Show any unknown permissions not in the registry */}
+              {/* Show any permissions not found in the registry */}
               {(() => {
                 const known = new Set(
-                  permissionGroups.flatMap((g) => g.options.map((o) => o.value)),
+                  permissionGroups.flatMap((g) =>
+                    g.options.flatMap((o) => [o.value, o.readKey, o.writeKey]),
+                  ),
                 );
                 const unknown = viewingRole?.permissions.filter((p) => !known.has(p)) ?? [];
                 if (!unknown.length) return null;

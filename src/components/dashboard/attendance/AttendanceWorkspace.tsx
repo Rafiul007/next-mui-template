@@ -10,6 +10,10 @@ import {
   SaveRounded,
   WarningRounded,
   InsightsRounded,
+  ScheduleRounded,
+  ArrowBackRounded,
+  ClassRounded,
+  EventAvailableRounded,
 } from "@mui/icons-material";
 import { useMutation, useQuery } from "@apollo/client/react";
 import {
@@ -33,6 +37,7 @@ import {
   TableHead,
   TableRow,
   Tabs,
+  TextField,
   ToggleButton,
   ToggleButtonGroup,
   Tooltip,
@@ -47,11 +52,15 @@ import {
   GetAttendanceBySessionDocument,
   GetAttendanceSummaryDocument,
   GetEnrollmentsByBatchDocument,
+  GetSchedulesByBatchDocument,
   GetSessionsByBatchDocument,
   GetStudentsDocument,
+  GetUsersDocument,
   MarkAttendanceDocument,
   type GetAttendanceBySessionQuery,
   type GetEnrollmentsByBatchQuery,
+  type GetSchedulesByBatchQuery,
+  type GetSessionsByBatchQuery,
   type GetStudentsQuery,
 } from "@/graphql/generated";
 import { getErrorMessage } from "@/lib/errors";
@@ -62,16 +71,65 @@ type AttendanceRecord =
 type EnrollmentRecord =
   GetEnrollmentsByBatchQuery["getEnrollmentsByBatch"][number];
 type StudentRecord = NonNullable<GetStudentsQuery["getStudents"][number]>;
+type ScheduleRecord = GetSchedulesByBatchQuery["getSchedulesByBatch"][number];
+type SessionRecord = GetSessionsByBatchQuery["getSessionsByBatch"][number];
 
 type AttendanceStatus = "PRESENT" | "ABSENT" | "LATE";
 
-const formatDate = (d: string) =>
-  new Date(d).toLocaleDateString("en-BD", {
+const DAY_NAMES = [
+  "SUNDAY",
+  "MONDAY",
+  "TUESDAY",
+  "WEDNESDAY",
+  "THURSDAY",
+  "FRIDAY",
+  "SATURDAY",
+];
+
+const DAY_LABELS: Record<string, string> = {
+  SUNDAY: "Sunday",
+  MONDAY: "Monday",
+  TUESDAY: "Tuesday",
+  WEDNESDAY: "Wednesday",
+  THURSDAY: "Thursday",
+  FRIDAY: "Friday",
+  SATURDAY: "Saturday",
+};
+
+const DAY_BG: Record<string, string> = {
+  SUNDAY: "#f0fdf4",
+  MONDAY: "#eff6ff",
+  TUESDAY: "#fefce8",
+  WEDNESDAY: "#fff7ed",
+  THURSDAY: "#fdf4ff",
+  FRIDAY: "#fff1f2",
+  SATURDAY: "#f8fafc",
+};
+
+const DAY_ACCENT: Record<string, string> = {
+  SUNDAY: "#15803d",
+  MONDAY: "#1d4ed8",
+  TUESDAY: "#a16207",
+  WEDNESDAY: "#c2410c",
+  THURSDAY: "#7e22ce",
+  FRIDAY: "#be123c",
+  SATURDAY: "#475569",
+};
+
+const toIsoDate = (d: Date): string =>
+  `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+
+const todayIso = toIsoDate(new Date());
+
+const formatDisplayDate = (iso: string) => {
+  const d = new Date(iso + "T00:00:00");
+  return d.toLocaleDateString("en-BD", {
     weekday: "short",
     day: "numeric",
     month: "short",
     year: "numeric",
   });
+};
 
 const formatTime = (t: string) => {
   const [h, m] = t.split(":").map(Number);
@@ -173,7 +231,7 @@ function StudentSummaryRow({
               label={`${s.absentCount} (${s.absentPercent.toFixed(0)}%)`}
               size="small"
               color={s.absentCount > 0 ? "error" : "default"}
-              variant={s.absentCount > 0 ? "outlined" : "outlined"}
+              variant="outlined"
               sx={{ fontSize: "0.72rem" }}
             />
           </TableCell>
@@ -218,12 +276,121 @@ function StudentSummaryRow({
   );
 }
 
+// ── Schedule slot card ────────────────────────────────────────────────────────
+
+function ScheduleSlotCard({
+  schedule,
+  session,
+  teacherName,
+  onSelect,
+}: {
+  schedule: ScheduleRecord;
+  session: SessionRecord | null;
+  teacherName: string | null;
+  onSelect: () => void;
+}) {
+  const accent = DAY_ACCENT[schedule.dayOfWeek] ?? "#10b981";
+  const bg = DAY_BG[schedule.dayOfWeek] ?? "#f0fdf4";
+  const hasSession = !!session;
+
+  return (
+    <Paper
+      elevation={0}
+      sx={{
+        border: "2px solid",
+        borderColor: hasSession ? alpha(accent, 0.3) : alpha("#0f172a", 0.1),
+        borderRadius: 2,
+        overflow: "hidden",
+        transition: "all 160ms ease",
+        cursor: hasSession ? "pointer" : "default",
+        "&:hover": hasSession
+          ? {
+              borderColor: accent,
+              boxShadow: `0 4px 16px ${alpha(accent, 0.18)}`,
+              transform: "translateY(-1px)",
+            }
+          : {},
+      }}
+      onClick={hasSession ? onSelect : undefined}
+    >
+      {/* Time strip */}
+      <Box
+        sx={{
+          px: 2,
+          py: 1.25,
+          bgcolor: hasSession ? alpha(accent, 0.06) : alpha("#0f172a", 0.03),
+          borderBottom: "1px solid",
+          borderColor: hasSession ? alpha(accent, 0.15) : alpha("#0f172a", 0.06),
+        }}
+      >
+        <Stack direction="row" spacing={1} alignItems="center">
+          <ScheduleRounded
+            sx={{ fontSize: 15, color: hasSession ? accent : "text.disabled" }}
+          />
+          <Typography
+            variant="body2"
+            fontWeight={700}
+            color={hasSession ? accent : "text.disabled"}
+          >
+            {formatTime(schedule.startTime)} – {formatTime(schedule.endTime)}
+          </Typography>
+        </Stack>
+      </Box>
+
+      <Box sx={{ p: 2, bgcolor: hasSession ? bg : "transparent" }}>
+        {teacherName ? (
+          <Typography variant="caption" color="text.secondary" noWrap>
+            {teacherName}
+          </Typography>
+        ) : null}
+        {schedule.roomName ? (
+          <Typography
+            variant="caption"
+            color="text.secondary"
+            display="block"
+            noWrap
+          >
+            {schedule.roomName}
+          </Typography>
+        ) : null}
+
+        {hasSession ? (
+          <Stack direction="row" spacing={1} alignItems="center" sx={{ mt: 1.5 }}>
+            <Chip
+              label="Session recorded"
+              size="small"
+              color="success"
+              variant="outlined"
+              icon={<EventAvailableRounded sx={{ fontSize: 13 }} />}
+              sx={{ height: 22, fontSize: 11 }}
+            />
+            <Typography variant="caption" color="primary.main" fontWeight={600}>
+              Tap to mark
+            </Typography>
+          </Stack>
+        ) : (
+          <Stack direction="row" spacing={1} alignItems="center" sx={{ mt: 1.5 }}>
+            <Chip
+              label="No session yet"
+              size="small"
+              variant="outlined"
+              sx={{ height: 22, fontSize: 11, color: "text.disabled" }}
+            />
+          </Stack>
+        )}
+      </Box>
+    </Paper>
+  );
+}
+
 // ── Main Workspace ────────────────────────────────────────────────────────────
 
 export function AttendanceWorkspace() {
   const [activeTab, setActiveTab] = useState(0);
   const [selectedBatchId, setSelectedBatchId] = useState("");
   const [selectedSessionId, setSelectedSessionId] = useState("");
+  const [selectedDate, setSelectedDate] = useState(todayIso);
+  const [showAllSessions, setShowAllSessions] = useState(false);
   const [pendingStatus, setPendingStatus] = useState<
     Record<string, AttendanceStatus>
   >({});
@@ -236,20 +403,19 @@ export function AttendanceWorkspace() {
   const { data: studentsData, loading: isStudentsLoading } = useQuery(
     GetStudentsDocument,
   );
-  const {
-    data: sessionsData,
-    loading: isSessionsLoading,
-  } = useQuery(GetSessionsByBatchDocument, {
-    skip: !selectedBatchId,
-    variables: { batchId: selectedBatchId },
-  });
-  const {
-    data: enrollmentsData,
-    loading: isEnrollmentsLoading,
-  } = useQuery(GetEnrollmentsByBatchDocument, {
-    skip: !selectedBatchId,
-    variables: { batchId: selectedBatchId },
-  });
+  const { data: usersData } = useQuery(GetUsersDocument);
+  const { data: schedulesData, loading: isSchedulesLoading } = useQuery(
+    GetSchedulesByBatchDocument,
+    { skip: !selectedBatchId, variables: { batchId: selectedBatchId } },
+  );
+  const { data: sessionsData, loading: isSessionsLoading } = useQuery(
+    GetSessionsByBatchDocument,
+    { skip: !selectedBatchId, variables: { batchId: selectedBatchId } },
+  );
+  const { data: enrollmentsData, loading: isEnrollmentsLoading } = useQuery(
+    GetEnrollmentsByBatchDocument,
+    { skip: !selectedBatchId, variables: { batchId: selectedBatchId } },
+  );
   const {
     data: attendanceData,
     loading: isAttendanceLoading,
@@ -266,6 +432,10 @@ export function AttendanceWorkspace() {
   const allStudents = (studentsData?.getStudents ?? []).filter(
     (s): s is StudentRecord => !!s,
   );
+  const allUsers = usersData?.getUsers ?? [];
+  const schedules = (schedulesData?.getSchedulesByBatch ?? []).filter(
+    (s) => s.active,
+  );
   const sessions = [...(sessionsData?.getSessionsByBatch ?? [])].sort(
     (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime(),
   );
@@ -273,6 +443,19 @@ export function AttendanceWorkspace() {
     (e): e is EnrollmentRecord => /active|enrolled/i.test(e.status),
   );
   const existingAttendance = attendanceData?.getAttendanceBySession ?? [];
+
+  const userLookup = useMemo(
+    () =>
+      new Map(
+        allUsers
+          .filter((u) => !!u)
+          .map((u) => [
+            u!.id,
+            `${u!.firstName ?? ""} ${u!.lastName ?? ""}`.trim() || u!.email,
+          ]),
+      ),
+    [allUsers],
+  );
 
   const studentLookup = useMemo(
     () => new Map(allStudents.map((s) => [s.id, s])),
@@ -284,6 +467,27 @@ export function AttendanceWorkspace() {
         existingAttendance.map((a) => [a.studentId, a]),
       ),
     [existingAttendance],
+  );
+
+  // Sessions indexed by recurringScheduleId::date for instant lookup
+  const sessionByScheduleAndDate = useMemo(() => {
+    const map = new Map<string, SessionRecord>();
+    for (const s of sessions) {
+      if (s.recurringScheduleId) {
+        map.set(`${s.recurringScheduleId}::${s.date}`, s);
+      }
+    }
+    return map;
+  }, [sessions]);
+
+  // Day-of-week for the selected date
+  const selectedDayOfWeek =
+    DAY_NAMES[new Date(selectedDate + "T00:00:00").getDay()];
+
+  // Schedule slots active on that day
+  const daySchedules = useMemo(
+    () => schedules.filter((s) => s.dayOfWeek === selectedDayOfWeek),
+    [schedules, selectedDayOfWeek],
   );
 
   const selectedSession =
@@ -321,12 +525,14 @@ export function AttendanceWorkspace() {
     setSelectedSessionId("");
     setPendingStatus({});
     setSaveError(null);
+    setShowAllSessions(false);
   };
 
-  const handleSessionChange = (sessionId: string) => {
+  const handleSessionSelect = (sessionId: string) => {
     setSelectedSessionId(sessionId);
     setPendingStatus({});
     setSaveError(null);
+    setShowAllSessions(false);
   };
 
   const handleStatusChange = (studentId: string, status: AttendanceStatus) => {
@@ -408,6 +614,7 @@ export function AttendanceWorkspace() {
 
   return (
     <Stack spacing={3}>
+      {/* Header */}
       <Paper
         elevation={0}
         sx={{
@@ -422,10 +629,12 @@ export function AttendanceWorkspace() {
           Student Attendance
         </Typography>
         <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
-          Select a batch and session to mark or review student attendance.
+          Pick a batch and date to see scheduled classes, then tap a class to
+          mark attendance.
         </Typography>
       </Paper>
 
+      {/* Batch + Date selectors */}
       <Paper
         elevation={0}
         sx={{ p: 2.5, border: "1px solid", borderColor: "divider" }}
@@ -451,27 +660,37 @@ export function AttendanceWorkspace() {
             </Select>
           </FormControl>
 
-          <FormControl size="small" sx={{ minWidth: 300 }} disabled={!selectedBatchId}>
-            <InputLabel>Select session</InputLabel>
-            <Select
-              value={selectedSessionId}
-              label="Select session"
-              onChange={(e) => handleSessionChange(e.target.value)}
-              disabled={isSessionsLoading || !selectedBatchId}
-            >
-              {sessions.map((session) => (
-                <MenuItem key={session.id} value={session.id}>
-                  {formatDate(session.date)} · {formatTime(session.startTime)}{" "}
-                  – {formatTime(session.endTime)}
-                  {session.type !== "REGULAR" ? ` (${session.type})` : ""}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
+          {selectedBatchId && (
+            <TextField
+              label="Date"
+              type="date"
+              size="small"
+              value={selectedDate}
+              onChange={(e) => {
+                setSelectedDate(e.target.value);
+                setSelectedSessionId("");
+                setPendingStatus({});
+              }}
+              InputLabelProps={{ shrink: true }}
+              sx={{ minWidth: 180 }}
+            />
+          )}
+
+          {selectedBatchId && (
+            <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+              <CalendarMonthRounded
+                sx={{ fontSize: 18, color: "text.secondary" }}
+              />
+              <Typography variant="body2" color="text.secondary">
+                {DAY_LABELS[selectedDayOfWeek]}
+                {selectedDate === todayIso ? " · Today" : ""}
+              </Typography>
+            </Box>
+          )}
         </Stack>
       </Paper>
 
-      {/* Tabs — only show when batch is selected */}
+      {/* Tabs — only when batch selected */}
       {selectedBatchId && (
         <Tabs
           value={activeTab}
@@ -503,7 +722,8 @@ export function AttendanceWorkspace() {
             }}
           >
             <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>
-              Attendance Summary — {batches.find((b) => b.id === selectedBatchId)?.name}
+              Attendance Summary —{" "}
+              {batches.find((b) => b.id === selectedBatchId)?.name}
             </Typography>
             <Typography variant="body2" color="text.secondary">
               Lifetime attendance record per enrolled student.
@@ -519,7 +739,9 @@ export function AttendanceWorkspace() {
             <Table size="small">
               <TableHead>
                 <TableRow sx={{ bgcolor: alpha("#f8fafc", 0.9) }}>
-                  <TableCell sx={{ fontWeight: 700, fontSize: 13 }}>Student</TableCell>
+                  <TableCell sx={{ fontWeight: 700, fontSize: 13 }}>
+                    Student
+                  </TableCell>
                   <TableCell align="center" sx={{ fontWeight: 700, fontSize: 13 }}>
                     Total Sessions
                   </TableCell>
@@ -553,358 +775,616 @@ export function AttendanceWorkspace() {
       )}
 
       {/* ── Mark Attendance Tab ── */}
-      {(activeTab === 0 || !selectedBatchId) && selectedSessionId && !isSheetLoading ? (
+      {activeTab === 0 && (
         <>
-          <Box
-            sx={{
-              display: "grid",
-              gap: 2,
-              gridTemplateColumns: {
-                xs: "1fr 1fr",
-                sm: "repeat(4, minmax(0, 1fr))",
-              },
-            }}
-          >
-            <SummaryCard
-              caption="Enrolled"
-              title={String(enrolledStudents.length)}
-              icon={<PeopleRounded />}
-            />
-            <SummaryCard
-              caption="Present"
-              title={String(presentCount)}
-              icon={<CheckCircleRounded />}
-              tone="success"
-            />
-            <SummaryCard
-              caption="Absent"
-              title={String(absentCount)}
-              icon={<CancelRounded />}
-              tone="muted"
-            />
-            <SummaryCard
-              caption="Late"
-              title={String(lateCount)}
-              icon={<PauseCircleRounded />}
-            />
-          </Box>
-
-          <Paper
-            elevation={0}
-            sx={{ border: "1px solid", borderColor: "divider", overflow: "hidden" }}
-          >
-            <Stack
-              direction={{ xs: "column", sm: "row" }}
-              justifyContent="space-between"
-              alignItems={{ sm: "center" }}
-              spacing={2}
-              sx={{ px: 3, py: 2, borderBottom: "1px solid", borderColor: "divider" }}
+          {/* No batch selected yet */}
+          {!selectedBatchId && (
+            <Paper
+              elevation={0}
+              sx={{
+                p: { xs: 3, md: 4 },
+                border: "1px solid",
+                borderColor: "divider",
+              }}
             >
-              <Box>
-                <Typography variant="subtitle1">
-                  {selectedBatch?.name} ·{" "}
-                  {selectedSession
-                    ? `${formatDate(selectedSession.date)}, ${formatTime(selectedSession.startTime)}`
-                    : ""}
+              <Stack spacing={1.5}>
+                <Typography variant="h6">Select a batch to begin</Typography>
+                <Typography variant="body2" color="text.secondary">
+                  Choose a batch above, then pick the date of the class you want
+                  to mark attendance for.
                 </Typography>
-                {isAttendanceTaken ? (
-                  <Stack direction="row" spacing={1} alignItems="center" sx={{ mt: 0.5 }}>
-                    <CalendarMonthRounded
-                      sx={{ fontSize: 14, color: "success.main" }}
-                    />
-                    <Typography variant="body2" color="success.main">
-                      Attendance already taken — changes will be corrections
-                    </Typography>
-                  </Stack>
-                ) : null}
-              </Box>
-              <Stack direction="row" spacing={1.5}>
-                <Button
-                  variant="outlined"
-                  size="small"
-                  onClick={handleMarkAllPresent}
-                  disabled={isSaving}
-                >
-                  Mark all present
-                </Button>
-                <Button
-                  variant="contained"
-                  size="small"
-                  startIcon={
-                    isSaving ? (
-                      <CircularProgress size={14} color="inherit" />
-                    ) : (
-                      <SaveRounded />
-                    )
-                  }
-                  disabled={!hasPendingChanges || isSaving}
-                  onClick={handleSave}
-                  sx={{ backgroundImage: primaryGradient }}
-                >
-                  Save attendance
-                </Button>
               </Stack>
-            </Stack>
+            </Paper>
+          )}
 
-            {saveError ? (
-              <Alert severity="error" sx={{ mx: 3, mt: 2 }}>
-                {saveError}
-              </Alert>
-            ) : null}
-
-            {unmarkedCount > 0 && !hasPendingChanges && !isAttendanceTaken ? (
-              <Alert
-                severity="warning"
-                icon={<WarningRounded />}
-                sx={{ mx: 3, mt: 2 }}
-              >
-                {unmarkedCount} student{unmarkedCount === 1 ? " has" : "s have"}{" "}
-                no attendance marked yet.
-              </Alert>
-            ) : null}
-
-            {enrolledStudents.length === 0 ? (
-              <Box sx={{ px: 3, py: 6, textAlign: "center" }}>
-                <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>
-                  No enrolled students
-                </Typography>
-                <Typography
-                  variant="body2"
-                  color="text.secondary"
-                  sx={{ mt: 1 }}
+          {/* Schedule picker — batch selected, no session chosen yet */}
+          {selectedBatchId && !selectedSessionId && !showAllSessions && (
+            <Stack spacing={2}>
+              {isSchedulesLoading || isSessionsLoading ? (
+                <Paper
+                  elevation={0}
+                  sx={{
+                    p: 4,
+                    border: "1px solid",
+                    borderColor: "divider",
+                    display: "flex",
+                    justifyContent: "center",
+                  }}
                 >
-                  Enroll students in this batch to take attendance.
-                </Typography>
-              </Box>
-            ) : (
-              <Table>
-                <TableHead>
-                  <TableRow sx={{ bgcolor: alpha("#f8fafc", 0.9) }}>
-                    <TableCell sx={{ fontWeight: 700, fontSize: 13 }}>
-                      Student
-                    </TableCell>
-                    <TableCell sx={{ fontWeight: 700, fontSize: 13 }}>
-                      Code
-                    </TableCell>
-                    <TableCell
-                      align="center"
-                      sx={{ fontWeight: 700, fontSize: 13 }}
+                  <CircularProgress size={28} />
+                </Paper>
+              ) : schedules.length === 0 ? (
+                <Paper
+                  elevation={0}
+                  sx={{
+                    p: { xs: 3, md: 4 },
+                    border: "1px solid",
+                    borderColor: "divider",
+                  }}
+                >
+                  <Stack spacing={1.5}>
+                    <Typography variant="h6">No class routine set up</Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      This batch has no recurring schedule. Set one up via
+                      Academics → Class Routine, or browse all sessions manually.
+                    </Typography>
+                    <Box>
+                      <Button
+                        variant="outlined"
+                        size="small"
+                        sx={{ mt: 0.5 }}
+                        onClick={() => setShowAllSessions(true)}
+                      >
+                        Browse all sessions
+                      </Button>
+                    </Box>
+                  </Stack>
+                </Paper>
+              ) : (
+                <>
+                  <Box>
+                    <Stack
+                      direction="row"
+                      justifyContent="space-between"
+                      alignItems="center"
+                      sx={{ mb: 1.5 }}
                     >
-                      Attendance
-                    </TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {enrolledStudents.map((student, index) => {
-                    const effectiveStatus = getEffectiveStatus(student.id);
-                    const isPending = !!pendingStatus[student.id];
-
-                    return (
-                      <TableRow
-                        key={student.id}
+                      <Typography
+                        variant="subtitle2"
                         sx={{
-                          bgcolor: index % 2 === 0 ? "#ffffff" : alpha("#f8fafc", 0.5),
-                          "&:hover": { bgcolor: alpha("#ecfdf5", 0.8) },
+                          fontWeight: 700,
+                          color: "text.secondary",
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 0.75,
                         }}
                       >
-                        <TableCell>
-                          <Stack>
-                            <Typography
-                              variant="subtitle2"
-                              sx={{ fontWeight: 700 }}
-                            >
-                              {student.firstName} {student.lastName}
-                            </Typography>
-                            {student.phone ? (
+                        <ClassRounded sx={{ fontSize: 15 }} />
+                        Classes on {DAY_LABELS[selectedDayOfWeek]}
+                        {selectedDate === todayIso ? " (Today)" : ""} ·{" "}
+                        {formatDisplayDate(selectedDate)}
+                      </Typography>
+                      <Button
+                        size="small"
+                        variant="text"
+                        onClick={() => setShowAllSessions(true)}
+                        sx={{ fontSize: 12 }}
+                      >
+                        Browse all sessions
+                      </Button>
+                    </Stack>
+
+                    {daySchedules.length === 0 ? (
+                      <Paper
+                        elevation={0}
+                        sx={{
+                          p: 4,
+                          border: "1px solid",
+                          borderColor: "divider",
+                          textAlign: "center",
+                        }}
+                      >
+                        <Typography
+                          variant="subtitle2"
+                          color="text.secondary"
+                          fontWeight={700}
+                        >
+                          No classes scheduled on{" "}
+                          {DAY_LABELS[selectedDayOfWeek]}
+                        </Typography>
+                        <Typography
+                          variant="body2"
+                          color="text.disabled"
+                          sx={{ mt: 0.5 }}
+                        >
+                          Pick a different date, or browse all recorded sessions.
+                        </Typography>
+                        <Button
+                          variant="outlined"
+                          size="small"
+                          sx={{ mt: 2 }}
+                          onClick={() => setShowAllSessions(true)}
+                        >
+                          Browse all sessions
+                        </Button>
+                      </Paper>
+                    ) : (
+                      <Box
+                        sx={{
+                          display: "grid",
+                          gap: 2,
+                          gridTemplateColumns: {
+                            xs: "1fr",
+                            sm: "repeat(2, minmax(0,1fr))",
+                            md: "repeat(3, minmax(0,1fr))",
+                          },
+                        }}
+                      >
+                        {daySchedules.map((schedule) => {
+                          const session =
+                            sessionByScheduleAndDate.get(
+                              `${schedule.id}::${selectedDate}`,
+                            ) ?? null;
+                          return (
+                            <ScheduleSlotCard
+                              key={schedule.id}
+                              schedule={schedule}
+                              session={session}
+                              teacherName={
+                                schedule.teacherId
+                                  ? (userLookup.get(schedule.teacherId) ?? null)
+                                  : null
+                              }
+                              onSelect={() =>
+                                session && handleSessionSelect(session.id)
+                              }
+                            />
+                          );
+                        })}
+                      </Box>
+                    )}
+                  </Box>
+
+                  <Alert severity="info" sx={{ fontSize: 13 }}>
+                    Only regular recurring class sessions are shown above. For
+                    extra, make-up, or special sessions,{" "}
+                    <Button
+                      size="small"
+                      variant="text"
+                      sx={{ p: 0, minWidth: 0, fontSize: 13, fontWeight: 700 }}
+                      onClick={() => setShowAllSessions(true)}
+                    >
+                      browse all sessions.
+                    </Button>
+                  </Alert>
+                </>
+              )}
+            </Stack>
+          )}
+
+          {/* All sessions fallback picker */}
+          {selectedBatchId && !selectedSessionId && showAllSessions && (
+            <Paper
+              elevation={0}
+              sx={{ p: 2.5, border: "1px solid", borderColor: "divider" }}
+            >
+              <Stack spacing={2}>
+                <Stack
+                  direction="row"
+                  justifyContent="space-between"
+                  alignItems="center"
+                >
+                  <Typography variant="subtitle2" fontWeight={700}>
+                    All sessions — {selectedBatch?.name}
+                  </Typography>
+                  <Button
+                    size="small"
+                    startIcon={<ArrowBackRounded />}
+                    onClick={() => setShowAllSessions(false)}
+                  >
+                    Back to schedule view
+                  </Button>
+                </Stack>
+
+                {isSessionsLoading ? (
+                  <CircularProgress size={24} />
+                ) : sessions.length === 0 ? (
+                  <Typography variant="body2" color="text.secondary">
+                    No sessions found for this batch.
+                  </Typography>
+                ) : (
+                  <FormControl size="small" fullWidth>
+                    <InputLabel>Select session</InputLabel>
+                    <Select
+                      value=""
+                      label="Select session"
+                      onChange={(e) => handleSessionSelect(e.target.value)}
+                    >
+                      {sessions.map((session) => (
+                        <MenuItem key={session.id} value={session.id}>
+                          {formatDisplayDate(session.date)} ·{" "}
+                          {formatTime(session.startTime)} –{" "}
+                          {formatTime(session.endTime)}
+                          {session.type !== "REGULAR"
+                            ? ` (${session.type})`
+                            : ""}
+                        </MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
+                )}
+              </Stack>
+            </Paper>
+          )}
+
+          {/* Loading sheet */}
+          {selectedBatchId && selectedSessionId && isSheetLoading && (
+            <Paper
+              elevation={0}
+              sx={{
+                p: 6,
+                border: "1px solid",
+                borderColor: "divider",
+                display: "flex",
+                justifyContent: "center",
+              }}
+            >
+              <CircularProgress size={32} />
+            </Paper>
+          )}
+
+          {/* Attendance sheet */}
+          {selectedBatchId && selectedSessionId && !isSheetLoading && (
+            <>
+              <Stack direction="row" alignItems="center" spacing={1.5}>
+                <Button
+                  size="small"
+                  startIcon={<ArrowBackRounded />}
+                  onClick={() => {
+                    setSelectedSessionId("");
+                    setPendingStatus({});
+                  }}
+                >
+                  Back to schedule
+                </Button>
+                {selectedSession && (
+                  <Typography variant="body2" color="text.secondary">
+                    {formatDisplayDate(selectedSession.date)} ·{" "}
+                    {formatTime(selectedSession.startTime)} –{" "}
+                    {formatTime(selectedSession.endTime)}
+                  </Typography>
+                )}
+              </Stack>
+
+              <Box
+                sx={{
+                  display: "grid",
+                  gap: 2,
+                  gridTemplateColumns: {
+                    xs: "1fr 1fr",
+                    sm: "repeat(4, minmax(0, 1fr))",
+                  },
+                }}
+              >
+                <SummaryCard
+                  caption="Enrolled"
+                  title={String(enrolledStudents.length)}
+                  icon={<PeopleRounded />}
+                />
+                <SummaryCard
+                  caption="Present"
+                  title={String(presentCount)}
+                  icon={<CheckCircleRounded />}
+                  tone="success"
+                />
+                <SummaryCard
+                  caption="Absent"
+                  title={String(absentCount)}
+                  icon={<CancelRounded />}
+                  tone="muted"
+                />
+                <SummaryCard
+                  caption="Late"
+                  title={String(lateCount)}
+                  icon={<PauseCircleRounded />}
+                />
+              </Box>
+
+              <Paper
+                elevation={0}
+                sx={{
+                  border: "1px solid",
+                  borderColor: "divider",
+                  overflow: "hidden",
+                }}
+              >
+                <Stack
+                  direction={{ xs: "column", sm: "row" }}
+                  justifyContent="space-between"
+                  alignItems={{ sm: "center" }}
+                  spacing={2}
+                  sx={{
+                    px: 3,
+                    py: 2,
+                    borderBottom: "1px solid",
+                    borderColor: "divider",
+                  }}
+                >
+                  <Box>
+                    <Typography variant="subtitle1">
+                      {selectedBatch?.name} ·{" "}
+                      {selectedSession
+                        ? `${formatDisplayDate(selectedSession.date)}, ${formatTime(selectedSession.startTime)}`
+                        : ""}
+                    </Typography>
+                    {isAttendanceTaken ? (
+                      <Stack
+                        direction="row"
+                        spacing={1}
+                        alignItems="center"
+                        sx={{ mt: 0.5 }}
+                      >
+                        <CalendarMonthRounded
+                          sx={{ fontSize: 14, color: "success.main" }}
+                        />
+                        <Typography variant="body2" color="success.main">
+                          Attendance already taken — changes will be corrections
+                        </Typography>
+                      </Stack>
+                    ) : null}
+                  </Box>
+                  <Stack direction="row" spacing={1.5}>
+                    <Button
+                      variant="outlined"
+                      size="small"
+                      onClick={handleMarkAllPresent}
+                      disabled={isSaving}
+                    >
+                      Mark all present
+                    </Button>
+                    <Button
+                      variant="contained"
+                      size="small"
+                      startIcon={
+                        isSaving ? (
+                          <CircularProgress size={14} color="inherit" />
+                        ) : (
+                          <SaveRounded />
+                        )
+                      }
+                      disabled={!hasPendingChanges || isSaving}
+                      onClick={handleSave}
+                      sx={{ backgroundImage: primaryGradient }}
+                    >
+                      Save attendance
+                    </Button>
+                  </Stack>
+                </Stack>
+
+                {saveError ? (
+                  <Alert severity="error" sx={{ mx: 3, mt: 2 }}>
+                    {saveError}
+                  </Alert>
+                ) : null}
+
+                {unmarkedCount > 0 &&
+                !hasPendingChanges &&
+                !isAttendanceTaken ? (
+                  <Alert
+                    severity="warning"
+                    icon={<WarningRounded />}
+                    sx={{ mx: 3, mt: 2 }}
+                  >
+                    {unmarkedCount} student
+                    {unmarkedCount === 1 ? " has" : "s have"} no attendance
+                    marked yet.
+                  </Alert>
+                ) : null}
+
+                {enrolledStudents.length === 0 ? (
+                  <Box sx={{ px: 3, py: 6, textAlign: "center" }}>
+                    <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>
+                      No enrolled students
+                    </Typography>
+                    <Typography
+                      variant="body2"
+                      color="text.secondary"
+                      sx={{ mt: 1 }}
+                    >
+                      Enroll students in this batch to take attendance.
+                    </Typography>
+                  </Box>
+                ) : (
+                  <Table>
+                    <TableHead>
+                      <TableRow sx={{ bgcolor: alpha("#f8fafc", 0.9) }}>
+                        <TableCell sx={{ fontWeight: 700, fontSize: 13 }}>
+                          Student
+                        </TableCell>
+                        <TableCell sx={{ fontWeight: 700, fontSize: 13 }}>
+                          Code
+                        </TableCell>
+                        <TableCell
+                          align="center"
+                          sx={{ fontWeight: 700, fontSize: 13 }}
+                        >
+                          Attendance
+                        </TableCell>
+                      </TableRow>
+                    </TableHead>
+                    <TableBody>
+                      {enrolledStudents.map((student, index) => {
+                        const effectiveStatus = getEffectiveStatus(student.id);
+                        const isPending = !!pendingStatus[student.id];
+
+                        return (
+                          <TableRow
+                            key={student.id}
+                            sx={{
+                              bgcolor:
+                                index % 2 === 0
+                                  ? "#ffffff"
+                                  : alpha("#f8fafc", 0.5),
+                              "&:hover": { bgcolor: alpha("#ecfdf5", 0.8) },
+                            }}
+                          >
+                            <TableCell>
+                              <Stack>
+                                <Typography
+                                  variant="subtitle2"
+                                  sx={{ fontWeight: 700 }}
+                                >
+                                  {student.firstName} {student.lastName}
+                                </Typography>
+                                {student.phone ? (
+                                  <Typography
+                                    variant="body2"
+                                    color="text.secondary"
+                                  >
+                                    {student.phone}
+                                  </Typography>
+                                ) : null}
+                              </Stack>
+                            </TableCell>
+                            <TableCell>
                               <Typography
                                 variant="body2"
                                 color="text.secondary"
                               >
-                                {student.phone}
+                                {student.studentCode}
                               </Typography>
-                            ) : null}
-                          </Stack>
-                        </TableCell>
-                        <TableCell>
-                          <Typography variant="body2" color="text.secondary">
-                            {student.studentCode}
-                          </Typography>
-                        </TableCell>
-                        <TableCell align="center">
-                          <Stack
-                            direction="row"
-                            spacing={1}
-                            justifyContent="center"
-                            alignItems="center"
-                          >
-                            <ToggleButtonGroup
-                              value={effectiveStatus ?? ""}
-                              exclusive
-                              onChange={(_, value) => {
-                                if (value) {
-                                  handleStatusChange(
-                                    student.id,
-                                    value as AttendanceStatus,
-                                  );
-                                }
-                              }}
-                              size="small"
-                            >
-                              {(
-                                ["PRESENT", "LATE", "ABSENT"] as AttendanceStatus[]
-                              ).map((status) => (
-                                <ToggleButton
-                                  key={status}
-                                  value={status}
-                                  sx={{
-                                    px: 1.5,
-                                    fontWeight: 700,
-                                    fontSize: 11,
-                                    "&.Mui-selected": {
-                                      color: `${statusColors[status]}.main`,
-                                      bgcolor: alpha(
-                                        status === "PRESENT"
-                                          ? "#10b981"
-                                          : status === "ABSENT"
-                                            ? "#ef4444"
-                                            : "#f59e0b",
-                                        0.12,
-                                      ),
-                                      "&:hover": {
-                                        bgcolor: alpha(
-                                          status === "PRESENT"
-                                            ? "#10b981"
-                                            : status === "ABSENT"
-                                              ? "#ef4444"
-                                              : "#f59e0b",
-                                          0.18,
-                                        ),
-                                      },
-                                    },
+                            </TableCell>
+                            <TableCell align="center">
+                              <Stack
+                                direction="row"
+                                spacing={1}
+                                justifyContent="center"
+                                alignItems="center"
+                              >
+                                <ToggleButtonGroup
+                                  value={effectiveStatus ?? ""}
+                                  exclusive
+                                  onChange={(_, value) => {
+                                    if (value) {
+                                      handleStatusChange(
+                                        student.id,
+                                        value as AttendanceStatus,
+                                      );
+                                    }
                                   }}
+                                  size="small"
                                 >
-                                  {statusIcons[status]}
-                                  <Box component="span" sx={{ ml: 0.5 }}>
-                                    {status === "PRESENT"
-                                      ? "P"
-                                      : status === "ABSENT"
-                                        ? "A"
-                                        : "L"}
-                                  </Box>
-                                </ToggleButton>
-                              ))}
-                            </ToggleButtonGroup>
-                            {isPending ? (
-                              <Chip
-                                label="unsaved"
-                                size="small"
-                                variant="outlined"
-                                color="warning"
-                                sx={{ height: 20, fontSize: 10 }}
-                              />
-                            ) : effectiveStatus ? (
-                              <Chip
-                                label={effectiveStatus.toLowerCase()}
-                                size="small"
-                                color={statusColors[effectiveStatus]}
-                                sx={{ height: 20, fontSize: 10 }}
-                              />
-                            ) : (
-                              <Chip
-                                label="not marked"
-                                size="small"
-                                variant="outlined"
-                                sx={{ height: 20, fontSize: 10 }}
-                              />
-                            )}
-                          </Stack>
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })}
-                </TableBody>
-              </Table>
-            )}
+                                  {(
+                                    [
+                                      "PRESENT",
+                                      "LATE",
+                                      "ABSENT",
+                                    ] as AttendanceStatus[]
+                                  ).map((status) => (
+                                    <ToggleButton
+                                      key={status}
+                                      value={status}
+                                      sx={{
+                                        px: 1.5,
+                                        fontWeight: 700,
+                                        fontSize: 11,
+                                        "&.Mui-selected": {
+                                          color: `${statusColors[status]}.main`,
+                                          bgcolor: alpha(
+                                            status === "PRESENT"
+                                              ? "#10b981"
+                                              : status === "ABSENT"
+                                                ? "#ef4444"
+                                                : "#f59e0b",
+                                            0.12,
+                                          ),
+                                          "&:hover": {
+                                            bgcolor: alpha(
+                                              status === "PRESENT"
+                                                ? "#10b981"
+                                                : status === "ABSENT"
+                                                  ? "#ef4444"
+                                                  : "#f59e0b",
+                                              0.18,
+                                            ),
+                                          },
+                                        },
+                                      }}
+                                    >
+                                      {statusIcons[status]}
+                                      <Box component="span" sx={{ ml: 0.5 }}>
+                                        {status === "PRESENT"
+                                          ? "P"
+                                          : status === "ABSENT"
+                                            ? "A"
+                                            : "L"}
+                                      </Box>
+                                    </ToggleButton>
+                                  ))}
+                                </ToggleButtonGroup>
+                                {isPending ? (
+                                  <Chip
+                                    label="unsaved"
+                                    size="small"
+                                    variant="outlined"
+                                    color="warning"
+                                    sx={{ height: 20, fontSize: 10 }}
+                                  />
+                                ) : effectiveStatus ? (
+                                  <Chip
+                                    label={effectiveStatus.toLowerCase()}
+                                    size="small"
+                                    color={statusColors[effectiveStatus]}
+                                    sx={{ height: 20, fontSize: 10 }}
+                                  />
+                                ) : (
+                                  <Chip
+                                    label="not marked"
+                                    size="small"
+                                    variant="outlined"
+                                    sx={{ height: 20, fontSize: 10 }}
+                                  />
+                                )}
+                              </Stack>
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })}
+                    </TableBody>
+                  </Table>
+                )}
 
-            <Divider />
-            <Box
-              sx={{
-                px: 3,
-                py: 1.5,
-                bgcolor: alpha("#f8fafc", 0.6),
-                display: "flex",
-                justifyContent: "flex-end",
-              }}
-            >
-              <Button
-                variant="contained"
-                startIcon={
-                  isSaving ? (
-                    <CircularProgress size={14} color="inherit" />
-                  ) : (
-                    <SaveRounded />
-                  )
-                }
-                disabled={!hasPendingChanges || isSaving}
-                onClick={handleSave}
-                sx={{ backgroundImage: primaryGradient }}
-              >
-                Save attendance
-              </Button>
-            </Box>
-          </Paper>
-        </>
-      ) : (activeTab === 0 || !selectedBatchId) && selectedSessionId && isSheetLoading ? (
-        <Paper
-          elevation={0}
-          sx={{
-            p: 6,
-            border: "1px solid",
-            borderColor: "divider",
-            display: "flex",
-            justifyContent: "center",
-          }}
-        >
-          <CircularProgress size={32} />
-        </Paper>
-      ) : (activeTab === 0 || !selectedBatchId) && selectedBatchId && !selectedSessionId ? (
-        <Paper
-          elevation={0}
-          sx={{ p: { xs: 3, md: 4 }, border: "1px solid", borderColor: "divider" }}
-        >
-          {isSessionsLoading ? (
-            <CircularProgress size={24} />
-          ) : sessions.length === 0 ? (
-            <Stack spacing={1.5}>
-              <Typography variant="h6">No sessions found</Typography>
-              <Typography variant="body2" color="text.secondary">
-                This batch has no scheduled sessions yet. Add sessions via Class
-                Schedule.
-              </Typography>
-            </Stack>
-          ) : (
-            <Stack spacing={1.5}>
-              <Typography variant="h6">Select a session above</Typography>
-              <Typography variant="body2" color="text.secondary">
-                {sessions.length} session{sessions.length === 1 ? "" : "s"}{" "}
-                available for this batch.
-              </Typography>
-            </Stack>
+                <Divider />
+                <Box
+                  sx={{
+                    px: 3,
+                    py: 1.5,
+                    bgcolor: alpha("#f8fafc", 0.6),
+                    display: "flex",
+                    justifyContent: "flex-end",
+                  }}
+                >
+                  <Button
+                    variant="contained"
+                    startIcon={
+                      isSaving ? (
+                        <CircularProgress size={14} color="inherit" />
+                      ) : (
+                        <SaveRounded />
+                      )
+                    }
+                    disabled={!hasPendingChanges || isSaving}
+                    onClick={handleSave}
+                    sx={{ backgroundImage: primaryGradient }}
+                  >
+                    Save attendance
+                  </Button>
+                </Box>
+              </Paper>
+            </>
           )}
-        </Paper>
-      ) : (activeTab === 0 || !selectedBatchId) && !selectedBatchId ? (
-        <Paper
-          elevation={0}
-          sx={{ p: { xs: 3, md: 4 }, border: "1px solid", borderColor: "divider" }}
-        >
-          <Stack spacing={1.5}>
-            <Typography variant="h6">Select a batch to begin</Typography>
-            <Typography variant="body2" color="text.secondary">
-              Choose a batch above, then select a session to take attendance.
-            </Typography>
-          </Stack>
-        </Paper>
-      ) : null}
+        </>
+      )}
     </Stack>
   );
 }
