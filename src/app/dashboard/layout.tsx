@@ -1,9 +1,7 @@
 import type { ReactNode } from "react";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
-import { Box } from "@mui/material";
-import { Sidebar } from "@/components/dashboard/Sidebar";
-import { Topbar } from "@/components/dashboard/Topbar";
+import { DashboardShell } from "@/components/dashboard/DashboardShell";
 import { DashboardAuthGuard } from "@/components/dashboard/DashboardAuthGuard";
 import { dashboardSidebarMenuItems } from "@/config/dashboard-menu";
 import { hasAuthSession } from "@/lib/auth/session";
@@ -20,44 +18,11 @@ export default async function DashboardLayout({
   }
 
   return (
-    <Box
-      sx={{
-        height: "100dvh",
-        display: "flex",
-        flexDirection: { xs: "column", md: "row" },
-        bgcolor: "#0f172a",
-        overflow: "hidden",
-      }}
+    <DashboardShell
+      logoText="BongoEdu360"
+      menuItems={dashboardSidebarMenuItems}
     >
-      <Sidebar logoText="BongoEdu360" menuItems={dashboardSidebarMenuItems} />
-
-      <Box
-        component="main"
-        sx={{
-          flex: 1,
-          minWidth: 0,
-          minHeight: 0,
-          display: "flex",
-          flexDirection: "column",
-          bgcolor: "#0f172a",
-          overflow: "hidden",
-        }}
-      >
-        <Topbar />
-
-        <Box
-          sx={{
-            flex: 1,
-            minHeight: 0,
-            bgcolor: "background.default",
-            p: { xs: 2, md: 3 },
-            overflowY: "auto",
-            overflowX: "hidden",
-          }}
-        >
-          <DashboardAuthGuard>{children}</DashboardAuthGuard>
-        </Box>
-      </Box>
-    </Box>
+      <DashboardAuthGuard>{children}</DashboardAuthGuard>
+    </DashboardShell>
   );
 }

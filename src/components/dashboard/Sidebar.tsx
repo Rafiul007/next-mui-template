@@ -12,6 +12,7 @@ import { usePathname } from "next/navigation";
 import {
   Box,
   Collapse,
+  Drawer,
   List,
   ListItemButton,
   ListItemIcon,
@@ -26,6 +27,15 @@ import { primaryGradient } from "@/theme/theme";
 type SidebarProps = {
   logoText: string;
   menuItems: SidebarMenuItem[];
+  /** Mobile drawer open state. Ignored on desktop (permanent sidebar). */
+  mobileOpen?: boolean;
+  onMobileClose?: () => void;
+};
+
+const SIDEBAR_SURFACE = {
+  bgcolor: "#09111c",
+  color: "#e2e8f0",
+  borderColor: "rgba(148, 163, 184, 0.1)",
 };
 
 const isItemActive = (pathname: string, item: SidebarMenuItem) => {
@@ -36,7 +46,12 @@ const isItemActive = (pathname: string, item: SidebarMenuItem) => {
   return item.children?.some((child) => pathname === child.href) ?? false;
 };
 
-export function Sidebar({ logoText, menuItems }: SidebarProps) {
+export function Sidebar({
+  logoText,
+  menuItems,
+  mobileOpen = false,
+  onMobileClose,
+}: SidebarProps) {
   const pathname = usePathname();
   const [openMenus, setOpenMenus] = useState<Record<string, boolean>>(() =>
     Object.fromEntries(
@@ -53,27 +68,13 @@ export function Sidebar({ logoText, menuItems }: SidebarProps) {
     }));
   };
 
-  return (
-    <Box
-      component="aside"
-      sx={{
-        width: { xs: "100%", md: "clamp(260px, 20vw, 320px)" },
-        height: { xs: "auto", md: "100dvh" },
-        flexShrink: 0,
-        bgcolor: "#09111c",
-        color: "#e2e8f0",
-        px: 2,
-        py: 0,
-        overflow: "hidden",
-        borderRight: "1px solid rgba(148, 163, 184, 0.1)",
-      }}
-    >
+  const content = (
       <Stack
         spacing={3.5}
         sx={{
-          height: { md: "100%" },
+          height: "100%",
           minHeight: 0,
-          py: { md: 1.5 },
+          py: 1.5,
         }}
       >
         <Stack
@@ -111,7 +112,7 @@ export function Sidebar({ logoText, menuItems }: SidebarProps) {
             flex: 1,
             minHeight: 0,
             pb: 3,
-            overflowY: { xs: "visible", md: "auto" },
+            overflowY: "auto",
             overflowX: "hidden",
             scrollbarWidth: "thin",
             scrollbarColor: "rgba(148, 163, 184, 0.35) transparent",
@@ -197,6 +198,7 @@ export function Sidebar({ logoText, menuItems }: SidebarProps) {
                                     key={child.key}
                                     component={Link}
                                     href={child.href}
+                                    onClick={onMobileClose}
                                     sx={{
                                       ml: 1.5,
                                       mt: 0.5,
@@ -289,6 +291,7 @@ export function Sidebar({ logoText, menuItems }: SidebarProps) {
                         <ListItemButton
                           component={Link}
                           href={item.href}
+                          onClick={onMobileClose}
                           sx={{
                             minHeight: 48,
                             px: 1.5,
@@ -344,6 +347,48 @@ export function Sidebar({ logoText, menuItems }: SidebarProps) {
           ))}
         </List>
       </Stack>
-    </Box>
+  );
+
+  return (
+    <>
+      {/* Desktop: permanent sidebar */}
+      <Box
+        component="aside"
+        sx={{
+          display: { xs: "none", md: "block" },
+          width: "clamp(260px, 20vw, 320px)",
+          height: "100dvh",
+          flexShrink: 0,
+          px: 2,
+          overflow: "hidden",
+          bgcolor: SIDEBAR_SURFACE.bgcolor,
+          color: SIDEBAR_SURFACE.color,
+          borderRight: `1px solid ${SIDEBAR_SURFACE.borderColor}`,
+        }}
+      >
+        {content}
+      </Box>
+
+      {/* Mobile: temporary drawer */}
+      <Drawer
+        variant="temporary"
+        open={mobileOpen}
+        onClose={onMobileClose}
+        ModalProps={{ keepMounted: true }}
+        sx={{
+          display: { xs: "block", md: "none" },
+          "& .MuiDrawer-paper": {
+            width: "min(86vw, 320px)",
+            boxSizing: "border-box",
+            px: 2,
+            bgcolor: SIDEBAR_SURFACE.bgcolor,
+            color: SIDEBAR_SURFACE.color,
+            borderRight: `1px solid ${SIDEBAR_SURFACE.borderColor}`,
+          },
+        }}
+      >
+        {content}
+      </Drawer>
+    </>
   );
 }
