@@ -99,3 +99,19 @@ export const ONBOARD_EMPLOYEE_WITH_USER_MUTATION = /* GraphQL */ `
     }
   }
 `;
+
+export const MARK_AS_READ_MUTATION = /* GraphQL */ `
+  mutation MarkAsRead($notificationId: ID!) {
+    markAsRead(notificationId: $notificationId) {
+      id
+      isRead
+      readAt
+    }
+  }
+`;
+
+export const MARK_ALL_READ_MUTATION = /* GraphQL */ `
+  mutation MarkAllRead {
+    markAllRead
+  }
+`;

@@ -30,8 +30,13 @@ const scheduleFormSchema = yup
     dayOfWeek: yup.string().required("Day of week is required"),
     startTime: yup.string().required("Start time is required"),
     endTime: yup.string().required("End time is required"),
-    roomName: yup.string().trim().max(60, "Room name must be 60 characters or fewer").default(""),
+    roomName: yup
+      .string()
+      .trim()
+      .max(60, "Room name must be 60 characters or fewer")
+      .default(""),
     teacherId: yup.string().default(""),
+    subjectId: yup.string().default(""),
   })
   .required();
 
@@ -43,6 +48,7 @@ type RecurringScheduleFormDialogProps = {
   initialValues: RecurringScheduleFormValues;
   isSubmitting: boolean;
   teacherOptions: RhfSelectOption[];
+  subjectOptions: RhfSelectOption[];
   onClose: () => void;
   onSubmit: (values: RecurringScheduleFormValues) => Promise<void>;
   open: boolean;
@@ -54,6 +60,7 @@ export function RecurringScheduleFormDialog({
   initialValues,
   isSubmitting,
   teacherOptions,
+  subjectOptions,
   onClose,
   onSubmit,
   open,
@@ -78,6 +85,17 @@ export function RecurringScheduleFormDialog({
             {errorMessage ? (
               <Alert severity="error">{errorMessage}</Alert>
             ) : null}
+
+            {subjectOptions.length > 1 && (
+              <RhfSelect
+                control={control}
+                name="subjectId"
+                label="Subject (optional)"
+                options={subjectOptions}
+                fullWidth
+              />
+            )}
+
             <Box
               sx={{
                 display: "grid",
@@ -88,7 +106,7 @@ export function RecurringScheduleFormDialog({
               <RhfSelect
                 control={control}
                 name="dayOfWeek"
-                label="Day of week"
+                label="Day of week *"
                 options={DAY_OPTIONS}
                 fullWidth
               />
@@ -102,7 +120,7 @@ export function RecurringScheduleFormDialog({
               <RhfTextField
                 control={control}
                 name="startTime"
-                label="Start time"
+                label="Start time *"
                 type="time"
                 fullWidth
                 slotProps={{ inputLabel: { shrink: true } }}
@@ -110,7 +128,7 @@ export function RecurringScheduleFormDialog({
               <RhfTextField
                 control={control}
                 name="endTime"
-                label="End time"
+                label="End time *"
                 type="time"
                 fullWidth
                 slotProps={{ inputLabel: { shrink: true } }}
@@ -126,14 +144,12 @@ export function RecurringScheduleFormDialog({
                 />
               </Box>
             </Box>
-            <Box
-              sx={{
-                p: 2,
-                borderRadius: 1,
-                bgcolor: "action.hover",
-              }}
-            >
-              <Box component="span" sx={{ typography: "body2", color: "text.secondary" }}>
+
+            <Box sx={{ p: 2, borderRadius: 1, bgcolor: "action.hover" }}>
+              <Box
+                component="span"
+                sx={{ typography: "body2", color: "text.secondary" }}
+              >
                 Batch: <strong>{batchName}</strong>
               </Box>
             </Box>

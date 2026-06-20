@@ -9,22 +9,26 @@ import {
   PolicyRounded,
   CheckCircleRounded,
   TimerRounded,
+  DeleteRounded,
 } from "@mui/icons-material";
-import { useMutation } from "@apollo/client/react";
+import { useMutation, useQuery } from "@apollo/client/react";
 import {
   Alert,
   Box,
   Button,
   Chip,
+  CircularProgress,
   Dialog,
   DialogActions,
   DialogContent,
   DialogTitle,
   Divider,
   FormControlLabel,
+  IconButton,
   Paper,
   Stack,
   Switch,
+  Tooltip,
   Typography,
   alpha,
 } from "@mui/material";
@@ -35,9 +39,17 @@ import {
   type RhfSelectOption,
 } from "@/components/form";
 import { SummaryCard } from "@/components/ui";
-import { CreateLeavePolicyDocument } from "@/graphql/generated";
+import {
+  CreateLeavePolicyDocument,
+  GetLeavePoliciesDocument,
+  type GetLeavePoliciesQuery,
+} from "@/graphql/generated";
 import { getErrorMessage } from "@/lib/errors";
 import { primaryGradient } from "@/theme/theme";
+
+type PolicyRecord = NonNullable<
+  GetLeavePoliciesQuery["getLeavePolicies"][number]
+>;
 
 const leaveTypeOptions: RhfSelectOption[] = [
   { label: "Sick leave", value: "sick" },
@@ -71,30 +83,110 @@ const policySchema = yup
 
 type PolicyFormValues = yup.InferType<typeof policySchema>;
 
-type CreatedPolicy = {
-  id: string;
-  name: string;
-  leaveType: string;
-  totalDaysPerYear: number;
-  carryForwardDays: number;
-  requiresApproval: boolean;
-  tenantId: string;
-};
-
 const LEAVE_TYPE_LABEL: Record<string, string> = {
   sick: "Sick",
   casual: "Casual",
   annual: "Annual",
   maternity: "Maternity",
   unpaid: "Unpaid",
+  SICK: "Sick",
+  CASUAL: "Casual",
+  ANNUAL: "Annual",
+  MATERNITY: "Maternity",
+  UNPAID: "Unpaid",
 };
+
+// ── Policy card ───────────────────────────────────────────────────────────────
+
+function PolicyCard({ policy }: { policy: PolicyRecord }) {
+  const typeLabel =
+    LEAVE_TYPE_LABEL[policy.leaveType] ??
+    policy.leaveType.charAt(0).toUpperCase() +
+      policy.leaveType.slice(1).toLowerCase();
+
+  return (
+    <Paper
+      elevation={0}
+      sx={{
+        p: 2.5,
+        border: "1px solid",
+        borderColor: alpha("#0f172a", 0.08),
+        borderRadius: 2,
+        display: "flex",
+        flexDirection: "column",
+        gap: 1.5,
+      }}
+    >
+      <Stack
+        direction="row"
+        justifyContent="space-between"
+        alignItems="flex-start"
+        spacing={1}
+      >
+        <Box flex={1} minWidth={0}>
+          <Typography variant="subtitle1" fontWeight={700} noWrap>
+            {policy.name}
+          </Typography>
+          <Chip
+            label={typeLabel}
+            size="small"
+            variant="outlined"
+            sx={{ mt: 0.5 }}
+          />
+        </Box>
+        <Chip
+          label={policy.requiresApproval ? "Approval required" : "Auto-approved"}
+          size="small"
+          color={policy.requiresApproval ? "default" : "success"}
+        />
+      </Stack>
+
+      {policy.description ? (
+        <Typography variant="body2" color="text.secondary" sx={{ fontSize: 12 }}>
+          {policy.description}
+        </Typography>
+      ) : null}
+
+      <Divider />
+
+      <Box
+        sx={{
+          display: "grid",
+          gridTemplateColumns: "1fr 1fr",
+          gap: 1,
+        }}
+      >
+        <Box>
+          <Typography variant="caption" color="text.secondary">
+            Days per year
+          </Typography>
+          <Typography variant="body2" fontWeight={600}>
+            {policy.totalDaysPerYear}
+          </Typography>
+        </Box>
+        <Box>
+          <Typography variant="caption" color="text.secondary">
+            Carry-forward
+          </Typography>
+          <Typography variant="body2" fontWeight={600}>
+            {policy.carryForwardDays} day{policy.carryForwardDays !== 1 ? "s" : ""}
+          </Typography>
+        </Box>
+      </Box>
+    </Paper>
+  );
+}
+
+// ── Main Workspace ────────────────────────────────────────────────────────────
 
 export function LeavePolicyWorkspace() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [dialogKey, setDialogKey] = useState(0);
   const [requiresApproval, setRequiresApproval] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [createdPolicies, setCreatedPolicies] = useState<CreatedPolicy[]>([]);
+
+  const { data, loading, refetch } = useQuery(GetLeavePoliciesDocument);
+  const policies: PolicyRecord[] = data?.getLeavePolicies ?? [];
 
   const [createLeavePolicy, createState] = useMutation(CreateLeavePolicyDocument);
 
@@ -141,12 +233,9 @@ export function LeavePolicyWorkspace() {
         },
       });
       if (result.error) throw result.error;
-      const policy = result.data?.createLeavePolicy;
-      if (policy) {
-        setCreatedPolicies((prev) => [...prev, { ...policy, requiresApproval }]);
-      }
       toast.success(`Leave policy "${values.name.trim()}" created.`);
       closeDialog();
+      await refetch();
     } catch (error) {
       const message = getErrorMessage(error, "Unable to create leave policy.");
       setErrorMessage(message);
@@ -154,9 +243,13 @@ export function LeavePolicyWorkspace() {
     }
   };
 
+  const requireApprovalCount = policies.filter((p) => p.requiresApproval).length;
+  const carryForwardCount = policies.filter((p) => p.carryForwardDays > 0).length;
+
   return (
     <>
       <Stack spacing={3}>
+        {/* Header */}
         <Paper
           elevation={0}
           sx={{
@@ -202,6 +295,7 @@ export function LeavePolicyWorkspace() {
           </Stack>
         </Paper>
 
+        {/* Summary cards */}
         <Box
           sx={{
             display: "grid",
@@ -215,24 +309,32 @@ export function LeavePolicyWorkspace() {
         >
           <SummaryCard
             caption="Policies defined"
-            title={String(createdPolicies.length)}
+            title={loading ? "…" : String(policies.length)}
             icon={<PolicyRounded />}
           />
           <SummaryCard
             caption="Require approval"
-            title={String(createdPolicies.filter((p) => p.requiresApproval).length)}
+            title={loading ? "…" : String(requireApprovalCount)}
             icon={<CheckCircleRounded />}
             tone="success"
           />
           <SummaryCard
             caption="With carry-forward"
-            title={String(createdPolicies.filter((p) => p.carryForwardDays > 0).length)}
+            title={loading ? "…" : String(carryForwardCount)}
             icon={<TimerRounded />}
             tone="default"
           />
         </Box>
 
-        {createdPolicies.length > 0 ? (
+        {/* Loading state */}
+        {loading && (
+          <Box sx={{ display: "flex", justifyContent: "center", py: 6 }}>
+            <CircularProgress size={32} />
+          </Box>
+        )}
+
+        {/* Policy grid */}
+        {!loading && policies.length > 0 && (
           <Box
             sx={{
               display: "grid",
@@ -244,82 +346,44 @@ export function LeavePolicyWorkspace() {
               },
             }}
           >
-            {createdPolicies.map((policy) => (
-              <Paper
-                key={policy.id}
-                elevation={0}
-                sx={{
-                  p: 2.5,
-                  border: "1px solid",
-                  borderColor: alpha("#0f172a", 0.08),
-                  borderRadius: 2,
-                }}
-              >
-                <Stack spacing={1.5}>
-                  <Stack direction="row" justifyContent="space-between" alignItems="flex-start">
-                    <Box>
-                      <Typography variant="subtitle1" fontWeight={700}>
-                        {policy.name}
-                      </Typography>
-                      <Chip
-                        label={LEAVE_TYPE_LABEL[policy.leaveType.toLowerCase()] ?? policy.leaveType}
-                        size="small"
-                        variant="outlined"
-                        sx={{ mt: 0.5 }}
-                      />
-                    </Box>
-                    <Chip
-                      label={policy.requiresApproval ? "Approval required" : "Auto-approved"}
-                      size="small"
-                      color={policy.requiresApproval ? "default" : "success"}
-                    />
-                  </Stack>
-                  <Divider />
-                  <Box
-                    sx={{
-                      display: "grid",
-                      gridTemplateColumns: "1fr 1fr",
-                      gap: 1,
-                    }}
-                  >
-                    <Box>
-                      <Typography variant="caption" color="text.secondary">
-                        Days per year
-                      </Typography>
-                      <Typography variant="body2" fontWeight={600}>
-                        {policy.totalDaysPerYear}
-                      </Typography>
-                    </Box>
-                    <Box>
-                      <Typography variant="caption" color="text.secondary">
-                        Carry-forward
-                      </Typography>
-                      <Typography variant="body2" fontWeight={600}>
-                        {policy.carryForwardDays} days
-                      </Typography>
-                    </Box>
-                  </Box>
-                </Stack>
-              </Paper>
+            {policies.map((policy) => (
+              <PolicyCard key={policy.id} policy={policy} />
             ))}
           </Box>
-        ) : (
+        )}
+
+        {/* Empty state */}
+        {!loading && policies.length === 0 && (
           <Paper
             elevation={0}
-            sx={{ p: { xs: 3, md: 6 }, border: "1px solid", borderColor: "divider", textAlign: "center" }}
+            sx={{
+              p: { xs: 3, md: 6 },
+              border: "1px solid",
+              borderColor: "divider",
+              textAlign: "center",
+            }}
           >
             <PolicyRounded sx={{ fontSize: 48, color: "text.disabled", mb: 2 }} />
             <Typography variant="h6">No leave policies yet</Typography>
-            <Typography variant="body2" color="text.secondary" sx={{ mt: 1, mb: 3 }}>
+            <Typography
+              variant="body2"
+              color="text.secondary"
+              sx={{ mt: 1, mb: 3 }}
+            >
               Create your first leave policy to define entitlements for your team.
             </Typography>
-            <Button variant="contained" onClick={openDialog} startIcon={<AddRounded />}>
+            <Button
+              variant="contained"
+              onClick={openDialog}
+              startIcon={<AddRounded />}
+            >
               Create policy
             </Button>
           </Paper>
         )}
       </Stack>
 
+      {/* Create dialog */}
       <Dialog
         key={dialogKey}
         open={isDialogOpen}
@@ -395,10 +459,23 @@ export function LeavePolicyWorkspace() {
             </Stack>
           </DialogContent>
           <DialogActions sx={{ px: 3, py: 2 }}>
-            <Button color="inherit" onClick={closeDialog} disabled={createState.loading}>
+            <Button
+              color="inherit"
+              onClick={closeDialog}
+              disabled={createState.loading}
+            >
               Cancel
             </Button>
-            <Button type="submit" variant="contained" disabled={createState.loading}>
+            <Button
+              type="submit"
+              variant="contained"
+              disabled={createState.loading}
+              startIcon={
+                createState.loading ? (
+                  <CircularProgress size={14} color="inherit" />
+                ) : undefined
+              }
+            >
               Create policy
             </Button>
           </DialogActions>

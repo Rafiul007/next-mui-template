@@ -128,6 +128,22 @@ export const GET_SUBJECTS_QUERY = /* GraphQL */ `
       nameBangla
       code
       classLevel
+      batchId
+      active
+      tenantId
+    }
+  }
+`;
+
+export const GET_SUBJECTS_BY_BATCH_QUERY = /* GraphQL */ `
+  query GetSubjectsByBatch($batchId: ID!) {
+    getSubjectsByBatch(batchId: $batchId) {
+      id
+      name
+      nameBangla
+      code
+      classLevel
+      batchId
       active
       tenantId
     }

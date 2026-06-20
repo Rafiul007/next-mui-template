@@ -8,6 +8,7 @@ import {
   CloseRounded,
   ErrorOutlineRounded,
   PersonSearchRounded,
+  PrintRounded,
   ReceiptLongRounded,
   WarningAmberRounded,
 } from "@mui/icons-material";
@@ -27,6 +28,7 @@ import {
   Paper,
   Stack,
   TextField,
+  Tooltip,
   Typography,
   alpha,
 } from "@mui/material";
@@ -35,6 +37,7 @@ import { MaterialReactTable, type MRT_ColumnDef } from "material-react-table";
 import { toast } from "react-hot-toast";
 import {
   GetAllBatchesDocument,
+  GetCenterDocument,
   GetStudentsDocument,
   RecordStudentPaymentDocument,
   type GetStudentsQuery,
@@ -300,6 +303,127 @@ function RecordPaymentDialog({
   );
 }
 
+// ── Invoice print ─────────────────────────────────────────────────────────────
+
+function printInvoice(params: {
+  invoice: StudentInvoiceNew;
+  studentName: string;
+  studentCode: string;
+  batchName: string;
+  centerName: string;
+}) {
+  const { invoice, studentName, studentCode, batchName, centerName } = params;
+  const win = window.open("", "_blank", "width=820,height=960");
+  if (!win) return;
+
+  const monthLabel = dayjs(invoice.month, "YYYY-MM").format("MMMM YYYY");
+  const printedOn = dayjs().format("DD MMM YYYY, h:mm A");
+  const fmtAmt = (n: number) =>
+    `৳${n.toLocaleString("en-BD", { minimumFractionDigits: 0 })}`;
+  const statusLabel = invoice.status === "WAIVED" ? "Waived" : "Paid";
+  const badgeColor =
+    invoice.status === "WAIVED"
+      ? { bg: "#e0f2fe", fg: "#0369a1", border: "#bae6fd" }
+      : { bg: "#dcfce7", fg: "#15803d", border: "#bbf7d0" };
+
+  const lineItemsHtml =
+    invoice.lineItems.length > 0
+      ? `<table>
+          <thead><tr><th>Description</th><th class="right">Amount</th></tr></thead>
+          <tbody>
+            ${invoice.lineItems
+              .map(
+                (li) =>
+                  `<tr><td>${li.description}</td><td class="right">${fmtAmt(li.amount)}</td></tr>`,
+              )
+              .join("")}
+          </tbody>
+        </table>`
+      : "";
+
+  const html = `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <title>Receipt – ${studentName} – ${monthLabel}</title>
+  <style>
+    *{margin:0;padding:0;box-sizing:border-box}
+    body{font-family:'Segoe UI',Arial,sans-serif;color:#1e293b;padding:48px;max-width:640px;margin:0 auto}
+    .header{text-align:center;padding-bottom:20px;border-bottom:2px solid #e2e8f0;margin-bottom:28px}
+    .center-name{font-size:22px;font-weight:700;color:#0f172a}
+    .receipt-label{font-size:11px;letter-spacing:1.2px;text-transform:uppercase;color:#94a3b8;margin-top:5px}
+    .meta-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:28px}
+    .meta-box{padding:12px 14px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px}
+    .meta-label{font-size:10px;text-transform:uppercase;letter-spacing:0.6px;color:#94a3b8;margin-bottom:3px}
+    .meta-value{font-size:14px;font-weight:600;color:#0f172a}
+    .meta-sub{font-size:12px;color:#64748b;margin-top:2px}
+    table{width:100%;border-collapse:collapse;margin-bottom:24px}
+    th{font-size:11px;text-transform:uppercase;letter-spacing:0.5px;color:#64748b;padding:8px 12px;background:#f1f5f9;text-align:left;border-bottom:1px solid #e2e8f0}
+    th.right{text-align:right}
+    td{padding:10px 12px;border-bottom:1px solid #f1f5f9;font-size:14px;color:#334155}
+    td.right{text-align:right;font-weight:600}
+    .totals{margin-left:auto;width:260px;margin-bottom:24px}
+    .tr{display:flex;justify-content:space-between;align-items:center;padding:5px 0;font-size:14px;color:#475569}
+    .tr.grand{font-weight:700;font-size:16px;color:#0f172a;border-top:2px solid #e2e8f0;padding-top:12px;margin-top:6px}
+    .tr.paid-row{color:#15803d;font-weight:600}
+    .tr.disc{color:#10b981}
+    .tr.fine{color:#ef4444}
+    .badge{display:inline-block;padding:5px 16px;border-radius:20px;font-size:12px;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;background:${badgeColor.bg};color:${badgeColor.fg};border:1px solid ${badgeColor.border}}
+    .footer{margin-top:36px;padding-top:14px;border-top:1px solid #e2e8f0;text-align:center;font-size:11px;color:#94a3b8;line-height:1.6}
+    @media print{body{padding:24px}@page{margin:16mm}}
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div class="center-name">${centerName}</div>
+    <div class="receipt-label">Payment Receipt</div>
+  </div>
+
+  <div class="meta-grid">
+    <div class="meta-box">
+      <div class="meta-label">Student</div>
+      <div class="meta-value">${studentName}</div>
+      <div class="meta-sub">${studentCode}</div>
+    </div>
+    <div class="meta-box">
+      <div class="meta-label">Batch</div>
+      <div class="meta-value">${batchName}</div>
+    </div>
+    <div class="meta-box">
+      <div class="meta-label">Invoice Period</div>
+      <div class="meta-value">${monthLabel}</div>
+    </div>
+    <div class="meta-box">
+      <div class="meta-label">Printed On</div>
+      <div class="meta-value">${printedOn}</div>
+    </div>
+  </div>
+
+  ${lineItemsHtml}
+
+  <div class="totals">
+    <div class="tr"><span>Subtotal</span><span>${fmtAmt(invoice.subtotal)}</span></div>
+    ${invoice.discountAmount > 0 ? `<div class="tr disc"><span>Discount</span><span>−${fmtAmt(invoice.discountAmount)}</span></div>` : ""}
+    ${invoice.fineAmount > 0 ? `<div class="tr fine"><span>Late fine</span><span>+${fmtAmt(invoice.fineAmount)}</span></div>` : ""}
+    <div class="tr grand"><span>Total</span><span>${fmtAmt(invoice.total)}</span></div>
+    <div class="tr paid-row"><span>Amount Paid</span><span>${fmtAmt(invoice.paidAmount)}</span></div>
+  </div>
+
+  <div class="badge">${statusLabel}</div>
+
+  <div class="footer">
+    This is a computer-generated receipt. No signature is required.<br/>
+    ${centerName} · Generated ${printedOn}
+  </div>
+
+  <script>window.onload=()=>{window.print()}</script>
+</body>
+</html>`;
+
+  win.document.write(html);
+  win.document.close();
+}
+
 // ── Table styles ──────────────────────────────────────────────────────────────
 
 const sharedTableProps = {
@@ -476,6 +600,7 @@ function buildOutstandingColumns(
 
 function buildPaidColumns(
   batchLookup: Map<string, string>,
+  onPrint: (inv: StudentInvoiceNew) => void,
 ): MRT_ColumnDef<StudentInvoiceNew>[] {
   return [
     {
@@ -527,6 +652,20 @@ function buildPaidColumns(
       filterSelectOptions: ["PAID", "WAIVED"],
       Cell: ({ cell }) => statusCell(String(cell.getValue())),
     },
+    {
+      id: "actions",
+      header: "",
+      size: 56,
+      enableSorting: false,
+      enableColumnFilter: false,
+      Cell: ({ row }) => (
+        <Tooltip title="Print receipt">
+          <IconButton size="small" onClick={() => onPrint(row.original)}>
+            <PrintRounded fontSize="small" />
+          </IconButton>
+        </Tooltip>
+      ),
+    },
   ];
 }
 
@@ -536,6 +675,9 @@ export function InvoicesWorkspace() {
   const [selectedStudent, setSelectedStudent] =
     useState<StudentRecord | null>(null);
   const [payTarget, setPayTarget] = useState<StudentInvoiceNew | null>(null);
+
+  const { data: centerData } = useQuery(GetCenterDocument);
+  const centerName = centerData?.getCenter?.name ?? "BongoBrain";
 
   const { data: studentsData, loading: studentsLoading } = useQuery(
     GetStudentsDocument,
@@ -570,9 +712,20 @@ export function InvoicesWorkspace() {
   const studentName = selectedStudent
     ? `${selectedStudent.firstName} ${selectedStudent.lastName ?? ""}`.trim()
     : "";
+  const studentCode = selectedStudent?.studentCode ?? "";
   const payTargetBatch = payTarget
     ? (batchLookup.get(payTarget.batchId) ?? "—")
     : "";
+
+  const handlePrint = (inv: StudentInvoiceNew) => {
+    printInvoice({
+      invoice: inv,
+      studentName,
+      studentCode,
+      batchName: batchLookup.get(inv.batchId) ?? "—",
+      centerName,
+    });
+  };
 
   const isInvoicesLoading = invoicesLoading && allInvoices.length === 0;
 
@@ -807,7 +960,7 @@ export function InvoicesWorkspace() {
 
               <MaterialReactTable
                 {...sharedTableProps}
-                columns={buildPaidColumns(batchLookup)}
+                columns={buildPaidColumns(batchLookup, handlePrint)}
                 data={paid}
                 enableColumnFilters
                 enableSorting

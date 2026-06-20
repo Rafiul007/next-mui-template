@@ -381,6 +381,7 @@ export type CreateRecurringScheduleInput = {
 
 /**  ─── Inputs ────────────────────────────────────────────────────────────────── */
 export type CreateSubjectInput = {
+  batchId?: InputMaybe<Scalars['ID']['input']>;
   classLevel?: InputMaybe<Scalars['String']['input']>;
   code?: InputMaybe<Scalars['String']['input']>;
   name: Scalars['String']['input'];
@@ -436,6 +437,7 @@ export type Discount = {
 export type Employee = {
   __typename?: 'Employee';
   bloodGroup?: Maybe<Scalars['String']['output']>;
+  branch?: Maybe<EmployeeBranchInfo>;
   branchId: Scalars['ID']['output'];
   department?: Maybe<Scalars['String']['output']>;
   departmentId?: Maybe<Scalars['ID']['output']>;
@@ -468,6 +470,12 @@ export type EmployeeAttendance = {
   tenantId: Scalars['ID']['output'];
 };
 
+export type EmployeeBranchInfo = {
+  __typename?: 'EmployeeBranchInfo';
+  branchName?: Maybe<Scalars['String']['output']>;
+  id: Scalars['ID']['output'];
+};
+
 export type EmployeeDocument = {
   __typename?: 'EmployeeDocument';
   employeeId: Scalars['ID']['output'];
@@ -485,6 +493,7 @@ export type EmployeeUserInfo = {
   lastName?: Maybe<Scalars['String']['output']>;
   phone?: Maybe<Scalars['String']['output']>;
   profilePicture?: Maybe<Scalars['String']['output']>;
+  roles?: Maybe<Array<Maybe<Scalars['String']['output']>>>;
 };
 
 export type Enrollment = {
@@ -841,6 +850,7 @@ export type Mutation = {
   setLateFinePolicy: LateFinePolicy;
   setSalaryStructure: SalaryStructure;
   setupCenter: Center;
+  startSession: Session;
   submitAssignment: Submission;
   submitReview: PerformanceReview;
   suspendTenant: Tenant;
@@ -1329,6 +1339,12 @@ export type MutationSetupCenterArgs = {
 };
 
 
+export type MutationStartSessionArgs = {
+  date: Scalars['String']['input'];
+  scheduleId: Scalars['ID']['input'];
+};
+
+
 export type MutationSubmitAssignmentArgs = {
   assignmentId: Scalars['ID']['input'];
   studentId: Scalars['ID']['input'];
@@ -1642,6 +1658,7 @@ export type Query = {
   getLateFinePolicy?: Maybe<LateFinePolicy>;
   getLeaveApplications: Array<LeaveApplication>;
   getLeaveBalance: Array<LeaveBalance>;
+  getLeavePolicies: Array<LeavePolicy>;
   getMaterialsByBatch: Array<StudyMaterial>;
   getMonthlyAttendanceSheet: Array<EmployeeAttendance>;
   getMyEmployeeProfile: Employee;
@@ -1666,6 +1683,7 @@ export type Query = {
   getStudentInvoices: Array<StudentInvoice>;
   getStudents: Array<Student>;
   getSubjects: Array<Subject>;
+  getSubjectsByBatch: Array<Subject>;
   getSubmissions: Array<Submission>;
   getSubscriptionPlan?: Maybe<SubscriptionPlan>;
   getSubscriptionPlans: Array<SubscriptionPlan>;
@@ -1789,6 +1807,11 @@ export type QueryGetLeaveBalanceArgs = {
 };
 
 
+export type QueryGetLeavePoliciesArgs = {
+  departmentId?: InputMaybe<Scalars['ID']['input']>;
+};
+
+
 export type QueryGetMaterialsByBatchArgs = {
   batchId: Scalars['ID']['input'];
 };
@@ -1869,6 +1892,11 @@ export type QueryGetStudentInvoiceArgs = {
 
 export type QueryGetStudentInvoicesArgs = {
   studentId: Scalars['ID']['input'];
+};
+
+
+export type QueryGetSubjectsByBatchArgs = {
+  batchId: Scalars['ID']['input'];
 };
 
 
@@ -2176,6 +2204,7 @@ export type StudyMaterial = {
 export type Subject = {
   __typename?: 'Subject';
   active: Scalars['Boolean']['output'];
+  batchId?: Maybe<Scalars['ID']['output']>;
   classLevel?: Maybe<Scalars['String']['output']>;
   code?: Maybe<Scalars['String']['output']>;
   id: Scalars['ID']['output'];
@@ -2343,6 +2372,7 @@ export type UpdateStudentInput = {
 
 export type UpdateSubjectInput = {
   active?: InputMaybe<Scalars['Boolean']['input']>;
+  batchId?: InputMaybe<Scalars['ID']['input']>;
   classLevel?: InputMaybe<Scalars['String']['input']>;
   code?: InputMaybe<Scalars['String']['input']>;
   id: Scalars['ID']['input'];

@@ -106,6 +106,22 @@ export const GET_LEAVE_BALANCE_QUERY = /* GraphQL */ `
   }
 `;
 
+export const GET_LEAVE_POLICIES_QUERY = /* GraphQL */ `
+  query GetLeavePolicies($departmentId: ID) {
+    getLeavePolicies(departmentId: $departmentId) {
+      id
+      name
+      leaveType
+      totalDaysPerYear
+      carryForwardDays
+      requiresApproval
+      description
+      departmentId
+      tenantId
+    }
+  }
+`;
+
 export const GET_PERFORMANCE_DASHBOARD_QUERY = /* GraphQL */ `
   query GetPerformanceDashboard($cycleId: ID!) {
     getPerformanceDashboard(cycleId: $cycleId) {

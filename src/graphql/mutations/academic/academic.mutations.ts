@@ -355,6 +355,26 @@ export const DELETE_BATCH_MUTATION = /* GraphQL */ `
   }
 `;
 
+export const START_SESSION_MUTATION = /* GraphQL */ `
+  mutation StartSession($scheduleId: ID!, $date: String!) {
+    startSession(scheduleId: $scheduleId, date: $date) {
+      id
+      batchId
+      recurringScheduleId
+      teacherId
+      substituteTeacherId
+      date
+      startTime
+      endTime
+      roomName
+      status
+      type
+      cancelReason
+      tenantId
+    }
+  }
+`;
+
 export const CREATE_EXAM_MUTATION = /* GraphQL */ `
   mutation CreateExam($exam: CreateExamInput!) {
     createExam(exam: $exam) {

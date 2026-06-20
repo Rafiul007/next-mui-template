@@ -49,3 +49,42 @@ export const GET_USERS_QUERY = /* GraphQL */ `
     }
   }
 `;
+
+export const GET_MY_PLAN_QUERY = /* GraphQL */ `
+  query GetMyPlan {
+    getMyPlan {
+      id
+      name
+      priceBdt
+      billingCycle
+      maxBranches
+      maxStudents
+      maxStaff
+      smsCredits
+      storageGb
+      featureFlags
+      active
+    }
+  }
+`;
+
+export const GET_MY_NOTIFICATIONS_QUERY = /* GraphQL */ `
+  query GetMyNotifications($page: Int, $limit: Int) {
+    myNotifications(page: $page, limit: $limit) {
+      id
+      title
+      body
+      type
+      isRead
+      readAt
+      createdAt
+      tenantId
+    }
+  }
+`;
+
+export const GET_MY_UNREAD_COUNT_QUERY = /* GraphQL */ `
+  query GetMyUnreadCount {
+    myUnreadCount
+  }
+`;
