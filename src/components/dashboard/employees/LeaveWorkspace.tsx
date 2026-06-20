@@ -30,7 +30,7 @@ import {
 } from "@mui/material";
 import { MaterialReactTable, type MRT_ColumnDef } from "material-react-table";
 import { toast } from "react-hot-toast";
-import type { RhfSelectOption } from "@/components/form";
+import { SearchSelect, type SearchSelectOption } from "@/components/form";
 import { SummaryCard } from "@/components/ui";
 import {
   ApplyLeaveDocument,
@@ -268,10 +268,12 @@ export function LeaveWorkspace() {
   const userLookup = new Map(users.map((u) => [u.id, formatPersonName(u)]));
   const employeeLookup = new Map(employees.map((e) => [e.id, e]));
 
-  const employeeOptions: RhfSelectOption[] = employees.map((e) => ({
-    label: e.userId ? (userLookup.get(e.userId) ?? e.employeeCode) : e.employeeCode,
-    value: e.id,
-  }));
+  const employeeOptions: SearchSelectOption[] = employees.map((e) => {
+    const name = e.userId
+      ? (userLookup.get(e.userId) ?? e.employeeCode)
+      : e.employeeCode;
+    return { value: e.id, label: name, keywords: e.employeeCode };
+  });
 
   const pendingCount = leaveRecords.filter(
     (r) => r.status?.toLowerCase() === "pending",
@@ -506,24 +508,13 @@ export function LeaveWorkspace() {
                 Choose an employee from the list below to see their leave history.
               </Typography>
               <Box sx={{ minWidth: 280 }}>
-                <select
+                <SearchSelect
+                  label="Employee"
+                  placeholder="Search by name or code…"
+                  options={employeeOptions}
                   value={selectedEmployeeId}
-                  onChange={(e) => setSelectedEmployeeId(e.target.value)}
-                  style={{
-                    width: "100%",
-                    padding: "8px 12px",
-                    borderRadius: 8,
-                    border: "1px solid #e2e8f0",
-                    fontSize: 14,
-                  }}
-                >
-                  <option value="">Select employee</option>
-                  {employeeOptions.map((opt) => (
-                    <option key={String(opt.value)} value={String(opt.value)}>
-                      {String(opt.label)}
-                    </option>
-                  ))}
-                </select>
+                  onChange={setSelectedEmployeeId}
+                />
               </Box>
             </Stack>
           </Paper>
@@ -627,24 +618,13 @@ export function LeaveWorkspace() {
             }}
             renderTopToolbarCustomActions={() => (
               <Box sx={{ minWidth: 220 }}>
-                <select
+                <SearchSelect
+                  label="Employee"
+                  placeholder="Search by name or code…"
+                  options={employeeOptions}
                   value={selectedEmployeeId}
-                  onChange={(e) => setSelectedEmployeeId(e.target.value)}
-                  style={{
-                    width: "100%",
-                    padding: "6px 10px",
-                    borderRadius: 8,
-                    border: "1px solid #e2e8f0",
-                    fontSize: 13,
-                  }}
-                >
-                  <option value="">Select employee</option>
-                  {employeeOptions.map((opt) => (
-                    <option key={String(opt.value)} value={String(opt.value)}>
-                      {String(opt.label)}
-                    </option>
-                  ))}
-                </select>
+                  onChange={setSelectedEmployeeId}
+                />
               </Box>
             )}
             state={{ isLoading: isLeaveLoading && leaveRecords.length === 0 }}

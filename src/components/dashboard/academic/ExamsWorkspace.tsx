@@ -22,12 +22,8 @@ import {
   DialogActions,
   DialogContent,
   DialogTitle,
-  FormControl,
   InputAdornment,
-  InputLabel,
-  MenuItem,
   Paper,
-  Select,
   Stack,
   Table,
   TableBody,
@@ -41,7 +37,13 @@ import {
 } from "@mui/material";
 import { MaterialReactTable, type MRT_ColumnDef } from "material-react-table";
 import { toast } from "react-hot-toast";
-import { RhfSelect, RhfTextField, type RhfSelectOption } from "@/components/form";
+import {
+  RhfSelect,
+  RhfTextField,
+  SearchSelect,
+  type RhfSelectOption,
+} from "@/components/form";
+import { batchSearchOptions } from "@/lib/search-options";
 import { SummaryCard } from "@/components/ui";
 import {
   CreateExamDocument,
@@ -448,11 +450,6 @@ export function ExamsWorkspace() {
   const students = studentsData?.getStudents ?? [];
   const results = resultsData?.getResultsByExam ?? [];
 
-  const batchOptions: RhfSelectOption[] = batches.map((b) => ({
-    label: b.name,
-    value: b.id,
-  }));
-
   const subjectOptions: RhfSelectOption[] = [
     { label: "All subjects / General", value: "" },
     ...subjects.map((s) => ({ label: s.name, value: s.id })),
@@ -757,21 +754,14 @@ export function ExamsWorkspace() {
             <Typography variant="subtitle2" sx={{ minWidth: 80, flexShrink: 0 }}>
               Select Batch
             </Typography>
-            <FormControl size="small" sx={{ minWidth: 300 }}>
-              <InputLabel id="exam-batch-label">Batch</InputLabel>
-              <Select
-                labelId="exam-batch-label"
-                label="Batch"
-                value={selectedBatchId}
-                onChange={(e) => setSelectedBatchId(e.target.value)}
-              >
-                {batchOptions.map((opt) => (
-                  <MenuItem key={opt.value} value={String(opt.value)}>
-                    {opt.label}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
+            <SearchSelect
+              label="Batch"
+              placeholder="Search by name, class, or course…"
+              options={batchSearchOptions(batches)}
+              value={selectedBatchId}
+              onChange={setSelectedBatchId}
+              sx={{ minWidth: 300 }}
+            />
           </Stack>
         </Paper>
 

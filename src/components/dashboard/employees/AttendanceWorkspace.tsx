@@ -49,6 +49,7 @@ import {
   type GetMonthlyAttendanceSheetQuery,
   type GetUsersQuery,
 } from "@/graphql/generated";
+import { SearchSelect, type SearchSelectOption } from "@/components/form";
 import { getErrorMessage } from "@/lib/errors";
 
 type AttendanceRecord =
@@ -246,10 +247,12 @@ export function AttendanceWorkspace() {
     (r) => r.status?.toLowerCase() === "pending",
   ).length;
 
-  const employeeOptions = employees.map((e) => ({
-    id: e.id,
-    label: e.userId ? (userLookup.get(e.userId) ?? e.employeeCode) : e.employeeCode,
-  }));
+  const employeeOptions: SearchSelectOption[] = employees.map((e) => {
+    const name = e.userId
+      ? (userLookup.get(e.userId) ?? e.employeeCode)
+      : e.employeeCode;
+    return { value: e.id, label: name, keywords: e.employeeCode };
+  });
 
   const handleApprove = async (attendanceId: string) => {
     try {
@@ -363,23 +366,14 @@ export function AttendanceWorkspace() {
                 textField: { size: "small", sx: { minWidth: 160 } },
               }}
             />
-            <FormControl size="small" sx={{ minWidth: 220 }}>
-              <InputLabel>Employee</InputLabel>
-              <Select
-                label="Employee"
-                value={selectedEmployeeId}
-                onChange={(e) => setSelectedEmployeeId(e.target.value)}
-              >
-                <MenuItem value="">
-                  <em>Select employee</em>
-                </MenuItem>
-                {employeeOptions.map((opt) => (
-                  <MenuItem key={opt.id} value={opt.id}>
-                    {opt.label}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
+            <SearchSelect
+              label="Employee"
+              placeholder="Search by name or code…"
+              options={employeeOptions}
+              value={selectedEmployeeId}
+              onChange={setSelectedEmployeeId}
+              sx={{ minWidth: 220 }}
+            />
             {selectedEmployeeId ? (
               <Stack direction="row" spacing={1}>
                 <Tooltip title="Record today's check-in">

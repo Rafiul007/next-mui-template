@@ -23,7 +23,7 @@ import {
 } from "@mui/material";
 import { MaterialReactTable, type MRT_ColumnDef } from "material-react-table";
 import { toast } from "react-hot-toast";
-import type { RhfSelectOption } from "@/components/form";
+import { SearchSelect, type SearchSelectOption } from "@/components/form";
 import { SummaryCard } from "@/components/ui";
 import {
   CreatePipDocument,
@@ -160,10 +160,12 @@ export function PipWorkspace() {
   const userLookup = new Map(users.map((u) => [u.id, formatName(u)]));
   const employeeLookup = new Map(employees.map((e) => [e.id, e]));
 
-  const employeeOptions: RhfSelectOption[] = employees.map((e) => ({
-    label: e.userId ? (userLookup.get(e.userId) ?? e.employeeCode) : e.employeeCode,
-    value: e.id,
-  }));
+  const employeeOptions: SearchSelectOption[] = employees.map((e) => {
+    const name = e.userId
+      ? (userLookup.get(e.userId) ?? e.employeeCode)
+      : e.employeeCode;
+    return { value: e.id, label: name, keywords: e.employeeCode };
+  });
 
   const activePips = pips.filter((p) => p.status === "ACTIVE").length;
   const completedPips = pips.filter((p) => p.status === "COMPLETED").length;
@@ -280,23 +282,13 @@ export function PipWorkspace() {
               Filter by employee
             </Typography>
             <Box sx={{ flex: 1, maxWidth: 360 }}>
-              <select
+              <SearchSelect
+                label="Employee"
+                placeholder="Search by name or code…"
+                options={employeeOptions}
                 value={selectedEmployeeId}
-                onChange={(e) => setSelectedEmployeeId(e.target.value)}
-                style={{
-                  width: "100%",
-                  padding: "8px 12px",
-                  borderRadius: 6,
-                  border: "1px solid #e2e8f0",
-                  fontSize: 14,
-                  background: "#fff",
-                }}
-              >
-                <option value="">— Select employee —</option>
-                {employeeOptions.map((o) => (
-                  <option key={o.value} value={o.value}>{o.label}</option>
-                ))}
-              </select>
+                onChange={setSelectedEmployeeId}
+              />
             </Box>
           </Stack>
         </Paper>

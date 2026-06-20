@@ -14,7 +14,14 @@ import {
   DialogTitle,
   Stack,
 } from "@mui/material";
-import { RhfDatePicker, RhfSelect, RhfTextField, type RhfSelectOption } from "@/components/form";
+import {
+  RhfDatePicker,
+  RhfSearchSelect,
+  RhfSelect,
+  RhfTextField,
+  type RhfSelectOption,
+  type SearchSelectOption,
+} from "@/components/form";
 
 const skillSchema = yup
   .object({
@@ -48,7 +55,7 @@ const PROFICIENCY_OPTIONS: RhfSelectOption[] = [
 type SkillDialogProps = {
   open: boolean;
   isSubmitting: boolean;
-  employeeOptions: RhfSelectOption[];
+  employeeOptions: SearchSelectOption[];
   errorMessage?: string | null;
   onClose: () => void;
   onSubmit: (values: SkillFormValues) => Promise<void>;
@@ -57,7 +64,7 @@ type SkillDialogProps = {
 type CertDialogProps = {
   open: boolean;
   isSubmitting: boolean;
-  employeeOptions: RhfSelectOption[];
+  employeeOptions: SearchSelectOption[];
   errorMessage?: string | null;
   onClose: () => void;
   onSubmit: (values: CertFormValues) => Promise<void>;
@@ -77,7 +84,7 @@ export function AddSkillDialog({ open, isSubmitting, employeeOptions, errorMessa
         <DialogContent dividers>
           <Stack spacing={2.5}>
             {errorMessage ? <Alert severity="error">{errorMessage}</Alert> : null}
-            <RhfSelect control={control} name="employeeId" label="Employee *" options={employeeOptions} placeholder="Select employee" />
+            <RhfSearchSelect control={control} name="employeeId" label="Employee *" options={employeeOptions} placeholder="Search by name or code…" />
             <Box sx={{ display: "grid", gap: 2, gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr" } }}>
               <RhfTextField control={control} name="skill" label="Skill *" placeholder="e.g. React, Excel, Leadership" trim />
               <RhfSelect control={control} name="proficiencyLevel" label="Proficiency *" options={PROFICIENCY_OPTIONS} placeholder="Select level" />
@@ -114,7 +121,7 @@ export function AddCertificationDialog({ open, isSubmitting, employeeOptions, er
         <DialogContent dividers>
           <Stack spacing={2.5}>
             {errorMessage ? <Alert severity="error">{errorMessage}</Alert> : null}
-            <RhfSelect control={control} name="employeeId" label="Employee *" options={employeeOptions} placeholder="Select employee" />
+            <RhfSearchSelect control={control} name="employeeId" label="Employee *" options={employeeOptions} placeholder="Search by name or code…" />
             <RhfTextField control={control} name="name" label="Certification name *" trim />
             <RhfTextField control={control} name="issuingOrganization" label="Issuing organization *" trim />
             <Box sx={{ display: "grid", gap: 2, gridTemplateColumns: "1fr 1fr" }}>

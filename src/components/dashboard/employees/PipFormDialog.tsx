@@ -14,7 +14,14 @@ import {
   DialogTitle,
   Stack,
 } from "@mui/material";
-import { RhfDatePicker, RhfSelect, RhfTextField, type RhfSelectOption } from "@/components/form";
+import {
+  RhfDatePicker,
+  RhfSearchSelect,
+  RhfSelect,
+  RhfTextField,
+  type RhfSelectOption,
+  type SearchSelectOption,
+} from "@/components/form";
 
 const createSchema = yup
   .object({
@@ -44,7 +51,7 @@ const PIP_STATUS_OPTIONS: RhfSelectOption[] = [
 type CreateProps = {
   open: boolean;
   isSubmitting: boolean;
-  employeeOptions: RhfSelectOption[];
+  employeeOptions: SearchSelectOption[];
   errorMessage?: string | null;
   onClose: () => void;
   onSubmit: (values: PipCreateValues) => Promise<void>;
@@ -74,7 +81,7 @@ export function PipCreateDialog({ open, isSubmitting, employeeOptions, errorMess
         <DialogContent dividers>
           <Stack spacing={2.5}>
             {errorMessage ? <Alert severity="error">{errorMessage}</Alert> : null}
-            <RhfSelect control={control} name="employeeId" label="Employee *" options={employeeOptions} placeholder="Select employee" />
+            <RhfSearchSelect control={control} name="employeeId" label="Employee *" options={employeeOptions} placeholder="Search by name or code…" />
             <RhfTextField control={control} name="goals" label="Goals *" multiline rows={3} trim placeholder="Describe the improvement goals..." />
             <Box sx={{ display: "grid", gap: 2, gridTemplateColumns: "1fr 1fr" }}>
               <RhfDatePicker control={control} name="startDate" label="Start date *" textFieldProps={{ fullWidth: true }} />

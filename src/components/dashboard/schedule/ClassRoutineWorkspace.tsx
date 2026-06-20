@@ -14,12 +14,8 @@ import {
   Box,
   Chip,
   Divider,
-  FormControl,
   GlobalStyles,
-  InputLabel,
-  MenuItem,
   Paper,
-  Select,
   Stack,
   Button,
   Typography,
@@ -32,6 +28,8 @@ import {
   type GetSchedulesByBatchQuery,
   type GetUsersQuery,
 } from "@/graphql/generated";
+import { SearchSelect } from "@/components/form";
+import { batchSearchOptions } from "@/lib/search-options";
 import { SummaryCard } from "@/components/ui";
 import { primaryGradient } from "@/theme/theme";
 
@@ -396,22 +394,15 @@ export function ClassRoutineWorkspace() {
           elevation={0}
           sx={{ p: 2.5, border: "1px solid", borderColor: "divider" }}
         >
-          <FormControl fullWidth size="small" sx={{ maxWidth: 420 }}>
-            <InputLabel>Select batch</InputLabel>
-            <Select
-              value={selectedBatchId}
-              label="Select batch"
-              onChange={(e) => setSelectedBatchId(e.target.value)}
-              disabled={isBatchesLoading}
-            >
-              {batches.map((batch) => (
-                <MenuItem key={batch.id} value={batch.id}>
-                  {batch.name}
-                  {batch.courseName ? ` · ${batch.courseName}` : ""}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
+          <SearchSelect
+            label="Select batch"
+            placeholder="Search by name, class, or course…"
+            options={batchSearchOptions(batches)}
+            value={selectedBatchId}
+            onChange={setSelectedBatchId}
+            loading={isBatchesLoading}
+            sx={{ maxWidth: 420 }}
+          />
         </Paper>
 
         {selectedBatchId ? (

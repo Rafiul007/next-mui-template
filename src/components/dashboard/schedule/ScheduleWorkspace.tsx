@@ -21,12 +21,8 @@ import {
   Button,
   Chip,
   CircularProgress,
-  FormControl,
   IconButton,
-  InputLabel,
-  MenuItem,
   Paper,
-  Select,
   Stack,
   Tab,
   Tabs,
@@ -36,7 +32,8 @@ import {
 } from "@mui/material";
 import { MaterialReactTable, type MRT_ColumnDef } from "material-react-table";
 import { toast } from "react-hot-toast";
-import type { RhfSelectOption } from "@/components/form";
+import { SearchSelect, type RhfSelectOption } from "@/components/form";
+import { batchSearchOptions } from "@/lib/search-options";
 import { SummaryCard } from "@/components/ui";
 import {
   AddOneOffSessionDocument,
@@ -943,21 +940,15 @@ export function ScheduleWorkspace() {
           elevation={0}
           sx={{ p: 2.5, border: "1px solid", borderColor: "divider" }}
         >
-          <FormControl fullWidth size="small" sx={{ maxWidth: 420 }}>
-            <InputLabel>Select batch</InputLabel>
-            <Select
-              value={selectedBatchId}
-              label="Select batch"
-              onChange={(e) => handleBatchChange(e.target.value)}
-              disabled={isBatchesLoading}
-            >
-              {batches.map((batch) => (
-                <MenuItem key={batch.id} value={batch.id}>
-                  {batch.name}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
+          <SearchSelect
+            label="Select batch"
+            placeholder="Search by name, class, or course…"
+            options={batchSearchOptions(batches)}
+            value={selectedBatchId}
+            onChange={handleBatchChange}
+            loading={isBatchesLoading}
+            sx={{ maxWidth: 420 }}
+          />
         </Paper>
 
         {selectedBatchId ? (

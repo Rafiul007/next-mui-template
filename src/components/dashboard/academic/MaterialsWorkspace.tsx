@@ -35,12 +35,8 @@ import {
   DialogContent,
   DialogTitle,
   Divider,
-  FormControl,
   IconButton,
-  InputLabel,
-  MenuItem,
   Paper,
-  Select,
   Stack,
   Switch,
   Tab,
@@ -51,7 +47,13 @@ import {
   alpha,
 } from "@mui/material";
 import { toast } from "react-hot-toast";
-import { RhfSelect, RhfTextField, type RhfSelectOption } from "@/components/form";
+import {
+  RhfSelect,
+  RhfTextField,
+  SearchSelect,
+  type RhfSelectOption,
+} from "@/components/form";
+import { batchSearchOptions } from "@/lib/search-options";
 import { SummaryCard } from "@/components/ui";
 import {
   CreateAssignmentDocument,
@@ -1134,25 +1136,18 @@ export function MaterialsWorkspace() {
           elevation={0}
           sx={{ p: 2.5, border: "1px solid", borderColor: "divider" }}
         >
-          <FormControl fullWidth size="small" sx={{ maxWidth: 420 }}>
-            <InputLabel>Select batch</InputLabel>
-            <Select
-              value={selectedBatchId}
-              label="Select batch"
-              onChange={(e) => {
-                setSelectedBatchId(e.target.value);
-                setExpandedAssignmentId(null);
-              }}
-              disabled={batchesLoading}
-            >
-              {batches.map((b) => (
-                <MenuItem key={b.id} value={b.id}>
-                  {b.name}
-                  {b.courseName ? ` · ${b.courseName}` : ""}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
+          <SearchSelect
+            label="Select batch"
+            placeholder="Search by name, class, or course…"
+            options={batchSearchOptions(batches)}
+            value={selectedBatchId}
+            onChange={(val) => {
+              setSelectedBatchId(val);
+              setExpandedAssignmentId(null);
+            }}
+            loading={batchesLoading}
+            sx={{ maxWidth: 420 }}
+          />
         </Paper>
 
         {selectedBatchId ? (

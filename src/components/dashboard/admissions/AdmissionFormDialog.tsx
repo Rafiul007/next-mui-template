@@ -24,7 +24,7 @@ import {
   Typography,
   alpha,
 } from "@mui/material";
-import { RhfSelect, RhfTextField } from "@/components/form";
+import { RhfSearchSelect, RhfSelect, RhfTextField } from "@/components/form";
 import { primaryGradient } from "@/theme/theme";
 
 // ── Shared types ──────────────────────────────────────────────────────────────
@@ -452,6 +452,7 @@ export function AdmissionFormDialog({
       return {
         label: `${b.displayName} — ${full ? "Full" : `${available} seats left`}`,
         value: b.id,
+        keywords: `${b.displayName} ${b.type}`,
         disabled: full,
       };
     });
@@ -759,13 +760,14 @@ export function AdmissionFormDialog({
                       : "All batches are full or closed."}
                   </Alert>
                 ) : (
-                  <RhfSelect
+                  <RhfSearchSelect
                     control={control}
                     name="batchId"
                     label="Select batch *"
+                    placeholder="Search batch by name…"
                     options={batchOptions}
                     fullWidth
-                    onCustomChange={() => setValue("appliedDiscountIndexes", [])}
+                    onValueChange={() => setValue("appliedDiscountIndexes", [])}
                   />
                 )}
 

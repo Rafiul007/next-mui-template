@@ -22,11 +22,7 @@ import {
   DialogContent,
   DialogTitle,
   Divider,
-  FormControl,
-  InputLabel,
-  MenuItem,
   Paper,
-  Select,
   Stack,
   Tooltip,
   Typography,
@@ -34,9 +30,10 @@ import {
 } from "@mui/material";
 import { MaterialReactTable, type MRT_ColumnDef } from "material-react-table";
 import { toast } from "react-hot-toast";
-import type { RhfSelectOption } from "@/components/form";
+import type { RhfSelectOption, SearchSelectOption } from "@/components/form";
 import {
   RhfDatePicker,
+  RhfSearchSelect,
   RhfSelect,
   RhfTextField,
 } from "@/components/form";
@@ -232,10 +229,12 @@ export function PerformanceWorkspace() {
   const userLookup = new Map(users.map((u) => [u.id, formatPersonName(u)]));
   const employeeLookup = new Map(employees.map((e) => [e.id, e]));
 
-  const employeeOptions: RhfSelectOption[] = employees.map((e) => ({
-    label: e.userId ? (userLookup.get(e.userId) ?? e.employeeCode) : e.employeeCode,
-    value: e.id,
-  }));
+  const employeeOptions: SearchSelectOption[] = employees.map((e) => {
+    const name = e.userId
+      ? (userLookup.get(e.userId) ?? e.employeeCode)
+      : e.employeeCode;
+    return { value: e.id, label: name, keywords: e.employeeCode };
+  });
 
   const totalReviewed = dashboardRecords.length;
   const avgScore =
@@ -621,20 +620,20 @@ export function PerformanceWorkspace() {
               {reviewErrorMessage ? (
                 <Alert severity="error">{reviewErrorMessage}</Alert>
               ) : null}
-              <RhfSelect
+              <RhfSearchSelect
                 control={reviewControl}
                 name="revieweeId"
                 label="Reviewee (employee being reviewed) *"
                 options={employeeOptions}
-                placeholder="Select employee"
+                placeholder="Search by name or code…"
               />
               <Divider />
-              <RhfSelect
+              <RhfSearchSelect
                 control={reviewControl}
                 name="reviewerId"
                 label="Reviewer *"
                 options={employeeOptions}
-                placeholder="Select reviewer"
+                placeholder="Search by name or code…"
               />
               <RhfSelect
                 control={reviewControl}

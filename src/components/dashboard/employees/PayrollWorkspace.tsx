@@ -45,6 +45,7 @@ import {
   SetSalaryStructureDocument,
   type GetPayrollRunsQuery,
 } from "@/graphql/hr-extended";
+import { SearchSelect, type SearchSelectOption } from "@/components/form";
 import { getErrorMessage } from "@/lib/errors";
 import { primaryGradient } from "@/theme/theme";
 
@@ -266,10 +267,13 @@ export function PayrollWorkspace() {
     }
   };
 
-  const employeeOptions = employees.map((e: EmployeeRecord) => ({
-    id: e.id,
-    label: e.employeeCode || e.id,
-  }));
+  const employeeOptions: SearchSelectOption[] = employees.map(
+    (e: EmployeeRecord) => ({
+      value: e.id,
+      label: e.employeeCode || e.id,
+      keywords: e.employeeCode,
+    }),
+  );
 
   return (
     <>
@@ -391,19 +395,14 @@ export function PayrollWorkspace() {
             ) : (
               <Stack spacing={3}>
                 <Stack direction={{ xs: "column", sm: "row" }} spacing={2} alignItems={{ sm: "center" }}>
-                  <FormControl size="small" sx={{ minWidth: 260 }}>
-                    <InputLabel>Select employee</InputLabel>
-                    <Select
-                      label="Select employee"
-                      value={selectedEmployeeId}
-                      onChange={(e) => setSelectedEmployeeId(e.target.value)}
-                    >
-                      <MenuItem value=""><em>Select employee</em></MenuItem>
-                      {employeeOptions.map((opt) => (
-                        <MenuItem key={opt.id} value={opt.id}>{opt.label}</MenuItem>
-                      ))}
-                    </Select>
-                  </FormControl>
+                  <SearchSelect
+                    label="Select employee"
+                    placeholder="Search by code…"
+                    options={employeeOptions}
+                    value={selectedEmployeeId}
+                    onChange={setSelectedEmployeeId}
+                    sx={{ minWidth: 260 }}
+                  />
                   {selectedEmployeeId ? (
                     <Button
                       variant="outlined"

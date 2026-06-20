@@ -16,9 +16,11 @@ import {
 } from "@mui/material";
 import {
   RhfDatePicker,
+  RhfSearchSelect,
   RhfSelect,
   RhfTextField,
   type RhfSelectOption,
+  type SearchSelectOption,
 } from "@/components/form";
 
 const leaveTypeOptions: RhfSelectOption[] = [
@@ -63,7 +65,7 @@ const emptyValues: LeaveFormValues = {
 };
 
 export type LeaveFormDialogProps = {
-  employeeOptions: RhfSelectOption[];
+  employeeOptions: SearchSelectOption[];
   errorMessage: string | null;
   isSubmitting: boolean;
   onClose: () => void;
@@ -100,12 +102,12 @@ export function LeaveFormDialog({
               <Alert severity="error">{errorMessage}</Alert>
             ) : null}
 
-            <RhfSelect
+            <RhfSearchSelect
               control={control}
               name="employeeId"
               label="Employee *"
               options={employeeOptions}
-              placeholder="Select employee"
+              placeholder="Search by name or code…"
             />
             <RhfSelect
               control={control}

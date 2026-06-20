@@ -61,7 +61,9 @@ import {
   type GetSessionsByBatchQuery,
   type GetStudentsQuery,
 } from "@/graphql/generated";
+import { SearchSelect } from "@/components/form";
 import { getErrorMessage } from "@/lib/errors";
+import { batchSearchOptions } from "@/lib/search-options";
 import { primaryGradient } from "@/theme/theme";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -967,29 +969,14 @@ export function AttendanceWorkspace() {
         spacing={2}
         alignItems={{ sm: "center" }}
       >
-        <FormControl size="small" sx={{ minWidth: 280 }}>
-          <Select
-            value={selectedBatchId}
-            displayEmpty
-            onChange={(e) => handleBatchChange(e.target.value)}
-            renderValue={(v) => {
-              if (!v)
-                return (
-                  <Typography color="text.secondary" variant="body2">
-                    Select batch…
-                  </Typography>
-                );
-              const b = batches.find((b) => b.id === v);
-              return b?.name ?? v;
-            }}
-          >
-            {batches.map((b) => (
-              <MenuItem key={b.id} value={b.id}>
-                {b.name}
-              </MenuItem>
-            ))}
-          </Select>
-        </FormControl>
+        <SearchSelect
+          label="Select batch"
+          placeholder="Search by name, class, or course…"
+          options={batchSearchOptions(batches)}
+          value={selectedBatchId}
+          onChange={handleBatchChange}
+          sx={{ minWidth: 280 }}
+        />
 
         {selectedBatchId && (
           <>

@@ -14,7 +14,6 @@ import {
 } from "@mui/icons-material";
 import {
   Alert,
-  Autocomplete,
   Box,
   Button,
   Chip,
@@ -40,7 +39,6 @@ import {
   GetCenterDocument,
   GetStudentsDocument,
   RecordStudentPaymentDocument,
-  type GetStudentsQuery,
 } from "@/graphql/generated";
 import {
   GetStudentInvoicesNewDocument,
@@ -48,6 +46,8 @@ import {
   type InvoiceStatus,
 } from "@/graphql/billing-new";
 import { getErrorMessage } from "@/lib/errors";
+import { SearchSelect } from "@/components/form";
+import { studentSearchOptions } from "@/lib/search-options";
 import { SummaryCard } from "@/components/ui";
 
 // ── Constants ─────────────────────────────────────────────────────────────────
@@ -85,8 +85,6 @@ const STATUS_LABEL: Record<string, string> = {
 
 const formatAmount = (n: number) =>
   `৳${n.toLocaleString("en-BD", { minimumFractionDigits: 0 })}`;
-
-type StudentRecord = GetStudentsQuery["getStudents"][number];
 
 // ── RecordPaymentDialog ───────────────────────────────────────────────────────
 
@@ -672,8 +670,7 @@ function buildPaidColumns(
 // ── InvoicesWorkspace ─────────────────────────────────────────────────────────
 
 export function InvoicesWorkspace() {
-  const [selectedStudent, setSelectedStudent] =
-    useState<StudentRecord | null>(null);
+  const [selectedStudentId, setSelectedStudentId] = useState("");
   const [payTarget, setPayTarget] = useState<StudentInvoiceNew | null>(null);
 
   const { data: centerData } = useQuery(GetCenterDocument);
@@ -688,12 +685,14 @@ export function InvoicesWorkspace() {
     loading: invoicesLoading,
     refetch,
   } = useQuery(GetStudentInvoicesNewDocument, {
-    variables: { studentId: selectedStudent?.id ?? "" },
-    skip: !selectedStudent,
+    variables: { studentId: selectedStudentId },
+    skip: !selectedStudentId,
     fetchPolicy: "cache-and-network",
   });
 
   const students = studentsData?.getStudents ?? [];
+  const selectedStudent =
+    students.find((s) => s.id === selectedStudentId) ?? null;
   const batchLookup = new Map(
     (batchesData?.getAllBatches ?? []).map((b) => [b.id, b.name]),
   );
@@ -766,40 +765,16 @@ export function InvoicesWorkspace() {
               sx={{ color: "text.secondary", mt: { sm: 1 } }}
             />
             <Box sx={{ flex: 1, maxWidth: 480 }}>
-              <Autocomplete<StudentRecord>
-                options={students}
+              <SearchSelect
+                label="Search student"
+                placeholder="Name, code, phone, or email…"
+                options={studentSearchOptions(students)}
                 loading={studentsLoading}
-                value={selectedStudent}
-                onChange={(_, val) => {
-                  setSelectedStudent(val);
+                value={selectedStudentId}
+                onChange={(val) => {
+                  setSelectedStudentId(val);
                   setPayTarget(null);
                 }}
-                getOptionLabel={(s) =>
-                  `${s.firstName} ${s.lastName ?? ""}`.trim() ||
-                  s.studentCode
-                }
-                renderOption={(props, s) => (
-                  <Box component="li" {...props} key={s.id}>
-                    <Stack spacing={0.25}>
-                      <Typography variant="body2" fontWeight={600}>
-                        {`${s.firstName} ${s.lastName ?? ""}`.trim()}
-                      </Typography>
-                      <Typography variant="caption" color="text.secondary">
-                        {s.studentCode}
-                        {s.classLevel ? ` · ${s.classLevel}` : ""}
-                      </Typography>
-                    </Stack>
-                  </Box>
-                )}
-                renderInput={(params) => (
-                  <TextField
-                    {...params}
-                    label="Search student"
-                    placeholder="Name or student code…"
-                    size="small"
-                  />
-                )}
-                isOptionEqualToValue={(a, b) => a.id === b.id}
               />
             </Box>
             {selectedStudent && (
