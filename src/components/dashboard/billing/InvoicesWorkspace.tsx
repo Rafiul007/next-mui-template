@@ -1,32 +1,31 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import dayjs from "dayjs";
 import {
   AccountBalanceWalletRounded,
   CheckCircleRounded,
-  CloseRounded,
-  ErrorOutlineRounded,
+  GavelRounded,
+  MoreVertRounded,
   PersonSearchRounded,
   PrintRounded,
   ReceiptLongRounded,
+  TaskAltRounded,
   WarningAmberRounded,
 } from "@mui/icons-material";
 import {
-  Alert,
   Box,
   Button,
-  Chip,
-  CircularProgress,
-  Dialog,
-  DialogContent,
-  DialogTitle,
   Divider,
   IconButton,
+  ListItemIcon,
+  ListItemText,
+  Menu,
   MenuItem,
   Paper,
   Stack,
-  TextField,
+  Tab,
+  Tabs,
   Tooltip,
   Typography,
   alpha,
@@ -35,485 +34,199 @@ import { useMutation, useQuery } from "@apollo/client/react";
 import { MaterialReactTable, type MRT_ColumnDef } from "material-react-table";
 import { toast } from "react-hot-toast";
 import {
+  ApproveWaiverDocument,
   GetAllBatchesDocument,
+  GetBatchInvoicesDocument,
   GetCenterDocument,
+  GetStudentInvoicesDocument,
   GetStudentsDocument,
-  RecordStudentPaymentDocument,
+  RequestWaiverDocument,
+  type GetStudentInvoicesQuery,
 } from "@/graphql/generated";
-import {
-  GetStudentInvoicesNewDocument,
-  type StudentInvoiceNew,
-  type InvoiceStatus,
-} from "@/graphql/billing-new";
 import { getErrorMessage } from "@/lib/errors";
 import { SearchSelect } from "@/components/form";
 import { studentSearchOptions } from "@/lib/search-options";
 import { SummaryCard } from "@/components/ui";
+import {
+  BatchPicker,
+  InvoiceStatusChip,
+  MonthField,
+  OUTSTANDING_STATUSES,
+  PAID_STATUSES,
+  currentMonth,
+  formatAmount,
+  monthLabel,
+  sharedTableProps,
+} from "./billing-shared";
+import { printInvoiceReceipt } from "./billing-print";
+import { RecordPaymentDialog } from "./RecordPaymentDialog";
 
-// ── Constants ─────────────────────────────────────────────────────────────────
+type Invoice = GetStudentInvoicesQuery["getStudentInvoices"][number];
 
-const PAYMENT_METHODS = [
-  { label: "Cash", value: "CASH" },
-  { label: "bKash", value: "BKASH" },
-  { label: "Nagad", value: "NAGAD" },
-  { label: "Rocket", value: "ROCKET" },
-  { label: "Card", value: "CARD" },
-  { label: "Bank transfer", value: "BANK_TRANSFER" },
-  { label: "Other", value: "OTHER" },
-];
+// ── Row actions menu ──────────────────────────────────────────────────────────
 
-const OUTSTANDING_STATUSES = new Set(["ISSUED", "UNPAID", "PARTIAL", "OVERDUE"]);
-const PAID_STATUSES = new Set(["PAID", "WAIVED"]);
-
-const STATUS_COLOR: Record<string, "default" | "warning" | "success" | "error" | "info"> = {
-  ISSUED: "default",
-  UNPAID: "default",
-  PARTIAL: "warning",
-  OVERDUE: "error",
-  PAID: "success",
-  WAIVED: "info",
-};
-
-const STATUS_LABEL: Record<string, string> = {
-  ISSUED: "Unpaid",
-  UNPAID: "Unpaid",
-  PARTIAL: "Partial",
-  OVERDUE: "Overdue",
-  PAID: "Paid",
-  WAIVED: "Waived",
-};
-
-const formatAmount = (n: number) =>
-  `৳${n.toLocaleString("en-BD", { minimumFractionDigits: 0 })}`;
-
-// ── RecordPaymentDialog ───────────────────────────────────────────────────────
-
-function RecordPaymentDialog({
+function InvoiceRowMenu({
   invoice,
-  studentName,
-  batchName,
-  onClose,
-  onSuccess,
+  onPay,
+  onPrint,
+  onRequestWaiver,
+  onApproveWaiver,
+  waiverBusy,
 }: {
-  invoice: StudentInvoiceNew | null;
-  studentName: string;
-  batchName: string;
-  onClose: () => void;
-  onSuccess: () => void;
+  invoice: Invoice;
+  onPay: (i: Invoice) => void;
+  onPrint: (i: Invoice) => void;
+  onRequestWaiver: (i: Invoice) => void;
+  onApproveWaiver: (i: Invoice) => void;
+  waiverBusy: boolean;
 }) {
-  const [amount, setAmount] = useState(() =>
-    invoice ? String(Math.max(0, invoice.total - invoice.paidAmount)) : "",
-  );
-  const [method, setMethod] = useState("CASH");
-  const [ref, setRef] = useState("");
-  const [remarks, setRemarks] = useState("");
-  const [error, setError] = useState<string | null>(null);
+  const [anchor, setAnchor] = useState<null | HTMLElement>(null);
+  const close = () => setAnchor(null);
 
-  const [recordPayment, { loading }] = useMutation(RecordStudentPaymentDocument);
-
-  if (!invoice) return null;
-
-  const remaining = invoice.total - invoice.paidAmount;
-
-  const handleConfirm = async () => {
-    const parsed = parseFloat(amount);
-    if (!parsed || parsed <= 0) {
-      setError("Enter a valid amount.");
-      return;
-    }
-    setError(null);
-    try {
-      await recordPayment({
-        variables: {
-          payment: {
-            invoiceId: invoice.id,
-            studentId: invoice.studentId,
-            amount: parsed,
-            method,
-            transactionRef: ref.trim() || `CASH-${Date.now()}`,
-            remarks: remarks.trim() || undefined,
-          },
-        },
-      });
-      toast.success("Payment recorded.");
-      onSuccess();
-      onClose();
-    } catch (err) {
-      setError(getErrorMessage(err, "Failed to record payment."));
-    }
-  };
+  const isOutstanding = OUTSTANDING_STATUSES.has(invoice.status);
+  const isPaid = PAID_STATUSES.has(invoice.status);
+  const isWaiverRequested = invoice.status === "WAIVER_REQUESTED";
 
   return (
-    <Dialog open onClose={loading ? undefined : onClose} maxWidth="xs" fullWidth>
-      <DialogTitle sx={{ pb: 1 }}>
-        <Stack direction="row" justifyContent="space-between" alignItems="center">
-          <Stack spacing={0.25}>
-            <Typography variant="h6" fontWeight={700}>
-              Record Payment
-            </Typography>
-            <Typography variant="body2" color="text.secondary">
-              {studentName} · {batchName} ·{" "}
-              {dayjs(invoice.month, "YYYY-MM").format("MMM YYYY")}
-            </Typography>
-          </Stack>
-          <IconButton size="small" onClick={onClose} disabled={loading}>
-            <CloseRounded fontSize="small" />
-          </IconButton>
-        </Stack>
-      </DialogTitle>
+    <>
+      <Stack direction="row" spacing={0.5} justifyContent="flex-end" alignItems="center">
+        {isOutstanding && (
+          <Button
+            size="small"
+            variant="contained"
+            startIcon={<ReceiptLongRounded fontSize="small" />}
+            onClick={() => onPay(invoice)}
+          >
+            Pay
+          </Button>
+        )}
+        {isPaid && (
+          <Tooltip title="Print receipt">
+            <IconButton size="small" onClick={() => onPrint(invoice)}>
+              <PrintRounded fontSize="small" />
+            </IconButton>
+          </Tooltip>
+        )}
+        <IconButton size="small" onClick={(e) => setAnchor(e.currentTarget)}>
+          <MoreVertRounded fontSize="small" />
+        </IconButton>
+      </Stack>
 
-      <DialogContent>
-        <Stack spacing={2} sx={{ pt: 0.5 }}>
-          <Box
-            sx={{
-              p: 1.5,
-              borderRadius: 1.5,
-              border: "1px solid",
-              borderColor: "divider",
-              bgcolor: alpha("#f8fafc", 0.8),
+      <Menu anchorEl={anchor} open={Boolean(anchor)} onClose={close}>
+        <MenuItem
+          onClick={() => {
+            onPrint(invoice);
+            close();
+          }}
+        >
+          <ListItemIcon>
+            <PrintRounded fontSize="small" />
+          </ListItemIcon>
+          <ListItemText>Print invoice</ListItemText>
+        </MenuItem>
+        {isOutstanding && !isWaiverRequested && (
+          <MenuItem
+            disabled={waiverBusy}
+            onClick={() => {
+              onRequestWaiver(invoice);
+              close();
             }}
           >
-            <Stack spacing={0.5}>
-              <Stack direction="row" justifyContent="space-between">
-                <Typography variant="caption" color="text.secondary">
-                  Invoice total
-                </Typography>
-                <Typography variant="caption" fontWeight={700}>
-                  {formatAmount(invoice.total)}
-                </Typography>
-              </Stack>
-              {invoice.discountAmount > 0 && (
-                <Stack direction="row" justifyContent="space-between">
-                  <Typography variant="caption" color="success.main">
-                    Discount
-                  </Typography>
-                  <Typography variant="caption" color="success.main">
-                    −{formatAmount(invoice.discountAmount)}
-                  </Typography>
-                </Stack>
-              )}
-              {invoice.fineAmount > 0 && (
-                <Stack direction="row" justifyContent="space-between">
-                  <Typography variant="caption" color="error.main">
-                    Late fine
-                  </Typography>
-                  <Typography variant="caption" color="error.main">
-                    +{formatAmount(invoice.fineAmount)}
-                  </Typography>
-                </Stack>
-              )}
-              {invoice.paidAmount > 0 && (
-                <Stack direction="row" justifyContent="space-between">
-                  <Typography variant="caption" color="success.main">
-                    Already paid
-                  </Typography>
-                  <Typography variant="caption" color="success.main">
-                    {formatAmount(invoice.paidAmount)}
-                  </Typography>
-                </Stack>
-              )}
-              <Divider sx={{ my: 0.5 }} />
-              <Stack direction="row" justifyContent="space-between">
-                <Typography variant="caption" fontWeight={700} color="error.main">
-                  Remaining
-                </Typography>
-                <Typography variant="caption" fontWeight={700} color="error.main">
-                  {formatAmount(remaining)}
-                </Typography>
-              </Stack>
-            </Stack>
+            <ListItemIcon>
+              <GavelRounded fontSize="small" />
+            </ListItemIcon>
+            <ListItemText>Request waiver</ListItemText>
+          </MenuItem>
+        )}
+        {isWaiverRequested && (
+          <MenuItem
+            disabled={waiverBusy}
+            onClick={() => {
+              onApproveWaiver(invoice);
+              close();
+            }}
+          >
+            <ListItemIcon>
+              <TaskAltRounded fontSize="small" color="success" />
+            </ListItemIcon>
+            <ListItemText>Approve waiver</ListItemText>
+          </MenuItem>
+        )}
+      </Menu>
+    </>
+  );
+}
+
+// ── Columns ───────────────────────────────────────────────────────────────────
+
+function useInvoiceColumns(opts: {
+  showStudent: boolean;
+  showBatch: boolean;
+  studentLookup: Map<string, { name: string; code: string }>;
+  batchLookup: Map<string, string>;
+  onPay: (i: Invoice) => void;
+  onPrint: (i: Invoice) => void;
+  onRequestWaiver: (i: Invoice) => void;
+  onApproveWaiver: (i: Invoice) => void;
+  waiverBusy: boolean;
+}): MRT_ColumnDef<Invoice>[] {
+  const cols: MRT_ColumnDef<Invoice>[] = [];
+
+  if (opts.showStudent) {
+    cols.push({
+      id: "student",
+      header: "Student",
+      size: 220,
+      accessorFn: (r) => opts.studentLookup.get(r.studentId)?.name ?? r.studentId,
+      Cell: ({ row }) => {
+        const s = opts.studentLookup.get(row.original.studentId);
+        return (
+          <Box>
+            <Typography variant="body2" fontWeight={700} noWrap>
+              {s?.name ?? "—"}
+            </Typography>
+            {s?.code ? (
+              <Typography variant="caption" color="text.secondary">
+                {s.code}
+              </Typography>
+            ) : null}
           </Box>
+        );
+      },
+    });
+  }
 
-          {error && (
-            <Alert severity="error" sx={{ py: 0.25, fontSize: 13 }}>
-              {error}
-            </Alert>
-          )}
-
-          <Stack direction="row" spacing={1.5}>
-            <TextField
-              label="Amount (৳)"
-              value={amount}
-              onChange={(e) => setAmount(e.target.value)}
-              size="small"
-              type="number"
-              inputProps={{ min: 0, step: 1 }}
-              sx={{ flex: 1 }}
-            />
-            <TextField
-              label="Method"
-              value={method}
-              onChange={(e) => setMethod(e.target.value)}
-              size="small"
-              select
-              sx={{ flex: 1 }}
-            >
-              {PAYMENT_METHODS.map((m) => (
-                <MenuItem key={m.value} value={m.value}>
-                  {m.label}
-                </MenuItem>
-              ))}
-            </TextField>
-          </Stack>
-
-          <TextField
-            label="Transaction ref / receipt no."
-            value={ref}
-            onChange={(e) => setRef(e.target.value)}
-            size="small"
-            placeholder="Optional for cash"
-            fullWidth
-          />
-          <TextField
-            label="Remarks (optional)"
-            value={remarks}
-            onChange={(e) => setRemarks(e.target.value)}
-            size="small"
-            fullWidth
-          />
-
-          <Stack direction="row" spacing={1} justifyContent="flex-end">
-            <Button
-              size="small"
-              color="inherit"
-              onClick={onClose}
-              disabled={loading}
-            >
-              Cancel
-            </Button>
-            <Button
-              size="small"
-              variant="contained"
-              onClick={handleConfirm}
-              disabled={loading}
-              startIcon={
-                loading ? (
-                  <CircularProgress size={13} color="inherit" />
-                ) : undefined
-              }
-            >
-              {loading ? "Saving…" : "Confirm Payment"}
-            </Button>
-          </Stack>
-        </Stack>
-      </DialogContent>
-    </Dialog>
-  );
-}
-
-// ── Invoice print ─────────────────────────────────────────────────────────────
-
-function printInvoice(params: {
-  invoice: StudentInvoiceNew;
-  studentName: string;
-  studentCode: string;
-  batchName: string;
-  centerName: string;
-}) {
-  const { invoice, studentName, studentCode, batchName, centerName } = params;
-  const win = window.open("", "_blank", "width=820,height=960");
-  if (!win) return;
-
-  const monthLabel = dayjs(invoice.month, "YYYY-MM").format("MMMM YYYY");
-  const printedOn = dayjs().format("DD MMM YYYY, h:mm A");
-  const fmtAmt = (n: number) =>
-    `৳${n.toLocaleString("en-BD", { minimumFractionDigits: 0 })}`;
-  const statusLabel = invoice.status === "WAIVED" ? "Waived" : "Paid";
-  const badgeColor =
-    invoice.status === "WAIVED"
-      ? { bg: "#e0f2fe", fg: "#0369a1", border: "#bae6fd" }
-      : { bg: "#dcfce7", fg: "#15803d", border: "#bbf7d0" };
-
-  const lineItemsHtml =
-    invoice.lineItems.length > 0
-      ? `<table>
-          <thead><tr><th>Description</th><th class="right">Amount</th></tr></thead>
-          <tbody>
-            ${invoice.lineItems
-              .map(
-                (li) =>
-                  `<tr><td>${li.description}</td><td class="right">${fmtAmt(li.amount)}</td></tr>`,
-              )
-              .join("")}
-          </tbody>
-        </table>`
-      : "";
-
-  const html = `<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8"/>
-  <title>Receipt – ${studentName} – ${monthLabel}</title>
-  <style>
-    *{margin:0;padding:0;box-sizing:border-box}
-    body{font-family:'Segoe UI',Arial,sans-serif;color:#1e293b;padding:48px;max-width:640px;margin:0 auto}
-    .header{text-align:center;padding-bottom:20px;border-bottom:2px solid #e2e8f0;margin-bottom:28px}
-    .center-name{font-size:22px;font-weight:700;color:#0f172a}
-    .receipt-label{font-size:11px;letter-spacing:1.2px;text-transform:uppercase;color:#94a3b8;margin-top:5px}
-    .meta-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:28px}
-    .meta-box{padding:12px 14px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px}
-    .meta-label{font-size:10px;text-transform:uppercase;letter-spacing:0.6px;color:#94a3b8;margin-bottom:3px}
-    .meta-value{font-size:14px;font-weight:600;color:#0f172a}
-    .meta-sub{font-size:12px;color:#64748b;margin-top:2px}
-    table{width:100%;border-collapse:collapse;margin-bottom:24px}
-    th{font-size:11px;text-transform:uppercase;letter-spacing:0.5px;color:#64748b;padding:8px 12px;background:#f1f5f9;text-align:left;border-bottom:1px solid #e2e8f0}
-    th.right{text-align:right}
-    td{padding:10px 12px;border-bottom:1px solid #f1f5f9;font-size:14px;color:#334155}
-    td.right{text-align:right;font-weight:600}
-    .totals{margin-left:auto;width:260px;margin-bottom:24px}
-    .tr{display:flex;justify-content:space-between;align-items:center;padding:5px 0;font-size:14px;color:#475569}
-    .tr.grand{font-weight:700;font-size:16px;color:#0f172a;border-top:2px solid #e2e8f0;padding-top:12px;margin-top:6px}
-    .tr.paid-row{color:#15803d;font-weight:600}
-    .tr.disc{color:#10b981}
-    .tr.fine{color:#ef4444}
-    .badge{display:inline-block;padding:5px 16px;border-radius:20px;font-size:12px;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;background:${badgeColor.bg};color:${badgeColor.fg};border:1px solid ${badgeColor.border}}
-    .footer{margin-top:36px;padding-top:14px;border-top:1px solid #e2e8f0;text-align:center;font-size:11px;color:#94a3b8;line-height:1.6}
-    @media print{body{padding:24px}@page{margin:16mm}}
-  </style>
-</head>
-<body>
-  <div class="header">
-    <div class="center-name">${centerName}</div>
-    <div class="receipt-label">Payment Receipt</div>
-  </div>
-
-  <div class="meta-grid">
-    <div class="meta-box">
-      <div class="meta-label">Student</div>
-      <div class="meta-value">${studentName}</div>
-      <div class="meta-sub">${studentCode}</div>
-    </div>
-    <div class="meta-box">
-      <div class="meta-label">Batch</div>
-      <div class="meta-value">${batchName}</div>
-    </div>
-    <div class="meta-box">
-      <div class="meta-label">Invoice Period</div>
-      <div class="meta-value">${monthLabel}</div>
-    </div>
-    <div class="meta-box">
-      <div class="meta-label">Printed On</div>
-      <div class="meta-value">${printedOn}</div>
-    </div>
-  </div>
-
-  ${lineItemsHtml}
-
-  <div class="totals">
-    <div class="tr"><span>Subtotal</span><span>${fmtAmt(invoice.subtotal)}</span></div>
-    ${invoice.discountAmount > 0 ? `<div class="tr disc"><span>Discount</span><span>−${fmtAmt(invoice.discountAmount)}</span></div>` : ""}
-    ${invoice.fineAmount > 0 ? `<div class="tr fine"><span>Late fine</span><span>+${fmtAmt(invoice.fineAmount)}</span></div>` : ""}
-    <div class="tr grand"><span>Total</span><span>${fmtAmt(invoice.total)}</span></div>
-    <div class="tr paid-row"><span>Amount Paid</span><span>${fmtAmt(invoice.paidAmount)}</span></div>
-  </div>
-
-  <div class="badge">${statusLabel}</div>
-
-  <div class="footer">
-    This is a computer-generated receipt. No signature is required.<br/>
-    ${centerName} · Generated ${printedOn}
-  </div>
-
-  <script>window.onload=()=>{window.print()}</script>
-</body>
-</html>`;
-
-  win.document.write(html);
-  win.document.close();
-}
-
-// ── Table styles ──────────────────────────────────────────────────────────────
-
-const sharedTableProps = {
-  enableDensityToggle: false,
-  enableFullScreenToggle: false,
-  enableHiding: false,
-  enableStickyHeader: true,
-  muiTablePaperProps: {
-    elevation: 0,
-    sx: {
-      border: "1px solid",
-      borderColor: alpha("#0f172a", 0.08),
-      borderRadius: 2,
-      overflow: "hidden",
-    },
-  },
-  muiTopToolbarProps: {
-    sx: {
-      px: 2.5,
-      py: 1.5,
-      borderBottom: "1px solid",
-      borderColor: alpha("#0f172a", 0.08),
-    },
-  },
-  muiBottomToolbarProps: {
-    sx: { borderTop: "1px solid", borderColor: alpha("#0f172a", 0.08) },
-  },
-  muiTableHeadCellProps: {
-    sx: {
-      fontSize: 13,
-      fontWeight: 700,
-      py: 1.75,
-      borderBottom: "1px solid",
-      borderColor: alpha("#0f172a", 0.08),
-    },
-  },
-  muiTableBodyCellProps: {
-    sx: {
-      borderBottom: "1px solid",
-      borderColor: alpha("#0f172a", 0.06),
-      py: 1.75,
-    },
-  },
-  muiTableContainerProps: { sx: { maxHeight: 480 } },
-  initialState: { pagination: { pageIndex: 0, pageSize: 20 } },
-};
-
-// ── Column builders ───────────────────────────────────────────────────────────
-
-function statusCell(status: string) {
-  return (
-    <Chip
-      label={STATUS_LABEL[status] ?? status}
-      size="small"
-      color={STATUS_COLOR[status as InvoiceStatus] ?? "default"}
-      variant={status === "OVERDUE" ? "filled" : "outlined"}
-    />
-  );
-}
-
-function buildOutstandingColumns(
-  batchLookup: Map<string, string>,
-  onPay: (inv: StudentInvoiceNew) => void,
-): MRT_ColumnDef<StudentInvoiceNew>[] {
-  return [
-    {
+  if (opts.showBatch) {
+    cols.push({
       id: "batch",
-      accessorFn: (r) => batchLookup.get(r.batchId) ?? r.batchId,
       header: "Batch",
-      size: 180,
+      size: 170,
+      accessorFn: (r) => opts.batchLookup.get(r.batchId) ?? r.batchId,
       Cell: ({ row }) => (
         <Typography variant="body2" noWrap>
-          {batchLookup.get(row.original.batchId) ?? "—"}
+          {opts.batchLookup.get(row.original.batchId) ?? "—"}
         </Typography>
       ),
-    },
+    });
+  }
+
+  cols.push(
     {
       accessorKey: "month",
       header: "Month",
       size: 110,
       Cell: ({ cell }) => (
-        <Typography variant="body2">
-          {dayjs(String(cell.getValue()), "YYYY-MM").format("MMM YYYY")}
-        </Typography>
+        <Typography variant="body2">{monthLabel(String(cell.getValue()))}</Typography>
       ),
     },
     {
       accessorKey: "dueDate",
-      header: "Due Date",
+      header: "Due",
       size: 110,
-      Cell: ({ cell }) => {
-        const isPast = dayjs(String(cell.getValue())).isBefore(dayjs(), "day");
+      Cell: ({ cell, row }) => {
+        const isPast =
+          dayjs(String(cell.getValue())).isBefore(dayjs(), "day") &&
+          OUTSTANDING_STATUSES.has(row.original.status);
         return (
           <Typography
             variant="body2"
@@ -528,7 +241,7 @@ function buildOutstandingColumns(
     {
       accessorKey: "total",
       header: "Total",
-      size: 95,
+      size: 100,
       Cell: ({ cell }) => (
         <Typography variant="body2" fontWeight={600}>
           {formatAmount(Number(cell.getValue()))}
@@ -544,189 +257,205 @@ function buildOutstandingColumns(
           variant="body2"
           color={Number(cell.getValue()) > 0 ? "success.main" : "text.disabled"}
         >
-          {Number(cell.getValue()) > 0
-            ? formatAmount(Number(cell.getValue()))
-            : "—"}
+          {Number(cell.getValue()) > 0 ? formatAmount(Number(cell.getValue())) : "—"}
         </Typography>
       ),
     },
     {
       id: "remaining",
-      accessorFn: (r) => r.total - r.paidAmount,
-      header: "Remaining",
+      header: "Balance",
       size: 105,
-      Cell: ({ cell }) => (
-        <Typography variant="body2" fontWeight={700} color="error.main">
-          {formatAmount(Number(cell.getValue()))}
-        </Typography>
-      ),
+      accessorFn: (r) => Math.max(0, r.total - r.paidAmount),
+      Cell: ({ cell, row }) => {
+        const v = Number(cell.getValue());
+        const settled = PAID_STATUSES.has(row.original.status) || v <= 0;
+        return (
+          <Typography
+            variant="body2"
+            fontWeight={settled ? 400 : 700}
+            color={settled ? "text.disabled" : "error.main"}
+          >
+            {settled ? "Settled" : formatAmount(v)}
+          </Typography>
+        );
+      },
     },
     {
       accessorKey: "status",
       header: "Status",
-      size: 105,
+      size: 130,
       filterVariant: "select",
       filterSelectOptions: [
         { label: "Unpaid", value: "UNPAID" },
-        { label: "Unpaid (legacy)", value: "ISSUED" },
         { label: "Partial", value: "PARTIAL" },
         { label: "Overdue", value: "OVERDUE" },
+        { label: "Paid", value: "PAID" },
+        { label: "Waived", value: "WAIVED" },
       ],
-      Cell: ({ cell }) => statusCell(String(cell.getValue())),
+      Cell: ({ cell }) => <InvoiceStatusChip status={String(cell.getValue())} />,
     },
     {
       id: "actions",
       header: "",
-      size: 160,
+      size: 150,
       enableSorting: false,
       enableColumnFilter: false,
       Cell: ({ row }) => (
-        <Box sx={{ display: "flex", justifyContent: "flex-end", width: "100%" }}>
-          <Button
-            size="small"
-            variant="contained"
-            startIcon={<ReceiptLongRounded fontSize="small" />}
-            onClick={() => onPay(row.original)}
-          >
-            Record Payment
-          </Button>
-        </Box>
+        <InvoiceRowMenu
+          invoice={row.original}
+          onPay={opts.onPay}
+          onPrint={opts.onPrint}
+          onRequestWaiver={opts.onRequestWaiver}
+          onApproveWaiver={opts.onApproveWaiver}
+          waiverBusy={opts.waiverBusy}
+        />
       ),
     },
-  ];
+  );
+
+  return cols;
 }
 
-function buildPaidColumns(
-  batchLookup: Map<string, string>,
-  onPrint: (inv: StudentInvoiceNew) => void,
-): MRT_ColumnDef<StudentInvoiceNew>[] {
-  return [
-    {
-      id: "batch",
-      accessorFn: (r) => batchLookup.get(r.batchId) ?? r.batchId,
-      header: "Batch",
-      size: 180,
-      Cell: ({ row }) => (
-        <Typography variant="body2" noWrap>
-          {batchLookup.get(row.original.batchId) ?? "—"}
-        </Typography>
-      ),
-    },
-    {
-      accessorKey: "month",
-      header: "Month",
-      size: 110,
-      Cell: ({ cell }) => (
-        <Typography variant="body2">
-          {dayjs(String(cell.getValue()), "YYYY-MM").format("MMM YYYY")}
-        </Typography>
-      ),
-    },
-    {
-      accessorKey: "total",
-      header: "Total",
-      size: 100,
-      Cell: ({ cell }) => (
-        <Typography variant="body2" fontWeight={600}>
-          {formatAmount(Number(cell.getValue()))}
-        </Typography>
-      ),
-    },
-    {
-      accessorKey: "paidAmount",
-      header: "Amount Paid",
-      size: 120,
-      Cell: ({ cell }) => (
-        <Typography variant="body2" color="success.main" fontWeight={600}>
-          {formatAmount(Number(cell.getValue()))}
-        </Typography>
-      ),
-    },
-    {
-      accessorKey: "status",
-      header: "Status",
-      size: 100,
-      filterVariant: "select",
-      filterSelectOptions: ["PAID", "WAIVED"],
-      Cell: ({ cell }) => statusCell(String(cell.getValue())),
-    },
-    {
-      id: "actions",
-      header: "",
-      size: 56,
-      enableSorting: false,
-      enableColumnFilter: false,
-      Cell: ({ row }) => (
-        <Tooltip title="Print receipt">
-          <IconButton size="small" onClick={() => onPrint(row.original)}>
-            <PrintRounded fontSize="small" />
-          </IconButton>
-        </Tooltip>
-      ),
-    },
-  ];
-}
-
-// ── InvoicesWorkspace ─────────────────────────────────────────────────────────
+// ── Workspace ─────────────────────────────────────────────────────────────────
 
 export function InvoicesWorkspace() {
-  const [selectedStudentId, setSelectedStudentId] = useState("");
-  const [payTarget, setPayTarget] = useState<StudentInvoiceNew | null>(null);
+  const [tab, setTab] = useState(0);
 
   const { data: centerData } = useQuery(GetCenterDocument);
-  const centerName = centerData?.getCenter?.name ?? "BongoBrain";
+  const { data: studentsData, loading: studentsLoading } =
+    useQuery(GetStudentsDocument);
+  const { data: batchesData, loading: batchesLoading } =
+    useQuery(GetAllBatchesDocument);
 
-  const { data: studentsData, loading: studentsLoading } = useQuery(
-    GetStudentsDocument,
+  const centerName = centerData?.getCenter?.name ?? "BongoBrain";
+  const students = studentsData?.getStudents ?? [];
+  const batches = batchesData?.getAllBatches ?? [];
+
+  const studentLookup = useMemo(
+    () =>
+      new Map(
+        students.map((s) => [
+          s.id,
+          {
+            name: `${s.firstName} ${s.lastName ?? ""}`.trim() || s.studentCode,
+            code: s.studentCode,
+          },
+        ]),
+      ),
+    [students],
   );
-  const { data: batchesData } = useQuery(GetAllBatchesDocument);
+  const batchLookup = useMemo(
+    () => new Map(batches.map((b) => [b.id, b.name])),
+    [batches],
+  );
+
+  // ── Shared mutations / dialog state ──
+  const [payTarget, setPayTarget] = useState<Invoice | null>(null);
+  const [requestWaiver, { loading: requesting }] = useMutation(RequestWaiverDocument);
+  const [approveWaiver, { loading: approving }] = useMutation(ApproveWaiverDocument);
+  const waiverBusy = requesting || approving;
+
+  // ── By Batch state ──
+  const [batchId, setBatchId] = useState("");
+  const [month, setMonth] = useState(currentMonth());
+  const batchReady = Boolean(batchId && month);
   const {
-    data: invoicesData,
-    loading: invoicesLoading,
-    refetch,
-  } = useQuery(GetStudentInvoicesNewDocument, {
-    variables: { studentId: selectedStudentId },
-    skip: !selectedStudentId,
+    data: batchInvoicesData,
+    loading: batchInvoicesLoading,
+    refetch: refetchBatch,
+  } = useQuery(GetBatchInvoicesDocument, {
+    variables: { batchId, month },
+    skip: !batchReady,
     fetchPolicy: "cache-and-network",
   });
 
-  const students = studentsData?.getStudents ?? [];
-  const selectedStudent =
-    students.find((s) => s.id === selectedStudentId) ?? null;
-  const batchLookup = new Map(
-    (batchesData?.getAllBatches ?? []).map((b) => [b.id, b.name]),
-  );
+  // ── By Student state ──
+  const [studentId, setStudentId] = useState("");
+  const {
+    data: studentInvoicesData,
+    loading: studentInvoicesLoading,
+    refetch: refetchStudent,
+  } = useQuery(GetStudentInvoicesDocument, {
+    variables: { studentId },
+    skip: !studentId,
+    fetchPolicy: "cache-and-network",
+  });
 
-  const allInvoices = invoicesData?.getStudentInvoices ?? [];
-  const outstanding = allInvoices.filter((r) => OUTSTANDING_STATUSES.has(r.status));
-  const paid = allInvoices.filter((r) => PAID_STATUSES.has(r.status));
+  const refetchActive = () => {
+    if (tab === 0) refetchBatch();
+    else refetchStudent();
+  };
 
-  const totalOutstanding = outstanding.reduce(
-    (s, r) => s + (r.total - r.paidAmount),
-    0,
-  );
-  const totalCollected = allInvoices.reduce((s, r) => s + r.paidAmount, 0);
-  const overdueCount = allInvoices.filter((r) => r.status === "OVERDUE").length;
-
-  const studentName = selectedStudent
-    ? `${selectedStudent.firstName} ${selectedStudent.lastName ?? ""}`.trim()
-    : "";
-  const studentCode = selectedStudent?.studentCode ?? "";
-  const payTargetBatch = payTarget
-    ? (batchLookup.get(payTarget.batchId) ?? "—")
-    : "";
-
-  const handlePrint = (inv: StudentInvoiceNew) => {
-    printInvoice({
+  const handlePrint = (inv: Invoice) => {
+    const s = studentLookup.get(inv.studentId);
+    printInvoiceReceipt({
       invoice: inv,
-      studentName,
-      studentCode,
+      studentName: s?.name ?? "—",
+      studentCode: s?.code ?? "",
       batchName: batchLookup.get(inv.batchId) ?? "—",
       centerName,
     });
   };
 
-  const isInvoicesLoading = invoicesLoading && allInvoices.length === 0;
+  const handleRequestWaiver = async (inv: Invoice) => {
+    try {
+      await requestWaiver({ variables: { invoiceId: inv.id } });
+      toast.success("Waiver requested.");
+      refetchActive();
+    } catch (err) {
+      toast.error(getErrorMessage(err, "Failed to request waiver."));
+    }
+  };
+
+  const handleApproveWaiver = async (inv: Invoice) => {
+    try {
+      await approveWaiver({ variables: { invoiceId: inv.id } });
+      toast.success("Waiver approved.");
+      refetchActive();
+    } catch (err) {
+      toast.error(getErrorMessage(err, "Failed to approve waiver."));
+    }
+  };
+
+  const sharedColOpts = {
+    studentLookup,
+    batchLookup,
+    onPay: setPayTarget,
+    onPrint: handlePrint,
+    onRequestWaiver: handleRequestWaiver,
+    onApproveWaiver: handleApproveWaiver,
+    waiverBusy,
+  };
+
+  // ── Derived data per tab ──
+  const batchInvoices = batchInvoicesData?.getBatchInvoices ?? [];
+  const studentInvoices = studentInvoicesData?.getStudentInvoices ?? [];
+
+  const batchCols = useInvoiceColumns({
+    ...sharedColOpts,
+    showStudent: true,
+    showBatch: false,
+  });
+  const studentCols = useInvoiceColumns({
+    ...sharedColOpts,
+    showStudent: false,
+    showBatch: true,
+  });
+
+  const summarise = (rows: Invoice[]) => {
+    const invoiced = rows.reduce((s, r) => s + r.total, 0);
+    const collected = rows.reduce((s, r) => s + r.paidAmount, 0);
+    const outstanding = rows
+      .filter((r) => OUTSTANDING_STATUSES.has(r.status))
+      .reduce((s, r) => s + (r.total - r.paidAmount), 0);
+    const overdue = rows.filter((r) => r.status === "OVERDUE").length;
+    return { invoiced, collected, outstanding, overdue };
+  };
+
+  const activeRows = tab === 0 ? batchInvoices : studentInvoices;
+  const stats = summarise(activeRows);
+
+  const selectedStudent = students.find((s) => s.id === studentId);
 
   return (
     <>
@@ -743,58 +472,64 @@ export function InvoicesWorkspace() {
           }}
         >
           <Typography variant="h4" component="h1">
-            Invoices
+            Bills & Invoices
           </Typography>
-          <Typography
-            variant="body2"
-            color="text.secondary"
-            sx={{ mt: 1.5, maxWidth: 680 }}
-          >
-            Search for a student to view their invoices, record payments, and
-            track collection status across all batches.
+          <Typography variant="body2" color="text.secondary" sx={{ mt: 1.5, maxWidth: 680 }}>
+            Browse invoices by batch and month or drill into a single student. Record
+            payments, print receipts, and handle fee waivers.
           </Typography>
         </Paper>
 
-        {/* Student selector */}
-        <Paper
-          elevation={0}
-          sx={{ p: 2.5, border: "1px solid", borderColor: "divider" }}
-        >
-          <Stack direction={{ xs: "column", sm: "row" }} spacing={2} alignItems="flex-start">
-            <PersonSearchRounded
-              sx={{ color: "text.secondary", mt: { sm: 1 } }}
-            />
-            <Box sx={{ flex: 1, maxWidth: 480 }}>
-              <SearchSelect
-                label="Search student"
-                placeholder="Name, code, phone, or email…"
-                options={studentSearchOptions(students)}
-                loading={studentsLoading}
-                value={selectedStudentId}
-                onChange={(val) => {
-                  setSelectedStudentId(val);
-                  setPayTarget(null);
-                }}
-              />
-            </Box>
-            {selectedStudent && (
-              <Stack spacing={0.25} sx={{ pt: { sm: 0.5 } }}>
-                <Typography variant="subtitle2" fontWeight={700}>
-                  {studentName}
-                </Typography>
-                <Typography variant="caption" color="text.secondary">
-                  {selectedStudent.studentCode}
-                  {selectedStudent.classLevel
-                    ? ` · ${selectedStudent.classLevel}`
-                    : ""}
-                </Typography>
-              </Stack>
-            )}
-          </Stack>
+        <Box sx={{ borderBottom: 1, borderColor: "divider" }}>
+          <Tabs value={tab} onChange={(_, v) => setTab(v)}>
+            <Tab icon={<ReceiptLongRounded />} iconPosition="start" label="By Batch" />
+            <Tab icon={<PersonSearchRounded />} iconPosition="start" label="By Student" />
+          </Tabs>
+        </Box>
+
+        {/* Selectors */}
+        <Paper elevation={0} sx={{ p: 2.5, border: "1px solid", borderColor: "divider" }}>
+          {tab === 0 ? (
+            <Stack direction={{ xs: "column", md: "row" }} spacing={2} alignItems={{ md: "center" }}>
+              <Box sx={{ flex: 1, maxWidth: 420 }}>
+                <BatchPicker
+                  batches={batches}
+                  value={batchId}
+                  onChange={setBatchId}
+                  loading={batchesLoading}
+                />
+              </Box>
+              <MonthField value={month} onChange={setMonth} sx={{ minWidth: 180 }} />
+            </Stack>
+          ) : (
+            <Stack direction={{ xs: "column", sm: "row" }} spacing={2} alignItems="flex-start">
+              <PersonSearchRounded sx={{ color: "text.secondary", mt: { sm: 1 } }} />
+              <Box sx={{ flex: 1, maxWidth: 480 }}>
+                <SearchSelect
+                  label="Search student"
+                  placeholder="Name, code, phone, or email…"
+                  options={studentSearchOptions(students)}
+                  loading={studentsLoading}
+                  value={studentId}
+                  onChange={setStudentId}
+                />
+              </Box>
+              {selectedStudent && (
+                <Stack spacing={0.25} sx={{ pt: { sm: 0.5 } }}>
+                  <Typography variant="subtitle2" fontWeight={700}>
+                    {`${selectedStudent.firstName} ${selectedStudent.lastName ?? ""}`.trim()}
+                  </Typography>
+                  <Typography variant="caption" color="text.secondary">
+                    {selectedStudent.studentCode}
+                    {selectedStudent.classLevel ? ` · ${selectedStudent.classLevel}` : ""}
+                  </Typography>
+                </Stack>
+              )}
+            </Stack>
+          )}
         </Paper>
 
-        {/* Only show content when a student is selected */}
-        {!selectedStudent ? (
+        {(tab === 0 && !batchReady) || (tab === 1 && !studentId) ? (
           <Box
             sx={{
               py: 8,
@@ -805,187 +540,104 @@ export function InvoicesWorkspace() {
               bgcolor: alpha("#f8fafc", 0.6),
             }}
           >
-            <PersonSearchRounded
-              sx={{ fontSize: 48, color: "text.disabled", mb: 1.5 }}
-            />
+            <ReceiptLongRounded sx={{ fontSize: 48, color: "text.disabled", mb: 1.5 }} />
             <Typography variant="h6" color="text.secondary">
-              Select a student to view invoices
+              {tab === 0 ? "Select a batch and month" : "Select a student"}
             </Typography>
             <Typography variant="body2" color="text.disabled" sx={{ mt: 0.5 }}>
-              Use the search above to find a student and load their invoice history.
+              Invoices will load here.
             </Typography>
           </Box>
         ) : (
           <>
-            {/* Summary cards */}
             <Box
               sx={{
                 display: "grid",
                 gap: 2,
                 gridTemplateColumns: {
                   xs: "1fr",
-                  sm: "repeat(3, minmax(0, 1fr))",
+                  sm: "repeat(2, minmax(0,1fr))",
+                  lg: "repeat(4, minmax(0,1fr))",
                 },
               }}
             >
               <SummaryCard
-                caption="Outstanding"
-                title={formatAmount(totalOutstanding)}
-                icon={<AccountBalanceWalletRounded />}
-                tone="error"
+                caption="Invoiced"
+                title={formatAmount(stats.invoiced)}
+                icon={<ReceiptLongRounded />}
               />
               <SummaryCard
-                caption="Total collected"
-                title={formatAmount(totalCollected)}
+                caption="Collected"
+                title={formatAmount(stats.collected)}
                 icon={<CheckCircleRounded />}
                 tone="success"
               />
               <SummaryCard
+                caption="Outstanding"
+                title={formatAmount(stats.outstanding)}
+                icon={<AccountBalanceWalletRounded />}
+                tone={stats.outstanding > 0 ? "warning" : "default"}
+              />
+              <SummaryCard
                 caption="Overdue invoices"
-                title={String(overdueCount)}
+                title={String(stats.overdue)}
                 icon={<WarningAmberRounded />}
-                tone={overdueCount > 0 ? "warning" : "default"}
+                tone={stats.overdue > 0 ? "error" : "default"}
               />
             </Box>
 
-            {/* Outstanding invoices */}
-            <Stack spacing={1.5}>
-              <Stack direction="row" alignItems="center" spacing={1}>
-                <ErrorOutlineRounded
-                  sx={{ color: "error.main", fontSize: 20 }}
-                />
-                <Typography variant="h6" fontWeight={700}>
-                  Outstanding Invoices
-                </Typography>
-                {outstanding.length > 0 && (
-                  <Chip
-                    label={outstanding.length}
-                    size="small"
-                    color="error"
-                    variant="outlined"
-                  />
-                )}
-              </Stack>
-
-              <MaterialReactTable
-                {...sharedTableProps}
-                columns={buildOutstandingColumns(batchLookup, setPayTarget)}
-                data={outstanding}
-                enableColumnFilters
-                enableSorting
-                getRowId={(r) => r.id}
-                state={{ isLoading: isInvoicesLoading }}
-                initialState={{
-                  ...sharedTableProps.initialState,
-                  sorting: [{ id: "dueDate", desc: false }],
-                }}
-                muiTableBodyRowProps={{
-                  sx: { "&:hover td": { bgcolor: alpha("#fef2f2", 0.8) } },
-                }}
-                renderTopToolbarCustomActions={() => (
-                  <Typography
-                    variant="body2"
-                    color="text.secondary"
-                    sx={{ alignSelf: "center" }}
-                  >
-                    {outstanding.length} invoice
-                    {outstanding.length !== 1 ? "s" : ""}
-                  </Typography>
-                )}
-                renderEmptyRowsFallback={() => (
-                  <Box sx={{ px: 3, py: 6, textAlign: "center" }}>
-                    <CheckCircleRounded
-                      sx={{ fontSize: 40, color: "success.light", mb: 1 }}
-                    />
-                    <Typography variant="subtitle1" fontWeight={700}>
-                      No outstanding invoices
-                    </Typography>
-                    <Typography
-                      variant="body2"
-                      color="text.secondary"
-                      sx={{ mt: 0.5 }}
-                    >
-                      All invoices have been cleared.
-                    </Typography>
-                  </Box>
-                )}
-              />
-            </Stack>
-
             <Divider />
 
-            {/* Payment history */}
-            <Stack spacing={1.5}>
-              <Stack direction="row" alignItems="center" spacing={1}>
-                <CheckCircleRounded
-                  sx={{ color: "success.main", fontSize: 20 }}
-                />
-                <Typography variant="h6" fontWeight={700}>
-                  Payment History
-                </Typography>
-                {paid.length > 0 && (
-                  <Chip
-                    label={paid.length}
-                    size="small"
-                    color="success"
-                    variant="outlined"
-                  />
-                )}
-              </Stack>
-
-              <MaterialReactTable
-                {...sharedTableProps}
-                columns={buildPaidColumns(batchLookup, handlePrint)}
-                data={paid}
-                enableColumnFilters
-                enableSorting
-                getRowId={(r) => r.id}
-                state={{ isLoading: isInvoicesLoading }}
-                initialState={{
-                  ...sharedTableProps.initialState,
-                  sorting: [{ id: "month", desc: true }],
-                }}
-                muiTableBodyRowProps={{
-                  sx: { "&:hover td": { bgcolor: alpha("#f0fdf4", 0.8) } },
-                }}
-                renderTopToolbarCustomActions={() => (
-                  <Typography
-                    variant="body2"
-                    color="text.secondary"
-                    sx={{ alignSelf: "center" }}
-                  >
-                    {paid.length} invoice{paid.length !== 1 ? "s" : ""}
+            <MaterialReactTable
+              {...sharedTableProps}
+              columns={tab === 0 ? batchCols : studentCols}
+              data={activeRows}
+              getRowId={(r) => r.id}
+              enableColumnFilters
+              enableSorting
+              state={{
+                isLoading:
+                  tab === 0
+                    ? batchInvoicesLoading && batchInvoices.length === 0
+                    : studentInvoicesLoading && studentInvoices.length === 0,
+              }}
+              initialState={{
+                ...sharedTableProps.initialState,
+                sorting: [{ id: tab === 0 ? "student" : "month", desc: tab === 1 }],
+              }}
+              renderEmptyRowsFallback={() => (
+                <Box sx={{ px: 3, py: 6, textAlign: "center" }}>
+                  <CheckCircleRounded sx={{ fontSize: 40, color: "success.light", mb: 1 }} />
+                  <Typography variant="subtitle1" fontWeight={700}>
+                    No invoices
                   </Typography>
-                )}
-                renderEmptyRowsFallback={() => (
-                  <Box sx={{ px: 3, py: 6, textAlign: "center" }}>
-                    <Typography variant="subtitle1" fontWeight={700}>
-                      No payment history
-                    </Typography>
-                    <Typography
-                      variant="body2"
-                      color="text.secondary"
-                      sx={{ mt: 0.5 }}
-                    >
-                      Paid invoices will appear here.
-                    </Typography>
-                  </Box>
-                )}
-              />
-            </Stack>
+                  <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+                    {tab === 0
+                      ? `Nothing generated for ${monthLabel(month)}. Run billing from Collections.`
+                      : "This student has no invoices yet."}
+                  </Typography>
+                </Box>
+              )}
+            />
           </>
         )}
       </Stack>
 
       {payTarget && (
         <RecordPaymentDialog
-          invoice={payTarget}
-          studentName={studentName}
-          batchName={payTargetBatch}
+          target={{
+            invoiceId: payTarget.id,
+            studentId: payTarget.studentId,
+            total: payTarget.total,
+            paidAmount: payTarget.paidAmount,
+            month: payTarget.month,
+          }}
+          studentName={studentLookup.get(payTarget.studentId)?.name ?? ""}
+          batchName={batchLookup.get(payTarget.batchId) ?? "—"}
           onClose={() => setPayTarget(null)}
           onSuccess={() => {
             setPayTarget(null);
-            refetch();
+            refetchActive();
           }}
         />
       )}

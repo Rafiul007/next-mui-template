@@ -10,7 +10,7 @@ import { MeDocument } from "@/graphql/generated/index";
 export function DashboardAuthGuard({ children }: { children: ReactNode }) {
   const router = useRouter();
   const { loading, error, data } = useQuery(MeDocument, {
-    fetchPolicy: "network-only",
+    fetchPolicy: "cache-and-network",
   });
 
   useEffect(() => {
@@ -21,7 +21,10 @@ export function DashboardAuthGuard({ children }: { children: ReactNode }) {
     }
   }, [error, data, router]);
 
-  if (loading) {
+  // Only block on the very first load (no cached user yet). Background
+  // revalidation keeps `loading` true while `data` is present — render through
+  // it so the dashboard doesn't flash a spinner on every visit.
+  if (loading && !data) {
     return (
       <Box
         sx={{
