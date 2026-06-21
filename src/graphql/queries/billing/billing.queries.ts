@@ -17,6 +17,8 @@ export const GET_FEE_PLANS_QUERY = /* GraphQL */ `
     getFeePlans(batchId: $batchId, programId: $programId) {
       id
       feeTypeId
+      feeTypeName
+      feeTypeKeyName
       batchId
       programId
       amount
@@ -112,6 +114,7 @@ export const GET_PAYMENTS_BY_INVOICE_QUERY = /* GraphQL */ `
       collectedAt
       collectedBy
       receiptPath
+      receiptNumber
       tenantId
     }
   }
@@ -165,6 +168,67 @@ export const GET_STUDENT_INVOICES_QUERY = /* GraphQL */ `
         description
         amount
       }
+    }
+  }
+`;
+
+export const GET_BATCH_INVOICES_QUERY = /* GraphQL */ `
+  query GetBatchInvoices($batchId: ID!, $month: String!) {
+    getBatchInvoices(batchId: $batchId, month: $month) {
+      id
+      batchId
+      studentId
+      month
+      dueDate
+      subtotal
+      discountAmount
+      fineAmount
+      paidAmount
+      total
+      status
+      gracePeriodDays
+      pdfPath
+      tenantId
+      lineItems {
+        feeTypeId
+        description
+        amount
+      }
+    }
+  }
+`;
+
+export const GET_DEFAULTERS_QUERY = /* GraphQL */ `
+  query GetDefaulters($batchId: ID, $month: String) {
+    getDefaulters(batchId: $batchId, month: $month) {
+      invoiceId
+      studentId
+      batchId
+      month
+      total
+      paidAmount
+      outstanding
+      dueDate
+      status
+      daysOverdue
+    }
+  }
+`;
+
+export const GET_BATCH_FEE_REPORT_QUERY = /* GraphQL */ `
+  query GetBatchFeeReport($batchId: ID!, $month: String!) {
+    getBatchFeeReport(batchId: $batchId, month: $month) {
+      batchId
+      month
+      totalStudents
+      totalInvoiced
+      totalPaid
+      totalPending
+      totalOverdue
+      fullyPaidCount
+      partiallyPaidCount
+      overdueCount
+      unpaidCount
     }
   }
 `;

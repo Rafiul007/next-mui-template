@@ -12,7 +12,10 @@ export const ME_QUERY = /* GraphQL */ `
         isVerified
       }
       roles
-      permissions
+      permissions {
+        resource
+        actions
+      }
       userType
     }
   }

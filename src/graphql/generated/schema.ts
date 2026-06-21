@@ -166,6 +166,21 @@ export type BatchFeePlanInput = {
   frequency: Scalars['String']['input'];
 };
 
+export type BatchFeeReport = {
+  __typename?: 'BatchFeeReport';
+  batchId: Scalars['ID']['output'];
+  fullyPaidCount: Scalars['Int']['output'];
+  month: Scalars['String']['output'];
+  overdueCount: Scalars['Int']['output'];
+  partiallyPaidCount: Scalars['Int']['output'];
+  totalInvoiced: Scalars['Float']['output'];
+  totalOverdue: Scalars['Float']['output'];
+  totalPaid: Scalars['Float']['output'];
+  totalPending: Scalars['Float']['output'];
+  totalStudents: Scalars['Int']['output'];
+  unpaidCount: Scalars['Int']['output'];
+};
+
 export type Branch = {
   __typename?: 'Branch';
   address?: Maybe<Scalars['String']['output']>;
@@ -403,6 +418,20 @@ export type CreateTenantInput = {
 export type CreateTenantRoleInput = {
   name: Scalars['String']['input'];
   permissions: Array<Scalars['String']['input']>;
+};
+
+export type DefaulterInfo = {
+  __typename?: 'DefaulterInfo';
+  batchId: Scalars['ID']['output'];
+  daysOverdue: Scalars['Int']['output'];
+  dueDate?: Maybe<Scalars['String']['output']>;
+  invoiceId: Scalars['ID']['output'];
+  month: Scalars['String']['output'];
+  outstanding: Scalars['Float']['output'];
+  paidAmount: Scalars['Float']['output'];
+  status: Scalars['String']['output'];
+  studentId: Scalars['ID']['output'];
+  total: Scalars['Float']['output'];
 };
 
 export type DepartmentDto = {
@@ -751,7 +780,7 @@ export type MarkAttendanceInput = {
 
 export type MeResponse = {
   __typename?: 'MeResponse';
-  permissions: Array<Scalars['String']['output']>;
+  permissions: Array<PermissionInfo>;
   roles: Array<Scalars['String']['output']>;
   subscription?: Maybe<SubscriptionInfo>;
   user: UserInfo;
@@ -1596,6 +1625,12 @@ export type PerformanceReview = {
   submittedAt?: Maybe<Scalars['String']['output']>;
 };
 
+export type PermissionInfo = {
+  __typename?: 'PermissionInfo';
+  actions: Array<Scalars['String']['output']>;
+  resource: Scalars['String']['output'];
+};
+
 export type PostVacancyInput = {
   department: Scalars['String']['input'];
   description?: InputMaybe<Scalars['String']['input']>;
@@ -1635,10 +1670,13 @@ export type Query = {
   getAssignmentsByBatch: Array<Assignment>;
   getAttendanceBySession: Array<Attendance>;
   getAttendanceSummary: AttendanceSummary;
+  getBatchFeeReport: BatchFeeReport;
+  getBatchInvoices: Array<StudentInvoice>;
   getBatchesByBranch: Array<Batch>;
   getBranch?: Maybe<Branch>;
   getBranches: Array<Branch>;
   getCenter?: Maybe<Center>;
+  getDefaulters: Array<DefaulterInfo>;
   getDepartment: DepartmentDto;
   getDepartments: Array<DepartmentDto>;
   getDiscounts: Array<Discount>;
@@ -1725,6 +1763,18 @@ export type QueryGetAttendanceSummaryArgs = {
 };
 
 
+export type QueryGetBatchFeeReportArgs = {
+  batchId: Scalars['ID']['input'];
+  month: Scalars['String']['input'];
+};
+
+
+export type QueryGetBatchInvoicesArgs = {
+  batchId: Scalars['ID']['input'];
+  month: Scalars['String']['input'];
+};
+
+
 export type QueryGetBatchesByBranchArgs = {
   branchId: Scalars['ID']['input'];
 };
@@ -1737,6 +1787,12 @@ export type QueryGetBranchArgs = {
 
 export type QueryGetBranchesArgs = {
   centerId: Scalars['ID']['input'];
+};
+
+
+export type QueryGetDefaultersArgs = {
+  batchId?: InputMaybe<Scalars['ID']['input']>;
+  month?: InputMaybe<Scalars['String']['input']>;
 };
 
 
@@ -2164,6 +2220,7 @@ export type StudentPayment = {
   id: Scalars['ID']['output'];
   invoiceId: Scalars['ID']['output'];
   method: Scalars['String']['output'];
+  receiptNumber?: Maybe<Scalars['String']['output']>;
   receiptPath?: Maybe<Scalars['String']['output']>;
   remarks?: Maybe<Scalars['String']['output']>;
   status: Scalars['String']['output'];
