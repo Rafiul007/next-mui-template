@@ -11,6 +11,7 @@ import {
   CheckCircleRounded,
   EventRounded,
   HowToRegRounded,
+  DescriptionRounded,
 } from "@mui/icons-material";
 import { useMutation, useQuery } from "@apollo/client/react";
 import {
@@ -47,6 +48,7 @@ import {
   ScheduleInterviewDocument,
   ReviewApplicationDocument,
   HireApplicantDocument,
+  GenerateOfferLetterDocument,
   type GetVacanciesQuery,
   type GetApplicationsByVacancyQuery,
 } from "@/graphql/hr-extended";
@@ -151,6 +153,33 @@ export function RecruitmentWorkspace() {
   const [scheduleInterview, scheduleInterviewState] = useMutation(ScheduleInterviewDocument);
   const [reviewApplication, reviewApplicationState] = useMutation(ReviewApplicationDocument);
   const [hireApplicant, hireApplicantState] = useMutation(HireApplicantDocument);
+  const [generateOfferLetter, offerLetterState] = useMutation(
+    GenerateOfferLetterDocument,
+  );
+
+  // Offer letter result: a URL is opened directly; raw text is shown in a dialog.
+  const [offerLetterText, setOfferLetterText] = useState<string | null>(null);
+
+  const handleGenerateOffer = async (application: Application) => {
+    try {
+      const res = await generateOfferLetter({
+        variables: { applicationId: application.id },
+      });
+      const result = res.data?.generateOfferLetter;
+      if (!result) {
+        toast.error("No offer letter was returned.");
+        return;
+      }
+      if (/^(https?:)?\//i.test(result)) {
+        window.open(result, "_blank", "noopener");
+      } else {
+        setOfferLetterText(result);
+      }
+      toast.success("Offer letter generated.");
+    } catch (error) {
+      toast.error(getErrorMessage(error, "Unable to generate offer letter."));
+    }
+  };
 
   const { control, handleSubmit, reset } = useForm<VacancyFormValues>({
     resolver: yupResolver(vacancySchema),
@@ -454,6 +483,8 @@ export function RecruitmentWorkspace() {
                           setHireForm({ branchId: "", department: "", designation: "", joiningDate: "" });
                           setHireError(null);
                         }}
+                        onGenerateOffer={() => handleGenerateOffer(app)}
+                        offerLoading={offerLetterState.loading}
                       />
                     ))}
                   </Stack>
@@ -698,6 +729,47 @@ export function RecruitmentWorkspace() {
           </Button>
         </DialogActions>
       </Dialog>
+
+      {/* Offer letter (raw text) dialog */}
+      <Dialog
+        open={!!offerLetterText}
+        onClose={() => setOfferLetterText(null)}
+        fullWidth
+        maxWidth="md"
+      >
+        <DialogTitle>Offer letter</DialogTitle>
+        <DialogContent dividers>
+          <Box
+            component="pre"
+            sx={{
+              whiteSpace: "pre-wrap",
+              wordBreak: "break-word",
+              fontFamily: "inherit",
+              fontSize: 14,
+              lineHeight: 1.7,
+              m: 0,
+            }}
+          >
+            {offerLetterText}
+          </Box>
+        </DialogContent>
+        <DialogActions sx={{ px: 3, py: 2 }}>
+          <Button
+            color="inherit"
+            onClick={() => {
+              if (offerLetterText) {
+                void navigator.clipboard?.writeText(offerLetterText);
+                toast.success("Copied to clipboard.");
+              }
+            }}
+          >
+            Copy
+          </Button>
+          <Button variant="contained" onClick={() => setOfferLetterText(null)}>
+            Close
+          </Button>
+        </DialogActions>
+      </Dialog>
     </>
   );
 }
@@ -796,14 +868,22 @@ function ApplicationRow({
   onScheduleInterview,
   onReview,
   onHire,
+  onGenerateOffer,
+  offerLoading,
 }: {
   application: Application;
   onScheduleInterview: () => void;
   onReview: () => void;
   onHire: () => void;
+  onGenerateOffer: () => void;
+  offerLoading: boolean;
 }) {
   const statusColor = STATUS_COLOR[application.status] ?? "default";
   const canHire = application.status === "shortlisted" || application.status === "interviewed";
+  const canOffer =
+    application.status === "hired" ||
+    application.status === "shortlisted" ||
+    application.status === "interviewed";
 
   return (
     <Paper
@@ -859,6 +939,17 @@ function ApplicationRow({
               onClick={onHire}
             >
               Hire
+            </Button>
+          )}
+          {canOffer && (
+            <Button
+              size="small"
+              variant="outlined"
+              startIcon={<DescriptionRounded />}
+              onClick={onGenerateOffer}
+              disabled={offerLoading}
+            >
+              Offer letter
             </Button>
           )}
         </Stack>

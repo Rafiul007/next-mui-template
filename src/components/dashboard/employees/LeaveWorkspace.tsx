@@ -9,6 +9,8 @@ import {
   HourglassTopRounded,
   EventNoteRounded,
   BalanceRounded,
+  SwapHorizRounded,
+  PersonAddAlt1Rounded,
 } from "@mui/icons-material";
 import { useMutation, useQuery } from "@apollo/client/react";
 import {
@@ -46,6 +48,10 @@ import {
   type GetLeaveBalanceQuery,
   type GetUsersQuery,
 } from "@/graphql/generated";
+import {
+  InitLeaveBalancesForEmployeeDocument,
+  SuggestSubstitutesDocument,
+} from "@/graphql/hr-extended";
 import { getErrorMessage } from "@/lib/errors";
 import { primaryGradient } from "@/theme/theme";
 import { LeaveFormDialog, type LeaveFormValues } from "./LeaveFormDialog";
@@ -88,6 +94,7 @@ const buildLeaveColumns = ({
   onApprove,
   onReject,
   onCancel,
+  onFindSubstitute,
   isActioning,
 }: {
   userLookup: Map<string, string>;
@@ -95,6 +102,7 @@ const buildLeaveColumns = ({
   onApprove: (id: string) => void;
   onReject: (record: LeaveRecord) => void;
   onCancel: (id: string) => void;
+  onFindSubstitute: (record: LeaveRecord) => void;
   isActioning: boolean;
 }): MRT_ColumnDef<LeaveRecord>[] => [
   {
@@ -193,33 +201,49 @@ const buildLeaveColumns = ({
     enableSorting: false,
     Cell: ({ row }) => {
       const status = row.original.status?.toLowerCase();
-      if (status !== "pending") return null;
-      return (
-        <Stack direction="row" spacing={0.5}>
-          <Tooltip title="Approve">
+      if (status === "pending") {
+        return (
+          <Stack direction="row" spacing={0.5}>
+            <Tooltip title="Approve">
+              <IconButton
+                size="small"
+                color="success"
+                disabled={isActioning}
+                onClick={() => onApprove(row.original.id)}
+                sx={{ bgcolor: alpha("#10b981", 0.08) }}
+              >
+                <CheckCircleRounded fontSize="small" />
+              </IconButton>
+            </Tooltip>
+            <Tooltip title="Reject">
+              <IconButton
+                size="small"
+                color="error"
+                disabled={isActioning}
+                onClick={() => onReject(row.original)}
+                sx={{ bgcolor: alpha("#ef4444", 0.08) }}
+              >
+                <CancelRounded fontSize="small" />
+              </IconButton>
+            </Tooltip>
+          </Stack>
+        );
+      }
+      if (status === "approved") {
+        return (
+          <Tooltip title="Find substitute">
             <IconButton
               size="small"
-              color="success"
-              disabled={isActioning}
-              onClick={() => onApprove(row.original.id)}
-              sx={{ bgcolor: alpha("#10b981", 0.08) }}
+              color="info"
+              onClick={() => onFindSubstitute(row.original)}
+              sx={{ bgcolor: alpha("#3b82f6", 0.08) }}
             >
-              <CheckCircleRounded fontSize="small" />
+              <SwapHorizRounded fontSize="small" />
             </IconButton>
           </Tooltip>
-          <Tooltip title="Reject">
-            <IconButton
-              size="small"
-              color="error"
-              disabled={isActioning}
-              onClick={() => onReject(row.original)}
-              sx={{ bgcolor: alpha("#ef4444", 0.08) }}
-            >
-              <CancelRounded fontSize="small" />
-            </IconButton>
-          </Tooltip>
-        </Stack>
-      );
+        );
+      }
+      return null;
     },
   },
 ];
@@ -231,6 +255,7 @@ export function LeaveWorkspace() {
   const [leaveToReject, setLeaveToReject] = useState<LeaveRecord | null>(null);
   const [rejectReason, setRejectReason] = useState("");
   const [selectedEmployeeId, setSelectedEmployeeId] = useState<string>("");
+  const [substituteFor, setSubstituteFor] = useState<LeaveRecord | null>(null);
 
   const { data: usersData } = useQuery(GetUsersDocument, {
     variables: { page: 1, limit: 500 },
@@ -247,16 +272,42 @@ export function LeaveWorkspace() {
     fetchPolicy: "cache-and-network",
   });
 
-  const { data: balanceData } = useQuery(GetLeaveBalanceDocument, {
-    skip: !selectedEmployeeId,
-    variables: { employeeId: selectedEmployeeId, year: new Date().getFullYear() },
-    fetchPolicy: "cache-and-network",
-  });
+  const { data: balanceData, refetch: refetchBalance } = useQuery(
+    GetLeaveBalanceDocument,
+    {
+      skip: !selectedEmployeeId,
+      variables: { employeeId: selectedEmployeeId, year: new Date().getFullYear() },
+      fetchPolicy: "cache-and-network",
+    },
+  );
+
+  const { data: substituteData, loading: substituteLoading } = useQuery(
+    SuggestSubstitutesDocument,
+    {
+      skip: !substituteFor,
+      variables: { leaveApplicationId: substituteFor?.id ?? "" },
+      fetchPolicy: "cache-and-network",
+    },
+  );
 
   const [applyLeave, applyState] = useMutation(ApplyLeaveDocument);
   const [approveLeave, approveState] = useMutation(ApproveLeaveDocument);
   const [rejectLeave, rejectState] = useMutation(RejectLeaveDocument);
   const [cancelLeave, cancelState] = useMutation(CancelLeaveDocument);
+  const [initLeaveBalances, initBalancesState] = useMutation(
+    InitLeaveBalancesForEmployeeDocument,
+  );
+
+  const handleInitBalances = async () => {
+    if (!selectedEmployeeId) return;
+    try {
+      await initLeaveBalances({ variables: { employeeId: selectedEmployeeId } });
+      await refetchBalance();
+      toast.success("Leave balances initialised.");
+    } catch (error) {
+      toast.error(getErrorMessage(error, "Unable to initialise leave balances."));
+    }
+  };
 
   const employees = employeesData?.getEmployees ?? [];
   const users = (usersData?.getUsers ?? []).filter(
@@ -495,6 +546,40 @@ export function LeaveWorkspace() {
               ))}
             </Box>
           </Paper>
+        ) : selectedEmployeeId ? (
+          <Paper
+            elevation={0}
+            sx={{ p: 2.5, border: "1px dashed", borderColor: "divider" }}
+          >
+            <Stack
+              direction={{ xs: "column", sm: "row" }}
+              spacing={2}
+              alignItems={{ sm: "center" }}
+              justifyContent="space-between"
+            >
+              <Stack direction="row" spacing={1.5} alignItems="center">
+                <BalanceRounded sx={{ color: "text.secondary" }} />
+                <Box>
+                  <Typography variant="subtitle2" fontWeight={700}>
+                    No leave balances yet
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    Initialise this year&apos;s balances so the employee can apply
+                    for leave.
+                  </Typography>
+                </Box>
+              </Stack>
+              <Button
+                variant="contained"
+                startIcon={<PersonAddAlt1Rounded />}
+                onClick={handleInitBalances}
+                disabled={initBalancesState.loading}
+                sx={{ backgroundImage: primaryGradient, whiteSpace: "nowrap" }}
+              >
+                Initialise balances
+              </Button>
+            </Stack>
+          </Paper>
         ) : null}
 
         {!selectedEmployeeId ? (
@@ -538,6 +623,7 @@ export function LeaveWorkspace() {
                   toast.error(getErrorMessage(error, "Unable to cancel leave."));
                 }
               },
+              onFindSubstitute: setSubstituteFor,
               isActioning,
             })}
             data={leaveRecords}
@@ -641,6 +727,73 @@ export function LeaveWorkspace() {
         onSubmit={handleApplyLeave}
         open={isFormOpen}
       />
+
+      <Dialog
+        open={!!substituteFor}
+        onClose={() => setSubstituteFor(null)}
+        fullWidth
+        maxWidth="sm"
+      >
+        <DialogTitle>Suggested substitutes</DialogTitle>
+        <DialogContent>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+            Available staff who can cover this leave, ranked by suitability.
+          </Typography>
+          {substituteLoading && !substituteData ? (
+            <Typography variant="body2" color="text.secondary">
+              Finding substitutes…
+            </Typography>
+          ) : (substituteData?.suggestSubstitutes ?? []).length === 0 ? (
+            <Alert severity="info">
+              No available substitutes found for this leave period.
+            </Alert>
+          ) : (
+            <Stack spacing={1}>
+              {(substituteData?.suggestSubstitutes ?? []).map((emp) => {
+                const name = emp.userInfo
+                  ? `${emp.userInfo.firstName} ${emp.userInfo.lastName ?? ""}`.trim()
+                  : emp.employeeCode;
+                return (
+                  <Paper
+                    key={emp.id}
+                    elevation={0}
+                    sx={{
+                      p: 1.75,
+                      border: "1px solid",
+                      borderColor: alpha("#0f172a", 0.08),
+                      borderRadius: 2,
+                    }}
+                  >
+                    <Stack direction="row" spacing={1.5} alignItems="center">
+                      <SwapHorizRounded sx={{ color: "info.main" }} />
+                      <Box sx={{ flex: 1, minWidth: 0 }}>
+                        <Typography variant="subtitle2" fontWeight={700}>
+                          {name}
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          {emp.employeeCode}
+                          {emp.designation ? ` · ${emp.designation}` : ""}
+                          {emp.department ? ` · ${emp.department}` : ""}
+                        </Typography>
+                      </Box>
+                      {emp.userInfo?.phone ? (
+                        <Typography variant="caption" color="text.secondary">
+                          {emp.userInfo.phone}
+                        </Typography>
+                      ) : null}
+                    </Stack>
+                  </Paper>
+                );
+              })}
+            </Stack>
+          )}
+        </DialogContent>
+        <DialogActions sx={{ px: 3, py: 2 }}>
+          <Button color="inherit" onClick={() => setSubstituteFor(null)}>
+            Close
+          </Button>
+        </DialogActions>
+      </Dialog>
 
       <Dialog
         open={!!leaveToReject}

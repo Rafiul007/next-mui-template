@@ -9,6 +9,8 @@ import {
   GroupsRounded,
   MoneyRounded,
   PaymentsRounded,
+  PrintRounded,
+  ReceiptLongRounded,
 } from "@mui/icons-material";
 import { useMutation, useQuery } from "@apollo/client/react";
 import {
@@ -35,11 +37,16 @@ import {
 import { MaterialReactTable, type MRT_ColumnDef } from "material-react-table";
 import { toast } from "react-hot-toast";
 import { SummaryCard } from "@/components/ui";
-import { GetEmployeesDocument, type GetEmployeesQuery } from "@/graphql/generated";
+import {
+  GetCenterDocument,
+  GetEmployeesDocument,
+  type GetEmployeesQuery,
+} from "@/graphql/generated";
 import {
   ApprovePayrollDocument,
   DisbursePayrollDocument,
   GetPayrollRunsDocument,
+  GetPayslipDocument,
   GetSalaryStructureDocument,
   RunPayrollDocument,
   SetSalaryStructureDocument,
@@ -48,6 +55,7 @@ import {
 import { SearchSelect, type SearchSelectOption } from "@/components/form";
 import { getErrorMessage } from "@/lib/errors";
 import { primaryGradient } from "@/theme/theme";
+import { printPayslip } from "./payslip-print";
 
 type PayrollRun = GetPayrollRunsQuery["getPayrollRuns"][number];
 type EmployeeRecord = GetEmployeesQuery["getEmployees"][number];
@@ -181,12 +189,26 @@ export function PayrollWorkspace() {
   });
   const [pageError, setPageError] = useState<string | null>(null);
 
+  // Payslips tab
+  const [payslipEmployeeId, setPayslipEmployeeId] = useState("");
+  const [payslipRunId, setPayslipRunId] = useState("");
+
   const { data: employeesData } = useQuery(GetEmployeesDocument);
+  const { data: centerData } = useQuery(GetCenterDocument);
   const {
     data: payrollRunsData,
     loading: isRunsLoading,
     refetch: refetchRuns,
   } = useQuery(GetPayrollRunsDocument, { fetchPolicy: "cache-and-network" });
+
+  const { data: payslipData, loading: payslipLoading } = useQuery(
+    GetPayslipDocument,
+    {
+      skip: !payslipEmployeeId || !payslipRunId,
+      variables: { employeeId: payslipEmployeeId, payrollRunId: payslipRunId },
+      fetchPolicy: "cache-and-network",
+    },
+  );
   const { data: salaryData, refetch: refetchSalary } = useQuery(
     GetSalaryStructureDocument,
     {
@@ -204,6 +226,26 @@ export function PayrollWorkspace() {
   const employees = employeesData?.getEmployees ?? [];
   const payrollRuns = payrollRunsData?.getPayrollRuns ?? [];
   const salary = salaryData?.getSalaryStructure;
+  const centerName = centerData?.getCenter?.name ?? "BongoBrain";
+  const payslip = payslipData?.getPayslip;
+
+  const payslipEmployee = employees.find((e) => e.id === payslipEmployeeId);
+  const payslipRun = payrollRuns.find((r) => r.id === payslipRunId);
+  const payslipPeriod = payslipRun
+    ? `${MONTH_NAMES[payslipRun.month - 1]} ${payslipRun.year}`
+    : null;
+
+  const handlePrintPayslip = () => {
+    if (!payslip) return;
+    printPayslip({
+      payslip,
+      employeeName: payslipEmployee?.employeeCode ?? "Employee",
+      employeeCode: payslipEmployee?.employeeCode ?? "—",
+      designation: payslipEmployee?.designation,
+      period: payslipPeriod,
+      centerName,
+    });
+  };
 
   const totalDisbursed = payrollRuns
     .filter((r) => r.status?.toLowerCase() === "disbursed")
@@ -363,6 +405,7 @@ export function PayrollWorkspace() {
           >
             <Tab label={`Payroll runs (${payrollRuns.length})`} />
             <Tab label="Salary structures" />
+            <Tab label="Payslips" />
           </Tabs>
 
           <Box sx={{ p: { xs: 2, md: 3 }, bgcolor: "#f8fafc" }}>
@@ -392,7 +435,7 @@ export function PayrollWorkspace() {
                 muiBottomToolbarProps={{ sx: { borderTop: "1px solid", borderColor: alpha("#0f172a", 0.08), bgcolor: "#ffffff" } }}
                 state={{ isLoading: isRunsLoading && payrollRuns.length === 0 }}
               />
-            ) : (
+            ) : activeTab === 1 ? (
               <Stack spacing={3}>
                 <Stack direction={{ xs: "column", sm: "row" }} spacing={2} alignItems={{ sm: "center" }}>
                   <SearchSelect
@@ -479,6 +522,154 @@ export function PayrollWorkspace() {
                     <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
                       Choose an employee above to view or configure their salary structure.
                     </Typography>
+                  </Paper>
+                )}
+              </Stack>
+            ) : (
+              <Stack spacing={3}>
+                <Stack
+                  direction={{ xs: "column", sm: "row" }}
+                  spacing={2}
+                  alignItems={{ sm: "center" }}
+                >
+                  <SearchSelect
+                    label="Select employee"
+                    placeholder="Search by code…"
+                    options={employeeOptions}
+                    value={payslipEmployeeId}
+                    onChange={setPayslipEmployeeId}
+                    sx={{ minWidth: 260 }}
+                  />
+                  <FormControl size="small" sx={{ minWidth: 220 }}>
+                    <InputLabel>Payroll run</InputLabel>
+                    <Select
+                      label="Payroll run"
+                      value={payslipRunId}
+                      onChange={(e) => setPayslipRunId(e.target.value)}
+                    >
+                      {payrollRuns.length === 0 ? (
+                        <MenuItem disabled value="">
+                          No payroll runs
+                        </MenuItem>
+                      ) : (
+                        payrollRuns.map((r) => (
+                          <MenuItem key={r.id} value={r.id}>
+                            {MONTH_NAMES[r.month - 1]} {r.year}
+                          </MenuItem>
+                        ))
+                      )}
+                    </Select>
+                  </FormControl>
+                  {payslip ? (
+                    <Button
+                      variant="outlined"
+                      startIcon={<PrintRounded />}
+                      onClick={handlePrintPayslip}
+                    >
+                      Print payslip
+                    </Button>
+                  ) : null}
+                </Stack>
+
+                {!payslipEmployeeId || !payslipRunId ? (
+                  <Paper
+                    elevation={0}
+                    sx={{ p: 4, border: "1px solid", borderColor: "divider", textAlign: "center" }}
+                  >
+                    <ReceiptLongRounded sx={{ fontSize: 40, color: "text.disabled", mb: 1 }} />
+                    <Typography variant="subtitle1" fontWeight={700}>
+                      Select employee and run
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+                      Choose an employee and a payroll run to view the payslip.
+                    </Typography>
+                  </Paper>
+                ) : payslipLoading && !payslip ? (
+                  <Paper
+                    elevation={0}
+                    sx={{ p: 4, border: "1px solid", borderColor: "divider", textAlign: "center" }}
+                  >
+                    <Typography variant="body2" color="text.secondary">
+                      Loading payslip…
+                    </Typography>
+                  </Paper>
+                ) : !payslip ? (
+                  <Paper
+                    elevation={0}
+                    sx={{ p: 4, border: "1px solid", borderColor: "divider", textAlign: "center" }}
+                  >
+                    <Typography variant="subtitle1" fontWeight={700}>
+                      No payslip found
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+                      This employee has no payslip for the selected run.
+                    </Typography>
+                  </Paper>
+                ) : (
+                  <Paper
+                    elevation={0}
+                    sx={{
+                      p: 3,
+                      border: "1px solid",
+                      borderColor: alpha("#10b981", 0.2),
+                      borderRadius: 2,
+                      bgcolor: alpha("#ecfdf5", 0.4),
+                    }}
+                  >
+                    <Stack
+                      direction="row"
+                      justifyContent="space-between"
+                      alignItems="center"
+                      sx={{ mb: 2 }}
+                    >
+                      <Box>
+                        <Typography variant="subtitle1" fontWeight={700}>
+                          {payslipEmployee?.employeeCode}
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          {payslipPeriod}
+                        </Typography>
+                      </Box>
+                      <Chip
+                        label={`Net ৳ ${payslip.netAmount.toLocaleString()}`}
+                        color="success"
+                      />
+                    </Stack>
+                    <Box
+                      sx={{
+                        display: "grid",
+                        gap: 2,
+                        gridTemplateColumns: { xs: "repeat(2,1fr)", md: "repeat(3,1fr)" },
+                      }}
+                    >
+                      {[
+                        { label: "Basic salary", value: payslip.basicSalary },
+                        { label: "Allowances", value: payslip.allowances },
+                        { label: "Deductions", value: payslip.deductions },
+                        { label: "Taxable income", value: payslip.taxableIncome },
+                        { label: "Taxes", value: payslip.taxes },
+                        { label: "Net amount", value: payslip.netAmount },
+                      ].map(({ label, value }) => (
+                        <Box
+                          key={label}
+                          sx={{
+                            p: 1.5,
+                            bgcolor: "#fff",
+                            borderRadius: 1,
+                            border: "1px solid",
+                            borderColor: alpha("#0f172a", 0.06),
+                            textAlign: "center",
+                          }}
+                        >
+                          <Typography variant="caption" color="text.secondary">
+                            {label}
+                          </Typography>
+                          <Typography variant="h6" sx={{ mt: 0.25 }}>
+                            ৳ {value.toLocaleString()}
+                          </Typography>
+                        </Box>
+                      ))}
+                    </Box>
                   </Paper>
                 )}
               </Stack>

@@ -13,7 +13,11 @@ import {
   Stack,
   Typography,
 } from "@mui/material";
-import { ExpandMoreRounded, LogoutRounded } from "@mui/icons-material";
+import {
+  ExpandMoreRounded,
+  LogoutRounded,
+  PersonOutlineRounded,
+} from "@mui/icons-material";
 import { logoutSession } from "@/lib/auth/client";
 import { MeDocument } from "@/graphql/generated/index";
 import { primaryGradient } from "@/theme/theme";
@@ -62,6 +66,11 @@ export function UserProfile() {
     if (!isLoggingOut) {
       setMenuAnchor(null);
     }
+  };
+
+  const handleViewProfile = () => {
+    setMenuAnchor(null);
+    router.push("/dashboard/hr/my-profile");
   };
 
   const handleLogout = async () => {
@@ -191,6 +200,15 @@ export function UserProfile() {
         </Box>
 
         <Divider />
+
+        <MenuItem
+          onClick={handleViewProfile}
+          disabled={isLoggingOut}
+          sx={{ gap: 1.25, minHeight: 44 }}
+        >
+          <PersonOutlineRounded fontSize="small" />
+          <Typography variant="body2">My Profile</Typography>
+        </MenuItem>
 
         <MenuItem
           onClick={handleLogout}

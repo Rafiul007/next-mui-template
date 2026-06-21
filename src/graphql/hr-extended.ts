@@ -456,3 +456,201 @@ export const HireApplicantDocument = gql`
     }
   }
 ` as unknown as TypedDocumentNode<HireApplicantMutation, HireApplicantMutationVariables>;
+
+export type GenerateOfferLetterMutationVariables = {
+  applicationId: string;
+};
+export type GenerateOfferLetterMutation = {
+  generateOfferLetter: string;
+};
+
+export const GenerateOfferLetterDocument = gql`
+  mutation GenerateOfferLetter($applicationId: ID!) {
+    generateOfferLetter(applicationId: $applicationId)
+  }
+` as unknown as TypedDocumentNode<
+  GenerateOfferLetterMutation,
+  GenerateOfferLetterMutationVariables
+>;
+
+// ─── Payslips ───────────────────────────────────────────────────────────────
+
+export type PayrollEntry = {
+  id: string;
+  payrollRunId: string;
+  employeeId: string;
+  tenantId: string;
+  basicSalary: number;
+  allowances: number;
+  deductions: number;
+  taxableIncome: number;
+  taxes: number;
+  netAmount: number;
+};
+
+const PAYROLL_ENTRY_FIELDS = `
+  id
+  payrollRunId
+  employeeId
+  tenantId
+  basicSalary
+  allowances
+  deductions
+  taxableIncome
+  taxes
+  netAmount
+`;
+
+export type GetPayslipQueryVariables = {
+  employeeId: string;
+  payrollRunId: string;
+};
+export type GetPayslipQuery = { getPayslip: PayrollEntry };
+
+export const GetPayslipDocument = gql`
+  query GetPayslip($employeeId: ID!, $payrollRunId: ID!) {
+    getPayslip(employeeId: $employeeId, payrollRunId: $payrollRunId) {
+      ${PAYROLL_ENTRY_FIELDS}
+    }
+  }
+` as unknown as TypedDocumentNode<GetPayslipQuery, GetPayslipQueryVariables>;
+
+export type GetMyLatestPayslipQueryVariables = Record<string, never>;
+export type GetMyLatestPayslipQuery = { getMyLatestPayslip: PayrollEntry };
+
+export const GetMyLatestPayslipDocument = gql`
+  query GetMyLatestPayslip {
+    getMyLatestPayslip {
+      ${PAYROLL_ENTRY_FIELDS}
+    }
+  }
+` as unknown as TypedDocumentNode<
+  GetMyLatestPayslipQuery,
+  GetMyLatestPayslipQueryVariables
+>;
+
+// ─── Employee self-service & substitutes ──────────────────────────────────────
+
+export type EmployeeProfile = {
+  id: string;
+  tenantId: string;
+  userId: string | null;
+  branchId: string | null;
+  employeeCode: string;
+  designation: string | null;
+  department: string | null;
+  employmentType: string | null;
+  joiningDate: string | null;
+  status: string;
+  isOnProbation: boolean | null;
+  probationEndsAt: string | null;
+  nid: string | null;
+  tin: string | null;
+  bloodGroup: string | null;
+  emergencyContactName: string | null;
+  emergencyContactPhone: string | null;
+  userInfo: {
+    firstName: string;
+    lastName: string | null;
+    email: string | null;
+    phone: string | null;
+    profilePicture: string | null;
+  } | null;
+};
+
+const EMPLOYEE_FIELDS = `
+  id
+  tenantId
+  userId
+  branchId
+  employeeCode
+  designation
+  department
+  employmentType
+  joiningDate
+  status
+  isOnProbation
+  probationEndsAt
+  nid
+  tin
+  bloodGroup
+  emergencyContactName
+  emergencyContactPhone
+  userInfo {
+    firstName
+    lastName
+    email
+    phone
+    profilePicture
+  }
+`;
+
+export type GetMyEmployeeProfileQueryVariables = Record<string, never>;
+export type GetMyEmployeeProfileQuery = { getMyEmployeeProfile: EmployeeProfile };
+
+export const GetMyEmployeeProfileDocument = gql`
+  query GetMyEmployeeProfile {
+    getMyEmployeeProfile {
+      ${EMPLOYEE_FIELDS}
+    }
+  }
+` as unknown as TypedDocumentNode<
+  GetMyEmployeeProfileQuery,
+  GetMyEmployeeProfileQueryVariables
+>;
+
+export type SuggestSubstitutesQueryVariables = {
+  leaveApplicationId: string;
+};
+export type SuggestSubstitutesQuery = {
+  suggestSubstitutes: EmployeeProfile[];
+};
+
+export const SuggestSubstitutesDocument = gql`
+  query SuggestSubstitutes($leaveApplicationId: ID!) {
+    suggestSubstitutes(leaveApplicationId: $leaveApplicationId) {
+      ${EMPLOYEE_FIELDS}
+    }
+  }
+` as unknown as TypedDocumentNode<
+  SuggestSubstitutesQuery,
+  SuggestSubstitutesQueryVariables
+>;
+
+// ─── Leave balance initialisation ─────────────────────────────────────────────
+
+export type LeaveBalanceEntry = {
+  id: string;
+  employeeId: string;
+  leaveType: string;
+  totalBalance: number;
+  usedDays: number;
+  remainingDays: number;
+  year: number;
+  tenantId: string;
+};
+
+export type InitLeaveBalancesMutationVariables = {
+  employeeId: string;
+};
+export type InitLeaveBalancesMutation = {
+  initLeaveBalancesForEmployee: LeaveBalanceEntry[];
+};
+
+export const InitLeaveBalancesForEmployeeDocument = gql`
+  mutation InitLeaveBalancesForEmployee($employeeId: ID!) {
+    initLeaveBalancesForEmployee(employeeId: $employeeId) {
+      id
+      employeeId
+      leaveType
+      totalBalance
+      usedDays
+      remainingDays
+      year
+      tenantId
+    }
+  }
+` as unknown as TypedDocumentNode<
+  InitLeaveBalancesMutation,
+  InitLeaveBalancesMutationVariables
+>;
