@@ -24,7 +24,7 @@ import { RhfTextField } from "@/components/form";
 import { AuthClientError, loginWithPassword } from "@/lib/auth/client";
 import { getErrorMessage } from "@/lib/errors";
 import { primaryGradient } from "@/theme/theme";
-import { MeDocument } from "@/graphql/generated/index";
+import { MeDocument } from "@/graphql/generated";
 
 const loginSchema = yup
   .object({
@@ -96,8 +96,13 @@ export default function LoginPage() {
         query: MeDocument,
         fetchPolicy: "network-only",
       });
+      const roles: string[] = data?.me?.roles ?? [];
       const destination =
-        data?.me?.userType === "BONGO" ? "/bongo/dashboard" : "/dashboard";
+        data?.me?.userType === "BONGO"
+          ? "/bongo/dashboard"
+          : roles.includes("USER")
+            ? "/student/dashboard"
+            : "/dashboard";
       router.push(destination);
       router.refresh();
     } catch (error) {
