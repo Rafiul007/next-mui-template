@@ -18,7 +18,7 @@ import {
 } from "@mui/material";
 import { useQuery } from "@apollo/client/react";
 import { MyEnrollmentsDocument } from "@/graphql/student-portal";
-import { GetMaterialsByBatchDocument } from "@/graphql/generated";
+import { GetMaterialsByBatchDocument, GetAllBatchesDocument } from "@/graphql/generated";
 
 function BatchMaterials({ batchId }: { batchId: string }) {
   const { data, loading } = useQuery(GetMaterialsByBatchDocument, {
@@ -150,9 +150,20 @@ export function MaterialsWorkspace() {
   const { data: enrollmentsData, loading: enrollmentsLoading } = useQuery(
     MyEnrollmentsDocument,
   );
+  const { data: batchesData } = useQuery(GetAllBatchesDocument, {
+    fetchPolicy: "cache-and-network",
+  });
 
   const activeEnrollments = (enrollmentsData?.myEnrollments ?? []).filter(
     (e) => e.status === "ACTIVE",
+  );
+
+  const batchMap = (batchesData?.getAllBatches ?? []).reduce(
+    (acc, batch) => {
+      acc[batch.id] = batch;
+      return acc;
+    },
+    {} as Record<string, { id: string; name: string; classLevel?: string | null }>,
   );
 
   return (
@@ -203,16 +214,15 @@ export function MaterialsWorkspace() {
         <Stack spacing={4}>
           {activeEnrollments.map((enrollment) => (
             <Box key={enrollment.id}>
-              <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 2 }}>
-                <Typography variant="h6" fontWeight={700}>
-                  Batch
-                </Typography>
-                <Chip
-                  label={enrollment.batchId.slice(0, 8) + "…"}
-                  size="small"
-                  variant="outlined"
-                />
-              </Stack>
+              {batchMap[enrollment.batchId]?.name && (
+                <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 2 }}>
+                  <Chip
+                    label={batchMap[enrollment.batchId]?.name}
+                    size="small"
+                    variant="outlined"
+                  />
+                </Stack>
+              )}
               <BatchMaterials batchId={enrollment.batchId} />
             </Box>
           ))}

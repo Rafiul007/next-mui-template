@@ -5,7 +5,7 @@ import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useQuery } from "@apollo/client/react";
 import { Box, CircularProgress } from "@mui/material";
-import { MeDocument } from "@/graphql/generated/index";
+import { MeDocument } from "@/graphql/generated";
 
 export function DashboardAuthGuard({ children }: { children: ReactNode }) {
   const router = useRouter();
@@ -18,6 +18,8 @@ export function DashboardAuthGuard({ children }: { children: ReactNode }) {
       router.replace("/login");
     } else if (data?.me?.userType === "BONGO") {
       router.replace("/bongo/dashboard");
+    } else if (data?.me?.userType === "COACHING") {
+      router.replace("/student");
     }
   }, [error, data, router]);
 
@@ -39,7 +41,7 @@ export function DashboardAuthGuard({ children }: { children: ReactNode }) {
     );
   }
 
-  if (error || data?.me?.userType === "BONGO") {
+  if (error || data?.me?.userType === "BONGO" || data?.me?.userType === "COACHING") {
     return null;
   }
 

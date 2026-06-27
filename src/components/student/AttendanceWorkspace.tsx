@@ -22,7 +22,7 @@ import {
   MyAttendanceSummaryDocument,
   MyEnrollmentsDocument,
 } from "@/graphql/student-portal";
-import { GetSessionsByBatchDocument } from "@/graphql/generated";
+import { GetSessionsByBatchDocument, GetAllBatchesDocument } from "@/graphql/generated";
 import { SummaryCard } from "@/components/ui";
 
 function BatchSessions({ batchId }: { batchId: string }) {
@@ -87,6 +87,9 @@ export function AttendanceWorkspace() {
   const { data: enrollmentsData, loading: enrollmentsLoading } = useQuery(
     MyEnrollmentsDocument,
   );
+  const { data: batchesData } = useQuery(GetAllBatchesDocument, {
+    fetchPolicy: "cache-and-network",
+  });
 
   const summary = summaryData?.myAttendanceSummary;
   const activeEnrollments = (enrollmentsData?.myEnrollments ?? []).filter(
@@ -94,6 +97,14 @@ export function AttendanceWorkspace() {
   );
 
   const isLoading = summaryLoading || enrollmentsLoading;
+
+  const batchMap = (batchesData?.getAllBatches ?? []).reduce(
+    (acc, batch) => {
+      acc[batch.id] = batch;
+      return acc;
+    },
+    {} as Record<string, { id: string; name: string; classLevel?: string | null }>,
+  );
 
   return (
     <Stack spacing={3}>
@@ -262,13 +273,15 @@ export function AttendanceWorkspace() {
                 elevation={0}
                 sx={{ p: 3, border: "1px solid", borderColor: "divider" }}
               >
-                <Typography
-                  variant="subtitle2"
-                  color="text.secondary"
-                  sx={{ mb: 2, textTransform: "uppercase", letterSpacing: 0.5 }}
-                >
-                  Recent Sessions · Batch {enrollment.batchId.slice(0, 8)}…
-                </Typography>
+                {batchMap[enrollment.batchId]?.name && (
+                  <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 2 }}>
+                    <Chip
+                      label={batchMap[enrollment.batchId]?.name}
+                      size="small"
+                      variant="outlined"
+                    />
+                  </Stack>
+                )}
                 <BatchSessions batchId={enrollment.batchId} />
               </Paper>
             ))
