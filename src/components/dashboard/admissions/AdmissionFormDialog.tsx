@@ -495,7 +495,7 @@ export function AdmissionFormDialog({
         <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ px: 3, py: 2, borderBottom: "1px solid", borderColor: "divider" }}>
           <Box>
             <Typography variant="h6" fontWeight={700}>Edit Student Record</Typography>
-            <Typography variant="caption" color="text.secondary">Update the student's personal details.</Typography>
+            <Typography variant="caption" color="text.secondary">Update the student&apos;s personal details.</Typography>
           </Box>
           <IconButton onClick={onClose} size="small" disabled={isSubmitting}>
             <CloseRounded />

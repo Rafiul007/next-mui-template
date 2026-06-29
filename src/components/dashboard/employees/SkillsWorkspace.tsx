@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import {
   AddRounded,
   EmojiEventsRounded,
@@ -213,11 +213,15 @@ export function SkillsWorkspace() {
     return { value: e.id, label: name, keywords: e.employeeCode };
   });
 
-  const expiringSoon = certs.filter((c) => {
-    if (!c.expiryDate) return false;
-    const diff = (new Date(c.expiryDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24);
-    return diff >= 0 && diff <= 30;
-  }).length;
+  const expiringSoon = useMemo(() => {
+    // eslint-disable-next-line react-hooks/purity
+    const now = Date.now();
+    return certs.filter((c) => {
+      if (!c.expiryDate) return false;
+      const diff = (new Date(c.expiryDate).getTime() - now) / (1000 * 60 * 60 * 24);
+      return diff >= 0 && diff <= 30;
+    }).length;
+  }, [certs]);
 
   const handleAddSkill = async (values: SkillFormValues) => {
     setSkillError(null);
