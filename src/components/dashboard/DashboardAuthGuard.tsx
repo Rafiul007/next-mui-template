@@ -14,7 +14,9 @@ export function DashboardAuthGuard({ children }: { children: ReactNode }) {
     fetchPolicy: "cache-and-network",
   });
 
-  // BONGO admins and teacher-only users belong in their own dashboards.
+  // BONGO admins, teacher-only users, and students belong in their own
+  // dashboards. resolveHomePath returns their landing path; anything other than
+  // /dashboard means this user does not belong on the admin console.
   const home = data?.me ? resolveHomePath(data.me) : null;
   const belongsElsewhere = home !== null && home !== "/dashboard";
 
@@ -23,8 +25,6 @@ export function DashboardAuthGuard({ children }: { children: ReactNode }) {
       router.replace("/login");
     } else if (belongsElsewhere && home) {
       router.replace(home);
-    } else if (data?.me?.userType === "COACHING") {
-      router.replace("/student");
     }
   }, [error, belongsElsewhere, home, router]);
 

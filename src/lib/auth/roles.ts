@@ -26,10 +26,17 @@ type MeLike = {
   roles?: readonly string[] | null;
 } | null | undefined;
 
+// A student must satisfy BOTH signals: the COACHING user type and the USER role.
+// Requiring both keeps every guard agreeing on who a student is, which is what
+// stops the dashboard/student guards from bouncing a divergent user forever.
+export const isStudent = (me: MeLike): boolean =>
+  !!me && me.userType === "COACHING" && (me.roles ?? []).includes("USER");
+
 // Single source of truth for the post-login landing path.
 export const resolveHomePath = (me: MeLike): string => {
   if (!me) return "/dashboard";
   if (me.userType === "BONGO") return "/bongo/dashboard";
+  if (isStudent(me)) return "/student/dashboard";
   if (isTeacherOnly(me.roles)) return "/teacher/dashboard";
   return "/dashboard";
 };
