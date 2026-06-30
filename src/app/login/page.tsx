@@ -97,13 +97,7 @@ export default function LoginPage() {
         query: MeDocument,
         fetchPolicy: "network-only",
       });
-      const roles: string[] = data?.me?.roles ?? [];
-      const destination =
-        data?.me?.userType === "BONGO"
-          ? "/bongo/dashboard"
-          : roles.includes("STUDENT")
-            ? "/student/dashboard"
-            : "/dashboard";
+      const destination = resolveHomePath(data?.me);
       router.push(destination);
       router.push(resolveHomePath(data?.me));
       router.refresh();

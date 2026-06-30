@@ -23,8 +23,6 @@ export function DashboardAuthGuard({ children }: { children: ReactNode }) {
       router.replace("/login");
     } else if (belongsElsewhere && home) {
       router.replace(home);
-    } else if (data?.me?.userType === "COACHING") {
-      router.replace("/student");
     }
   }, [error, belongsElsewhere, home, router]);
 

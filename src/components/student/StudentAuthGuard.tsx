@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { useQuery } from "@apollo/client/react";
 import { Box, CircularProgress } from "@mui/material";
 import { MeDocument } from "@/graphql/generated";
+import { isStudentRole, resolveHomePath } from "@/lib/auth/roles";
 
 export function StudentAuthGuard({ children }: { children: ReactNode }) {
   const router = useRouter();
@@ -13,13 +14,15 @@ export function StudentAuthGuard({ children }: { children: ReactNode }) {
     fetchPolicy: "network-only",
   });
 
+  const isStudent = data?.me ? isStudentRole(data.me.roles) : null;
+
   useEffect(() => {
     if (error) {
       router.replace("/login");
-    } else if (data && !data.me?.roles?.includes("USER")) {
-      router.replace("/dashboard");
+    } else if (data?.me && !isStudent) {
+      router.replace(resolveHomePath(data.me));
     }
-  }, [error, data, router]);
+  }, [error, data, isStudent, router]);
 
   if (loading) {
     return (
@@ -36,7 +39,7 @@ export function StudentAuthGuard({ children }: { children: ReactNode }) {
     );
   }
 
-  if (error || (data && !data.me?.roles?.includes("USER"))) {
+  if (error || (data?.me && !isStudent)) {
     return null;
   }
 
