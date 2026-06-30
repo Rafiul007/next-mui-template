@@ -20,6 +20,7 @@ import {
 } from "@mui/icons-material";
 import { logoutSession } from "@/lib/auth/client";
 import { MeDocument } from "@/graphql/generated/index";
+import { isTeacherOnly } from "@/lib/auth/roles";
 import { primaryGradient } from "@/theme/theme";
 
 const getInitials = (name: string) =>
@@ -70,7 +71,10 @@ export function UserProfile() {
 
   const handleViewProfile = () => {
     setMenuAnchor(null);
-    router.push("/dashboard/hr/my-profile");
+    const profilePath = isTeacherOnly(data?.me?.roles)
+      ? "/teacher/dashboard/my-profile"
+      : "/dashboard/hr/my-profile";
+    router.push(profilePath);
   };
 
   const handleLogout = async () => {

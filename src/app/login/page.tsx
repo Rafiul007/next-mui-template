@@ -22,6 +22,7 @@ import * as yup from "yup";
 import { useApolloClient } from "@apollo/client/react";
 import { RhfTextField } from "@/components/form";
 import { AuthClientError, loginWithPassword } from "@/lib/auth/client";
+import { resolveHomePath } from "@/lib/auth/roles";
 import { getErrorMessage } from "@/lib/errors";
 import { primaryGradient } from "@/theme/theme";
 import { MeDocument } from "@/graphql/generated";
@@ -104,6 +105,7 @@ export default function LoginPage() {
             ? "/student/dashboard"
             : "/dashboard";
       router.push(destination);
+      router.push(resolveHomePath(data?.me));
       router.refresh();
     } catch (error) {
       const message = getErrorMessage(error, "Unable to sign in.");
@@ -277,7 +279,9 @@ export default function LoginPage() {
                           onClick={() => setShowPassword((prev) => !prev)}
                           edge="end"
                           size="small"
-                          aria-label={showPassword ? "Hide password" : "Show password"}
+                          aria-label={
+                            showPassword ? "Hide password" : "Show password"
+                          }
                         >
                           {showPassword ? (
                             <VisibilityOffRounded fontSize="small" />
