@@ -100,7 +100,7 @@ export default function LoginPage() {
       const destination =
         data?.me?.userType === "BONGO"
           ? "/bongo/dashboard"
-          : roles.includes("USER")
+          : roles.includes("STUDENT")
             ? "/student/dashboard"
             : "/dashboard";
       router.push(destination);
@@ -297,6 +297,7 @@ export default function LoginPage() {
                 size="large"
                 fullWidth
                 disabled={isSubmitting}
+                data-testid="login-submit"
               >
                 {isSubmitting ? (
                   <CircularProgress color="inherit" size={22} />
