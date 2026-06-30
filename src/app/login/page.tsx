@@ -97,8 +97,6 @@ export default function LoginPage() {
         query: MeDocument,
         fetchPolicy: "network-only",
       });
-      const destination = resolveHomePath(data?.me);
-      router.push(destination);
       router.push(resolveHomePath(data?.me));
       router.refresh();
     } catch (error) {

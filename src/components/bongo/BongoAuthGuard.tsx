@@ -13,15 +13,20 @@ export function BongoAuthGuard({ children }: { children: ReactNode }) {
     fetchPolicy: "network-only",
   });
 
+  // Only redirect to login when there is genuinely no authenticated user.
+  // errorPolicy: "all" sets `error` for non-fatal partial errors that still
+  // return a valid `me`, so keying off `error` alone bounces signed-in users.
+  const isAuthFailure = !!error && !data?.me;
+
   useEffect(() => {
-    if (error) {
+    if (isAuthFailure) {
       router.replace("/login");
-    } else if (data && data.me?.userType !== "BONGO") {
+    } else if (data?.me && data.me.userType !== "BONGO") {
       router.replace("/dashboard");
     }
-  }, [error, data, router]);
+  }, [isAuthFailure, data, router]);
 
-  if (loading) {
+  if (loading && !data) {
     return (
       <Box
         sx={{
@@ -36,7 +41,7 @@ export function BongoAuthGuard({ children }: { children: ReactNode }) {
     );
   }
 
-  if (error || (data && data.me?.userType !== "BONGO")) {
+  if (isAuthFailure || (data?.me && data.me.userType !== "BONGO")) {
     return null;
   }
 

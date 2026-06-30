@@ -13,6 +13,12 @@
 # testing
 /coverage
 CLAUDE.md
+
+# cypress
+cypress.env.json
+/cypress/screenshots
+/cypress/videos
+/cypress/downloads
 # next.js
 /.next/
 /out/

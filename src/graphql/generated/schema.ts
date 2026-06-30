@@ -1378,12 +1378,14 @@ export type MutationStartSessionArgs = {
 
 export type MutationSubmitAssignmentArgs = {
   assignmentId: Scalars['ID']['input'];
+  linkUrl?: InputMaybe<Scalars['String']['input']>;
   studentId: Scalars['ID']['input'];
 };
 
 
 export type MutationSubmitMyAssignmentArgs = {
   assignmentId: Scalars['ID']['input'];
+  linkUrl?: InputMaybe<Scalars['String']['input']>;
 };
 
 
@@ -2290,6 +2292,7 @@ export type Submission = {
   filePath?: Maybe<Scalars['String']['output']>;
   id: Scalars['ID']['output'];
   late: Scalars['Boolean']['output'];
+  linkUrl?: Maybe<Scalars['String']['output']>;
   studentId: Scalars['ID']['output'];
   submittedAt?: Maybe<Scalars['String']['output']>;
   tenantId: Scalars['ID']['output'];
