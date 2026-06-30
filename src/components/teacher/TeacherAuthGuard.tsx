@@ -8,15 +8,16 @@ import { Box, CircularProgress } from "@mui/material";
 import { MeDocument } from "@/graphql/generated/index";
 import { resolveHomePath } from "@/lib/auth/roles";
 
-export function DashboardAuthGuard({ children }: { children: ReactNode }) {
+// Only teacher-only users may stay here. BONGO admins and center admins are
+// redirected to the dashboard that resolveHomePath() picks for them.
+export function TeacherAuthGuard({ children }: { children: ReactNode }) {
   const router = useRouter();
   const { loading, error, data } = useQuery(MeDocument, {
     fetchPolicy: "cache-and-network",
   });
 
-  // BONGO admins and teacher-only users belong in their own dashboards.
   const home = data?.me ? resolveHomePath(data.me) : null;
-  const belongsElsewhere = home !== null && home !== "/dashboard";
+  const belongsElsewhere = home !== null && home !== "/teacher/dashboard";
 
   useEffect(() => {
     if (error) {
@@ -26,9 +27,6 @@ export function DashboardAuthGuard({ children }: { children: ReactNode }) {
     }
   }, [error, belongsElsewhere, home, router]);
 
-  // Only block on the very first load (no cached user yet). Background
-  // revalidation keeps `loading` true while `data` is present — render through
-  // it so the dashboard doesn't flash a spinner on every visit.
   if (loading && !data) {
     return (
       <Box
