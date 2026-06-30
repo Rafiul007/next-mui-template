@@ -22,6 +22,7 @@ import * as yup from "yup";
 import { useApolloClient } from "@apollo/client/react";
 import { RhfTextField } from "@/components/form";
 import { AuthClientError, loginWithPassword } from "@/lib/auth/client";
+import { resolveHomePath } from "@/lib/auth/roles";
 import { getErrorMessage } from "@/lib/errors";
 import { primaryGradient } from "@/theme/theme";
 import { MeDocument } from "@/graphql/generated/index";
@@ -96,9 +97,7 @@ export default function LoginPage() {
         query: MeDocument,
         fetchPolicy: "network-only",
       });
-      const destination =
-        data?.me?.userType === "BONGO" ? "/bongo/dashboard" : "/dashboard";
-      router.push(destination);
+      router.push(resolveHomePath(data?.me));
       router.refresh();
     } catch (error) {
       const message = getErrorMessage(error, "Unable to sign in.");
