@@ -180,7 +180,7 @@ export function DashboardWorkspace() {
           <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 2 }}>
             <CalendarTodayRounded sx={{ color: "primary.main", fontSize: 20 }} />
             <Typography variant="h6" fontWeight={700}>
-              Today's Classes
+              Today&apos;s Classes
             </Typography>
             <Chip
               label={dayjs().format("ddd")}

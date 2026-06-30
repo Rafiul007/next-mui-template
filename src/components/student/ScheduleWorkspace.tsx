@@ -188,7 +188,7 @@ function BatchCalendar({ batchId }: { batchId: string }) {
         max={setMinutes(setHours(new Date(), maxHour), 0)}
         toolbar={false}
         components={{
-          event: EventBlock as any,
+          event: EventBlock as React.ComponentType<{ event: Event & { resource?: { room?: string | null } } }>,
         }}
         style={{ height: "100%" }}
       />

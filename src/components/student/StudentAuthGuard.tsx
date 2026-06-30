@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { useQuery } from "@apollo/client/react";
 import { Box, CircularProgress } from "@mui/material";
 import { MeDocument } from "@/graphql/generated";
+import { isStudentRole, resolveHomePath } from "@/lib/auth/roles";
 import { isStudent, resolveHomePath } from "@/lib/auth/roles";
 
 export function StudentAuthGuard({ children }: { children: ReactNode }) {
@@ -13,6 +14,8 @@ export function StudentAuthGuard({ children }: { children: ReactNode }) {
   const { loading, error, data } = useQuery(MeDocument, {
     fetchPolicy: "cache-and-network",
   });
+
+  const isStudent = data?.me ? isStudentRole(data.me.roles) : null;
 
   // Anyone who is not a student gets sent to wherever they actually belong,
   // not blindly to /dashboard, so guards never ping-pong a user between panels.
@@ -24,7 +27,7 @@ export function StudentAuthGuard({ children }: { children: ReactNode }) {
     } else if (belongsElsewhere && data?.me) {
       router.replace(resolveHomePath(data.me));
     }
-  }, [error, belongsElsewhere, data, router]);
+  }, [error, belongsElsewhere, data, isStudent, router]);
 
   if (loading && !data) {
     return (

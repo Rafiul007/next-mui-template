@@ -3,11 +3,12 @@
 import { useState } from "react";
 import Link from "next/link";
 import {
+  LogoutRounded,
   MenuRounded,
   NotificationsNoneRounded,
   SchoolRounded,
 } from "@mui/icons-material";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import {
   Box,
   Drawer,
@@ -16,6 +17,8 @@ import {
   ListItemButton,
   ListItemIcon,
   ListItemText,
+  Menu,
+  MenuItem,
   Stack,
   Typography,
   alpha,
@@ -26,6 +29,7 @@ import { primaryGradient } from "@/theme/theme";
 import { GetMyUnreadCountDocument } from "@/graphql/generated";
 import { useQuery } from "@apollo/client/react";
 import { Badge } from "@mui/material";
+import { logoutSession } from "@/lib/auth/client";
 
 const SIDEBAR_SURFACE = {
   bgcolor: "#09111c",
@@ -209,8 +213,36 @@ export function StudentShell({ children }: { children: ReactNode }) {
 }
 
 function StudentTopbar({ onMenuClick }: { onMenuClick: () => void }) {
+  const router = useRouter();
   const { data } = useQuery(GetMyUnreadCountDocument);
   const unreadCount = data?.myUnreadCount ?? 0;
+
+  const [menuAnchor, setMenuAnchor] = useState<HTMLElement | null>(null);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const isMenuOpen = !!menuAnchor;
+
+  const handleOpenMenu = (event: React.MouseEvent<HTMLElement>) => {
+    setMenuAnchor(event.currentTarget);
+  };
+
+  const handleCloseMenu = () => {
+    if (!isLoggingOut) {
+      setMenuAnchor(null);
+    }
+  };
+
+  const handleLogout = async () => {
+    setIsLoggingOut(true);
+
+    try {
+      await logoutSession();
+      setMenuAnchor(null);
+      router.push("/login");
+      router.refresh();
+    } finally {
+      setIsLoggingOut(false);
+    }
+  };
 
   return (
     <Box
@@ -250,19 +282,51 @@ function StudentTopbar({ onMenuClick }: { onMenuClick: () => void }) {
           </Typography>
         </Stack>
 
-        <IconButton
-          href="/student/notices"
-          sx={{
-            borderRadius: 2,
-            color: "#e2e8f0",
-            bgcolor: alpha("#ffffff", 0.05),
-            border: "1px solid rgba(148, 163, 184, 0.12)",
-          }}
-        >
-          <Badge badgeContent={unreadCount || undefined} color="error" max={99}>
-            <NotificationsNoneRounded />
-          </Badge>
-        </IconButton>
+        <Stack direction="row" spacing={1.5} alignItems="center">
+          <IconButton
+            href="/student/notices"
+            sx={{
+              borderRadius: 2,
+              color: "#e2e8f0",
+              bgcolor: alpha("#ffffff", 0.05),
+              border: "1px solid rgba(148, 163, 184, 0.12)",
+            }}
+          >
+            <Badge badgeContent={unreadCount || undefined} color="error" max={99}>
+              <NotificationsNoneRounded />
+            </Badge>
+          </IconButton>
+
+          <IconButton
+            onClick={handleOpenMenu}
+            aria-haspopup="menu"
+            aria-expanded={isMenuOpen ? "true" : undefined}
+            aria-label="Account menu"
+            sx={{
+              borderRadius: 2,
+              color: "#e2e8f0",
+              bgcolor: alpha("#ffffff", 0.05),
+              border: "1px solid rgba(148, 163, 184, 0.12)",
+            }}
+          >
+            <LogoutRounded />
+          </IconButton>
+
+          <Menu
+            anchorEl={menuAnchor}
+            open={isMenuOpen}
+            onClose={handleCloseMenu}
+            anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
+            transformOrigin={{ vertical: "top", horizontal: "right" }}
+          >
+            <MenuItem onClick={handleLogout} disabled={isLoggingOut} sx={{ gap: 1.25 }}>
+              <LogoutRounded fontSize="small" />
+              <Typography variant="body2">
+                {isLoggingOut ? "Logging out..." : "Log out"}
+              </Typography>
+            </MenuItem>
+          </Menu>
+        </Stack>
       </Stack>
     </Box>
   );

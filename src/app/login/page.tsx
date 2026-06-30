@@ -97,6 +97,8 @@ export default function LoginPage() {
         query: MeDocument,
         fetchPolicy: "network-only",
       });
+      const destination = resolveHomePath(data?.me);
+      router.push(destination);
       router.push(resolveHomePath(data?.me));
       router.refresh();
     } catch (error) {
@@ -293,6 +295,7 @@ export default function LoginPage() {
                 size="large"
                 fullWidth
                 disabled={isSubmitting}
+                data-testid="login-submit"
               >
                 {isSubmitting ? (
                   <CircularProgress color="inherit" size={22} />

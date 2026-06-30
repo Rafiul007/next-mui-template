@@ -5,7 +5,10 @@
 const ADMIN_ROLE_KEYWORDS = ["admin", "owner", "principal", "director"];
 const TEACHER_ROLE_KEYWORDS = ["teacher", "instructor", "faculty"];
 
-const matches = (roles: readonly string[] | null | undefined, keywords: string[]) =>
+const matches = (
+  roles: readonly string[] | null | undefined,
+  keywords: string[],
+) =>
   (roles ?? []).some((role) =>
     keywords.some((kw) => role.toLowerCase().includes(kw)),
   );
@@ -21,10 +24,16 @@ export const isTeacherRole = (roles?: readonly string[] | null) =>
 export const isTeacherOnly = (roles?: readonly string[] | null) =>
   isTeacherRole(roles) && !isAdminRole(roles);
 
-type MeLike = {
-  userType?: string | null;
-  roles?: readonly string[] | null;
-} | null | undefined;
+export const isStudentRole = (roles?: readonly string[] | null) =>
+  matches(roles, ["student"]);
+
+type MeLike =
+  | {
+      userType?: string | null;
+      roles?: readonly string[] | null;
+    }
+  | null
+  | undefined;
 
 // A student must satisfy BOTH signals: the COACHING user type and the USER role.
 // Requiring both keeps every guard agreeing on who a student is, which is what
@@ -32,11 +41,15 @@ type MeLike = {
 export const isStudent = (me: MeLike): boolean =>
   !!me && me.userType === "COACHING" && (me.roles ?? []).includes("USER");
 
-// Single source of truth for the post-login landing path.
+// Single source of truth for the post-login landing path. Every auth guard
+// must redirect through this function so they all agree on where a given
+// user belongs — otherwise mismatched guards can bounce a user back and
+// forth between two routes forever.
 export const resolveHomePath = (me: MeLike): string => {
   if (!me) return "/dashboard";
   if (me.userType === "BONGO") return "/bongo/dashboard";
   if (isStudent(me)) return "/student/dashboard";
   if (isTeacherOnly(me.roles)) return "/teacher/dashboard";
+  if (isStudentRole(me.roles)) return "/student/dashboard";
   return "/dashboard";
 };
