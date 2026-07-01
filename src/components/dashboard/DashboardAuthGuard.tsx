@@ -5,7 +5,7 @@ import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useQuery } from "@apollo/client/react";
 import { Box, CircularProgress } from "@mui/material";
-import { MeDocument } from "@/graphql/generated/index";
+import { MeDocument } from "@/graphql/generated";
 import { resolveHomePath } from "@/lib/auth/roles";
 
 export function DashboardAuthGuard({ children }: { children: ReactNode }) {
@@ -14,7 +14,9 @@ export function DashboardAuthGuard({ children }: { children: ReactNode }) {
     fetchPolicy: "cache-and-network",
   });
 
-  // BONGO admins and teacher-only users belong in their own dashboards.
+  // BONGO admins, teacher-only users, and students belong in their own
+  // dashboards. resolveHomePath returns their landing path; anything other than
+  // /dashboard means this user does not belong on the admin console.
   const home = data?.me ? resolveHomePath(data.me) : null;
   const belongsElsewhere = home !== null && home !== "/dashboard";
 

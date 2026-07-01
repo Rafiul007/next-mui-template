@@ -391,6 +391,7 @@ export type CreateRecurringScheduleInput = {
   endTime: Scalars['String']['input'];
   roomName?: InputMaybe<Scalars['String']['input']>;
   startTime: Scalars['String']['input'];
+  subjectId?: InputMaybe<Scalars['ID']['input']>;
   teacherId?: InputMaybe<Scalars['ID']['input']>;
 };
 
@@ -881,6 +882,7 @@ export type Mutation = {
   setupCenter: Center;
   startSession: Session;
   submitAssignment: Submission;
+  submitMyAssignment: Submission;
   submitReview: PerformanceReview;
   suspendTenant: Tenant;
   terminateTenant: Tenant;
@@ -1376,7 +1378,14 @@ export type MutationStartSessionArgs = {
 
 export type MutationSubmitAssignmentArgs = {
   assignmentId: Scalars['ID']['input'];
+  linkUrl?: InputMaybe<Scalars['String']['input']>;
   studentId: Scalars['ID']['input'];
+};
+
+
+export type MutationSubmitMyAssignmentArgs = {
+  assignmentId: Scalars['ID']['input'];
+  linkUrl?: InputMaybe<Scalars['String']['input']>;
 };
 
 
@@ -1735,9 +1744,12 @@ export type Query = {
   me: MeResponse;
   myAttendanceBySession: Array<Attendance>;
   myAttendanceSummary: AttendanceSummary;
+  myEnrollments: Array<Enrollment>;
+  myInvoices: Array<StudentInvoice>;
   myNotifications: Array<Notification>;
   myResults: Array<ExamResult>;
   myRoutine: Array<RecurringSchedule>;
+  myStudentProfile: Student;
   myUnreadCount: Scalars['Int']['output'];
   suggestSubstitutes: Array<Employee>;
 };
@@ -2051,6 +2063,8 @@ export type RecurringSchedule = {
   id: Scalars['ID']['output'];
   roomName?: Maybe<Scalars['String']['output']>;
   startTime: Scalars['String']['output'];
+  subjectId?: Maybe<Scalars['ID']['output']>;
+  subjectName?: Maybe<Scalars['String']['output']>;
   teacherId?: Maybe<Scalars['ID']['output']>;
   tenantId: Scalars['ID']['output'];
 };
@@ -2278,6 +2292,7 @@ export type Submission = {
   filePath?: Maybe<Scalars['String']['output']>;
   id: Scalars['ID']['output'];
   late: Scalars['Boolean']['output'];
+  linkUrl?: Maybe<Scalars['String']['output']>;
   studentId: Scalars['ID']['output'];
   submittedAt?: Maybe<Scalars['String']['output']>;
   tenantId: Scalars['ID']['output'];
