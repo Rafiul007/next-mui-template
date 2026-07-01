@@ -40,16 +40,16 @@ import {
   DeactivateBranchDocument,
   GetBranchesDocument,
   GetCenterDocument,
-  GetUsersDocument,
+  GetEmployeesDocument,
   UpdateBranchDocument,
   type GetBranchesQuery,
-  type GetUsersQuery,
+  type GetEmployeesQuery,
 } from "@/graphql/generated";
 import { getErrorMessage } from "@/lib/errors";
 import { primaryGradient } from "@/theme/theme";
 
 type BranchRecord = GetBranchesQuery["getBranches"][number];
-type UserRecord = NonNullable<GetUsersQuery["getUsers"][number]>;
+type EmployeeRecord = NonNullable<GetEmployeesQuery["getEmployees"][number]>;
 
 const emptyBranchFormValues: BranchFormValues = {
   name: "",
@@ -64,8 +64,12 @@ const emptyBranchFormValues: BranchFormValues = {
 const isInactiveStatus = (status: string) =>
   /inactive|deactivated|disabled/i.test(status);
 
-const formatPersonName = (user: UserRecord) =>
-  `${user.firstName} ${user.lastName}`.trim() || user.email;
+const formatEmployeeName = (employee: EmployeeRecord) => {
+  const info = employee.userInfo;
+  const fullName = `${info?.firstName ?? ""} ${info?.lastName ?? ""}`.trim();
+
+  return fullName || info?.email || employee.employeeCode || "Unnamed employee";
+};
 
 const formatBranchStatus = (status: string) => {
   if (isInactiveStatus(status)) {
@@ -265,15 +269,10 @@ export function BranchesWorkspace() {
     loading: isCenterLoading,
   } = useQuery(GetCenterDocument);
   const {
-    data: usersData,
-    error: usersError,
-    loading: isUsersLoading,
-  } = useQuery(GetUsersDocument, {
-    variables: {
-      page: 1,
-      limit: 200,
-    },
-  });
+    data: employeesData,
+    error: employeesError,
+    loading: isEmployeesLoading,
+  } = useQuery(GetEmployeesDocument);
   const {
     data: branchesData,
     error: branchesError,
@@ -295,17 +294,18 @@ export function BranchesWorkspace() {
   const center = centerData?.getCenter ?? null;
   const effectiveCenter = center;
   const branches = branchesData?.getBranches ?? [];
-  const users = (usersData?.getUsers ?? []).filter(
-    (user): user is UserRecord => !!user,
+  const employees = (employeesData?.getEmployees ?? []).filter(
+    (employee): employee is EmployeeRecord & { userId: string } =>
+      !!employee && !!employee.userId,
   );
   const managerLookup = new Map(
-    users.map((user) => [user.id, formatPersonName(user)]),
+    employees.map((employee) => [employee.userId, formatEmployeeName(employee)]),
   );
   const managerOptions: RhfSelectOption[] = [
     { label: "Unassigned", value: "" },
-    ...users.map((user) => ({
-      label: formatPersonName(user),
-      value: user.id,
+    ...employees.map((employee) => ({
+      label: formatEmployeeName(employee),
+      value: employee.userId,
     })),
   ];
   const statusOptions = Array.from(
@@ -321,9 +321,9 @@ export function BranchesWorkspace() {
   const isSavingBranch = createBranchState.loading || updateBranchState.loading;
   const isWorkspaceLoading =
     isCenterLoading ||
-    isUsersLoading ||
+    isEmployeesLoading ||
     (Boolean(center?.id) && isBranchesLoading);
-  const loadError = centerError ?? usersError ?? branchesError;
+  const loadError = centerError ?? employeesError ?? branchesError;
 
   const openCreateDialog = () => {
     setFormMode("create");
@@ -493,7 +493,7 @@ export function BranchesWorkspace() {
                 fullWidth
                 sx={{
                   maxWidth: { xs: "100%", lg: 220 },
-                  backgroundImage: primaryGradient,
+                  backgroundColor: primaryGradient,
                 }}
               >
                 Add Branch
@@ -611,11 +611,11 @@ export function BranchesWorkspace() {
                 transition:
                   "background-color 140ms ease, transform 140ms ease, box-shadow 140ms ease",
                 "&:hover td": {
-                  bgcolor: alpha("#ecfdf5", 0.9),
+                  bgcolor: alpha("#eff6ff", 0.9),
                 },
                 "&:hover": {
                   transform: "translateY(-1px)",
-                  boxShadow: `inset 0 0 0 1px ${alpha("#10b981", 0.12)}`,
+                  boxShadow: `inset 0 0 0 1px ${alpha("#2563eb", 0.12)}`,
                 },
               },
             })}

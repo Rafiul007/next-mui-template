@@ -260,7 +260,7 @@ export function PipWorkspace() {
                 variant="contained"
                 startIcon={<AddRounded />}
                 onClick={openCreate}
-                sx={{ backgroundImage: primaryGradient, maxWidth: { xs: "100%", lg: 180 } }}
+                sx={{ backgroundColor: primaryGradient, maxWidth: { xs: "100%", lg: 180 } }}
                 fullWidth
               >
                 New PIP
@@ -318,7 +318,7 @@ export function PipWorkspace() {
             getRowId={(row) => row.id}
             initialState={{ pagination: { pageIndex: 0, pageSize: 10 } }}
             localization={{ noRecordsToDisplay: "No PIPs found for this employee" }}
-            muiTableBodyRowProps={{ sx: { bgcolor: "#ffffff", "&:hover td": { bgcolor: alpha("#ecfdf5", 0.9) } } }}
+            muiTableBodyRowProps={{ sx: { bgcolor: "#ffffff", "&:hover td": { bgcolor: alpha("#eff6ff", 0.9) } } }}
             muiTableBodyCellProps={{ sx: { bgcolor: "#ffffff", borderBottom: "1px solid", borderColor: alpha("#0f172a", 0.06), py: 2 } }}
             muiTableContainerProps={{ sx: { maxHeight: 560, bgcolor: "#ffffff" } }}
             muiTableHeadCellProps={{ sx: { bgcolor: "#ffffff", color: alpha("#0f172a", 0.72), fontSize: 13, fontWeight: 700, py: 1.75, borderBottom: "1px solid", borderColor: alpha("#0f172a", 0.08) } }}

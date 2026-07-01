@@ -231,7 +231,7 @@ function UploadMaterialDialog({
             variant="contained"
             disabled={isSubmitting}
             startIcon={<CloudUploadRounded />}
-            sx={{ backgroundImage: primaryGradient }}
+            sx={{ backgroundColor: primaryGradient }}
           >
             Upload
           </Button>
@@ -347,7 +347,7 @@ function CreateAssignmentDialog({
             variant="contained"
             disabled={isSubmitting}
             startIcon={<AddRounded />}
-            sx={{ backgroundImage: primaryGradient }}
+            sx={{ backgroundColor: primaryGradient }}
           >
             Create Assignment
           </Button>
@@ -410,7 +410,7 @@ function GiveFeedbackDialog({
           variant="contained"
           disabled={isSubmitting || !text.trim()}
           startIcon={<CommentRounded />}
-          sx={{ backgroundImage: primaryGradient }}
+          sx={{ backgroundColor: primaryGradient }}
         >
           Submit Feedback
         </Button>
@@ -435,10 +435,10 @@ function MaterialCard({
       ? alpha("#8b5cf6", 0.1)
       : kind === "both"
         ? alpha("#0ea5e9", 0.1)
-        : alpha("#10b981", 0.1);
+        : alpha("#2563eb", 0.1);
 
   const iconColor =
-    kind === "video" ? "#7c3aed" : kind === "both" ? "#0284c7" : "#059669";
+    kind === "video" ? "#7c3aed" : kind === "both" ? "#0284c7" : "#1d4ed8";
 
   return (
     <Paper
@@ -454,7 +454,7 @@ function MaterialCard({
         transition: "box-shadow 200ms, border-color 200ms",
         "&:hover": {
           boxShadow: `0 4px 20px ${alpha("#0f172a", 0.08)}`,
-          borderColor: alpha("#10b981", 0.3),
+          borderColor: alpha("#2563eb", 0.3),
         },
       }}
     >
@@ -599,7 +599,7 @@ function AssignmentPanel({
       ? "#ef4444"
       : dueStat === "soon"
         ? "#f59e0b"
-        : "#10b981";
+        : "#2563eb";
 
   return (
     <Paper
@@ -740,7 +740,7 @@ function AssignmentPanel({
               sx={{
                 width: `${pct}%`,
                 height: "100%",
-                backgroundImage: primaryGradient,
+                backgroundColor: primaryGradient,
                 borderRadius: 1,
                 transition: "width 500ms ease",
               }}
@@ -1123,7 +1123,7 @@ export function MaterialsWorkspace() {
                   setCreateError(null);
                   setIsCreateOpen(true);
                 }}
-                sx={{ backgroundImage: primaryGradient }}
+                sx={{ backgroundColor: primaryGradient }}
               >
                 New Assignment
               </Button>

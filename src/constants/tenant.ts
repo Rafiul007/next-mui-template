@@ -45,7 +45,7 @@ export const STATUS_META: Record<
   string,
   { label: string; color: string; bg: string }
 > = {
-  active: { label: "Active", color: "#10b981", bg: alpha("#10b981", 0.1) },
+  active: { label: "Active", color: "#2563eb", bg: alpha("#2563eb", 0.1) },
   trial: { label: "Trial", color: "#f59e0b", bg: alpha("#f59e0b", 0.1) },
   suspended: {
     label: "Suspended",

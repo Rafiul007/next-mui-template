@@ -390,13 +390,13 @@ export function CreateRoleDialog({
                       borderRadius: 1.5,
                       cursor: "pointer",
                       bgcolor: isActive
-                        ? alpha("#10b981", 0.1)
+                        ? alpha("#2563eb", 0.1)
                         : "transparent",
-                      color: isActive ? "#047857" : "text.primary",
+                      color: isActive ? "#1d4ed8" : "text.primary",
                       transition: "background-color 120ms ease",
                       "&:hover": {
                         bgcolor: isActive
-                          ? alpha("#10b981", 0.13)
+                          ? alpha("#2563eb", 0.13)
                           : alpha("#0f172a", 0.05),
                       },
                     }}
@@ -409,7 +409,7 @@ export function CreateRoleDialog({
                         display: "grid",
                         placeItems: "center",
                         flexShrink: 0,
-                        bgcolor: isActive ? "#10b981" : alpha("#0f172a", 0.07),
+                        bgcolor: isActive ? "#2563eb" : alpha("#0f172a", 0.07),
                         color: isActive ? "#ffffff" : "text.secondary",
                         transition: "background-color 120ms ease",
                       }}
@@ -434,7 +434,7 @@ export function CreateRoleDialog({
                         sx={{
                           fontSize: 11,
                           color: isActive
-                            ? alpha("#047857", 0.75)
+                            ? alpha("#1d4ed8", 0.75)
                             : "text.secondary",
                         }}
                       >
@@ -537,11 +537,11 @@ export function CreateRoleDialog({
                         sx={{
                           fontSize: 12,
                           py: 0.35,
-                          borderColor: alpha("#10b981", 0.4),
-                          color: "#047857",
+                          borderColor: alpha("#2563eb", 0.4),
+                          color: "#1d4ed8",
                           "&:hover": {
-                            borderColor: "#10b981",
-                            bgcolor: alpha("#10b981", 0.06),
+                            borderColor: "#2563eb",
+                            bgcolor: alpha("#2563eb", 0.06),
                           },
                         }}
                       >
@@ -572,13 +572,13 @@ export function CreateRoleDialog({
                             gap: 2,
                             border: "1px solid",
                             borderColor: isAny
-                              ? alpha("#10b981", 0.28)
+                              ? alpha("#2563eb", 0.28)
                               : alpha("#0f172a", 0.09),
                             borderRadius: 2,
                             px: 2,
                             py: 1.5,
                             bgcolor: isAny
-                              ? alpha("#10b981", 0.04)
+                              ? alpha("#2563eb", 0.04)
                               : "#ffffff",
                             transition:
                               "border-color 120ms ease, background-color 120ms ease",
@@ -643,16 +643,16 @@ export function CreateRoleDialog({
                                 minWidth: 76,
                                 ...(isWrite
                                   ? {
-                                      bgcolor: "#10b981",
-                                      "&:hover": { bgcolor: "#059669" },
+                                      bgcolor: "#2563eb",
+                                      "&:hover": { bgcolor: "#1d4ed8" },
                                     }
                                   : {
                                       borderColor: alpha("#0f172a", 0.2),
                                       color: "text.secondary",
                                       "&:hover": {
-                                        borderColor: "#10b981",
-                                        color: "#047857",
-                                        bgcolor: alpha("#10b981", 0.05),
+                                        borderColor: "#2563eb",
+                                        color: "#1d4ed8",
+                                        bgcolor: alpha("#2563eb", 0.05),
                                       },
                                     }),
                               }}
@@ -721,7 +721,7 @@ export function CreateRoleDialog({
                   width: 7,
                   height: 7,
                   borderRadius: "50%",
-                  bgcolor: "#10b981",
+                  bgcolor: "#2563eb",
                 }}
               />
               <Typography sx={{ fontSize: 12, color: "text.secondary" }}>
@@ -747,12 +747,12 @@ export function CreateRoleDialog({
             startIcon={<CheckCircleRounded />}
             sx={{
               fontSize: 14,
-              bgcolor: totalCount > 0 ? "#10b981" : undefined,
+              bgcolor: totalCount > 0 ? "#2563eb" : undefined,
               "&:hover": {
-                bgcolor: totalCount > 0 ? "#059669" : undefined,
+                bgcolor: totalCount > 0 ? "#1d4ed8" : undefined,
               },
               "&.Mui-disabled": {
-                bgcolor: alpha("#10b981", 0.3),
+                bgcolor: alpha("#2563eb", 0.3),
                 color: "#ffffff",
               },
             }}

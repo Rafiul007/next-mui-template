@@ -205,7 +205,7 @@ export function HolidaysWorkspace() {
                 variant="contained"
                 startIcon={<AddRounded />}
                 onClick={openDialog}
-                sx={{ backgroundImage: primaryGradient, maxWidth: { xs: "100%", lg: 200 } }}
+                sx={{ backgroundColor: primaryGradient, maxWidth: { xs: "100%", lg: 200 } }}
                 fullWidth
               >
                 Add holiday
@@ -307,9 +307,9 @@ export function HolidaysWorkspace() {
                     sx={{
                       px: 2.5,
                       py: 1.5,
-                      bgcolor: alpha("#10b981", 0.06),
+                      bgcolor: alpha("#2563eb", 0.06),
                       borderBottom: "1px solid",
-                      borderColor: alpha("#10b981", 0.12),
+                      borderColor: alpha("#2563eb", 0.12),
                     }}
                   >
                     <Stack direction="row" justifyContent="space-between" alignItems="center">
@@ -344,9 +344,9 @@ export function HolidaysWorkspace() {
                             display: "grid",
                             placeItems: "center",
                             flexShrink: 0,
-                            bgcolor: alpha("#10b981", 0.08),
+                            bgcolor: alpha("#2563eb", 0.08),
                             border: "1px solid",
-                            borderColor: alpha("#10b981", 0.2),
+                            borderColor: alpha("#2563eb", 0.2),
                           }}
                         >
                           <Typography variant="h6" lineHeight={1} color="success.dark">

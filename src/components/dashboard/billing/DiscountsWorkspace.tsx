@@ -79,8 +79,8 @@ const buildColumns = (): MRT_ColumnDef<DiscountRecord>[] => [
             borderRadius: 1.5,
             display: "grid",
             placeItems: "center",
-            bgcolor: alpha("#10b981", 0.1),
-            color: "#047857",
+            bgcolor: alpha("#2563eb", 0.1),
+            color: "#1d4ed8",
             flexShrink: 0,
           }}
         >
@@ -258,7 +258,7 @@ export function DiscountsWorkspace() {
                 variant="contained"
                 startIcon={<AddRounded />}
                 onClick={openDialog}
-                sx={{ backgroundImage: primaryGradient, maxWidth: { xs: "100%", lg: 200 } }}
+                sx={{ backgroundColor: primaryGradient, maxWidth: { xs: "100%", lg: 200 } }}
                 fullWidth
               >
                 New discount
@@ -292,7 +292,7 @@ export function DiscountsWorkspace() {
           initialState={{ pagination: { pageIndex: 0, pageSize: 20 } }}
           localization={{ noRecordsToDisplay: "No discounts yet. Create your first discount to get started." }}
           muiSearchTextFieldProps={{ placeholder: "Search discounts", size: "small", sx: { minWidth: { xs: "100%", md: 260 } } }}
-          muiTableBodyRowProps={{ sx: { bgcolor: "#ffffff", transition: "background-color 140ms ease", "&:hover td": { bgcolor: alpha("#ecfdf5", 0.9) } } }}
+          muiTableBodyRowProps={{ sx: { bgcolor: "#ffffff", transition: "background-color 140ms ease", "&:hover td": { bgcolor: alpha("#eff6ff", 0.9) } } }}
           muiTableBodyCellProps={{ sx: { bgcolor: "#ffffff", borderBottom: "1px solid", borderColor: alpha("#0f172a", 0.06), py: 2.25 } }}
           muiTableContainerProps={{ sx: { maxHeight: 560, bgcolor: "#ffffff" } }}
           muiTableHeadCellProps={{ sx: { bgcolor: "#ffffff", color: alpha("#0f172a", 0.72), fontSize: 13, fontWeight: 700, py: 1.75, borderBottom: "1px solid", borderColor: alpha("#0f172a", 0.08) } }}

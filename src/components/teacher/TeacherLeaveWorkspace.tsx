@@ -263,7 +263,7 @@ export function TeacherLeaveWorkspace() {
               startIcon={<AddRounded />}
               onClick={() => setOpen(true)}
               disabled={!employeeId}
-              sx={{ alignSelf: "flex-start", backgroundImage: primaryGradient }}
+              sx={{ alignSelf: "flex-start", backgroundColor: primaryGradient }}
             >
               Apply for leave
             </Button>

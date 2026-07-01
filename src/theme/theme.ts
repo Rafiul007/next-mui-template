@@ -1,7 +1,7 @@
 import { alpha, createTheme } from "@mui/material/styles";
 
-export const primaryGradient =
-  "linear-gradient(135deg, #22c55e 0%, #10b981 48%, #14b8a6 100%)";
+// Solid brand blue. Name kept for backwards compatibility with existing usages.
+export const primaryGradient = "#2563eb";
 
 export const appTheme = createTheme({
   shape: {
@@ -10,16 +10,16 @@ export const appTheme = createTheme({
   palette: {
     mode: "light",
     primary: {
-      main: "#10b981",
-      light: "#34d399",
-      dark: "#047857",
+      main: "#2563eb",
+      light: "#60a5fa",
+      dark: "#1d4ed8",
       contrastText: "#ffffff",
     },
     secondary: {
       main: "#0f172a",
     },
     background: {
-      default: "#eef4f1",
+      default: "#eef2f9",
       paper: "#ffffff",
     },
     text: {
@@ -28,7 +28,7 @@ export const appTheme = createTheme({
     },
     divider: alpha("#0f172a", 0.08),
     success: {
-      main: "#10b981",
+      main: "#2563eb",
     },
     warning: {
       main: "#f59e0b",
@@ -41,6 +41,7 @@ export const appTheme = createTheme({
     },
   },
   typography: {
+    fontSize: 13,
     fontFamily:
       '"Inter", "Manrope", "Segoe UI", "Helvetica Neue", Arial, sans-serif',
     h3: {
@@ -74,8 +75,7 @@ export const appTheme = createTheme({
     MuiCssBaseline: {
       styleOverrides: {
         body: {
-          background:
-            "radial-gradient(circle at top left, rgba(16,185,129,0.08), transparent 24%), #eef4f1",
+          background: "#eef2f9",
         },
       },
     },
@@ -106,11 +106,13 @@ export const appTheme = createTheme({
           paddingInline: 16,
         },
         containedPrimary: {
-          backgroundImage: primaryGradient,
-          boxShadow: "0 12px 24px rgba(16, 185, 129, 0.24)",
+          backgroundImage: "none",
+          backgroundColor: primaryGradient,
+          boxShadow: "0 12px 24px rgba(37, 99, 235, 0.24)",
           "&:hover": {
-            backgroundImage: primaryGradient,
-            boxShadow: "0 14px 28px rgba(16, 185, 129, 0.3)",
+            backgroundImage: "none",
+            backgroundColor: "#1d4ed8",
+            boxShadow: "0 14px 28px rgba(37, 99, 235, 0.3)",
           },
         },
       },

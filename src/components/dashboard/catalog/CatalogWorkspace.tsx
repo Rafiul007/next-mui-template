@@ -112,18 +112,18 @@ function SummaryCard({
 }) {
   const borderColor =
     tone === "success"
-      ? alpha("#10b981", 0.22)
+      ? alpha("#2563eb", 0.22)
       : tone === "muted"
         ? alpha("#64748b", 0.16)
         : alpha("#0f172a", 0.08);
 
   const iconBg =
     tone === "success"
-      ? alpha("#10b981", 0.12)
+      ? alpha("#2563eb", 0.12)
       : alpha("#0f172a", 0.06);
 
   const iconColor =
-    tone === "success" ? "#047857" : "#0f172a";
+    tone === "success" ? "#1d4ed8" : "#0f172a";
 
   return (
     <Paper
@@ -182,10 +182,10 @@ const tableProps = {
       bgcolor: "#ffffff",
       transition:
         "background-color 140ms ease, transform 140ms ease, box-shadow 140ms ease",
-      "&:hover td": { bgcolor: alpha("#ecfdf5", 0.9) },
+      "&:hover td": { bgcolor: alpha("#eff6ff", 0.9) },
       "&:hover": {
         transform: "translateY(-1px)",
-        boxShadow: `inset 0 0 0 1px ${alpha("#10b981", 0.12)}`,
+        boxShadow: `inset 0 0 0 1px ${alpha("#2563eb", 0.12)}`,
       },
     },
   },
@@ -657,7 +657,7 @@ export function CatalogWorkspace() {
                 fullWidth
                 sx={{
                   maxWidth: { xs: "100%", lg: 220 },
-                  backgroundImage: primaryGradient,
+                  backgroundColor: primaryGradient,
                 }}
               >
                 {activeTab === 0 ? "Create Subject" : "Create Program"}

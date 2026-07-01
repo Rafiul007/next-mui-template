@@ -707,7 +707,7 @@ export function ExamsWorkspace() {
                 fullWidth
                 sx={{
                   maxWidth: { xs: "100%", lg: 220 },
-                  backgroundImage: primaryGradient,
+                  backgroundColor: primaryGradient,
                 }}
               >
                 New Exam

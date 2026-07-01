@@ -341,7 +341,7 @@ export function RecruitmentWorkspace() {
                 startIcon={<AddRounded />}
                 onClick={openVacancyDialog}
                 fullWidth
-                sx={{ maxWidth: { xs: "100%", lg: 220 }, backgroundImage: primaryGradient }}
+                sx={{ maxWidth: { xs: "100%", lg: 220 }, backgroundColor: primaryGradient }}
               >
                 Post vacancy
               </Button>

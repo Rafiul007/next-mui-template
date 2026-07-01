@@ -395,8 +395,8 @@ function generateReceiptHtml(
     *{margin:0;padding:0;box-sizing:border-box}
     body{font-family:'Segoe UI',Arial,sans-serif;background:#f9fafb;color:#111827;padding:40px 20px}
     .receipt{max-width:460px;margin:0 auto;background:#fff;border:1px solid #e5e7eb;border-radius:12px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,.08)}
-    .head{background:#f0fdf4;padding:32px 32px 24px;text-align:center;border-bottom:2px dashed #d1fae5}
-    .check{width:60px;height:60px;background:#16a34a;border-radius:50%;margin:0 auto 14px;display:flex;align-items:center;justify-content:center;font-size:28px;color:#fff;line-height:1}
+    .head{background:#eff6ff;padding:32px 32px 24px;text-align:center;border-bottom:2px dashed #dbeafe}
+    .check{width:60px;height:60px;background:#2563eb;border-radius:50%;margin:0 auto 14px;display:flex;align-items:center;justify-content:center;font-size:28px;color:#fff;line-height:1}
     .org{font-size:20px;font-weight:800;color:#111}
     .subtitle{font-size:11px;color:#6b7280;text-transform:uppercase;letter-spacing:1px;margin-top:4px}
     .body{padding:28px 32px}
@@ -407,9 +407,9 @@ function generateReceiptHtml(
     .row{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:7px;gap:8px}
     .label{font-size:13px;color:#6b7280;flex-shrink:0}
     .value{font-size:13px;font-weight:600;color:#111;text-align:right}
-    .big{font-size:26px;font-weight:900;color:#16a34a}
+    .big{font-size:26px;font-weight:900;color:#2563eb}
     .badge{display:inline-block;padding:2px 12px;border-radius:100px;font-size:11px;font-weight:700}
-    .s-paid{background:#dcfce7;color:#166534}
+    .s-paid{background:#dbeafe;color:#1e40af}
     .s-partial{background:#fef3c7;color:#92400e}
     .s-pending{background:#f3f4f6;color:#374151}
     .s-overdue{background:#fee2e2;color:#991b1b}
@@ -436,7 +436,7 @@ function generateReceiptHtml(
       <hr class="dash">
       <div class="section">
         <div class="sec-title">Payment</div>
-        ${row("Amount paid", formatAmount(payment.amount), "font-size:26px;font-weight:900;color:#16a34a")}
+        ${row("Amount paid", formatAmount(payment.amount), "font-size:26px;font-weight:900;color:#2563eb")}
         ${row("Method", methodLabel)}
         ${row("Date", formatDate(payment.paidAt))}
         ${payment.reference ? row("Reference", `<span style="font-family:monospace">${payment.reference}</span>`) : ""}
@@ -446,8 +446,8 @@ function generateReceiptHtml(
       <div class="section">
         <div class="sec-title">Invoice summary</div>
         ${row("Invoice total", formatAmount(invoice.netTotal))}
-        ${row("Total paid", formatAmount(newPaidTotal), "color:#16a34a")}
-        ${row("Balance remaining", formatAmount(newBalance), `color:${newBalance === 0 ? "#16a34a" : "#dc2626"}`)}
+        ${row("Total paid", formatAmount(newPaidTotal), "color:#2563eb")}
+        ${row("Balance remaining", formatAmount(newBalance), `color:${newBalance === 0 ? "#2563eb" : "#dc2626"}`)}
         <div class="row"><span class="label">Status</span><span class="badge s-${newStatus}">${statusLabel}</span></div>
       </div>
     </div>
@@ -566,8 +566,8 @@ function PaymentPage({
       value: "cash",
       label: "Cash",
       icon: <LocalAtmRounded fontSize="inherit" />,
-      color: "#16a34a",
-      bgColor: "#f0fdf4",
+      color: "#2563eb",
+      bgColor: "#eff6ff",
     },
     {
       value: "bkash",
@@ -707,7 +707,7 @@ function PaymentPage({
               alignItems: "center",
               justifyContent: { xs: "flex-start", md: "center" },
               p: { xs: 3, md: 5 },
-              bgcolor: alpha("#f0fdf4", 0.4),
+              bgcolor: alpha("#eff6ff", 0.4),
             }}
           >
             {/* Success icon */}
@@ -716,11 +716,11 @@ function PaymentPage({
                 width: 72,
                 height: 72,
                 borderRadius: "50%",
-                bgcolor: "#16a34a",
+                bgcolor: "#2563eb",
                 display: "grid",
                 placeItems: "center",
                 mb: 2,
-                boxShadow: `0 0 0 12px ${alpha("#16a34a", 0.12)}`,
+                boxShadow: `0 0 0 12px ${alpha("#2563eb", 0.12)}`,
               }}
             >
               <CheckCircleRounded sx={{ fontSize: 40, color: "#fff" }} />
@@ -751,9 +751,9 @@ function PaymentPage({
                 sx={{
                   px: 3.5,
                   py: 3,
-                  bgcolor: alpha("#f0fdf4", 0.8),
+                  bgcolor: alpha("#eff6ff", 0.8),
                   borderBottom: "2px dashed",
-                  borderColor: alpha("#10b981", 0.25),
+                  borderColor: alpha("#2563eb", 0.25),
                   textAlign: "center",
                 }}
               >
@@ -1172,9 +1172,9 @@ function PaymentPage({
                           sx={{
                             p: 1.5,
                             border: "1px solid",
-                            borderColor: alpha("#10b981", 0.2),
+                            borderColor: alpha("#2563eb", 0.2),
                             borderRadius: 1.5,
-                            bgcolor: alpha("#f0fdf4", 0.5),
+                            bgcolor: alpha("#eff6ff", 0.5),
                           }}
                         >
                           <Stack
@@ -1417,13 +1417,13 @@ function PaymentPage({
                   p: 2.5,
                   border: "2px solid",
                   borderColor: willClear
-                    ? alpha("#10b981", 0.4)
+                    ? alpha("#2563eb", 0.4)
                     : amountNum > 0
                       ? alpha("#3b82f6", 0.3)
                       : alpha("#0f172a", 0.08),
                   borderRadius: 2,
                   bgcolor: willClear
-                    ? alpha("#f0fdf4", 0.8)
+                    ? alpha("#eff6ff", 0.8)
                     : amountNum > 0
                       ? alpha("#eff6ff", 0.8)
                       : alpha("#f8fafc", 0.8),
@@ -1521,7 +1521,7 @@ function PaymentPage({
                   variant="contained"
                   fullWidth
                   size="large"
-                  sx={{ backgroundImage: primaryGradient, py: 1.5 }}
+                  sx={{ backgroundColor: primaryGradient, py: 1.5 }}
                 >
                   Record Payment
                   {amountNum > 0 ? ` · ${formatAmount(amountNum)}` : ""}
@@ -1671,7 +1671,7 @@ function SummaryCard({
 }) {
   const borderColor =
     tone === "success"
-      ? alpha("#10b981", 0.22)
+      ? alpha("#2563eb", 0.22)
       : tone === "warning"
         ? alpha("#f59e0b", 0.22)
         : tone === "error"
@@ -1682,7 +1682,7 @@ function SummaryCard({
 
   const iconBg =
     tone === "success"
-      ? alpha("#10b981", 0.12)
+      ? alpha("#2563eb", 0.12)
       : tone === "warning"
         ? alpha("#f59e0b", 0.12)
         : tone === "error"
@@ -1691,7 +1691,7 @@ function SummaryCard({
 
   const iconColor =
     tone === "success"
-      ? "#047857"
+      ? "#1d4ed8"
       : tone === "warning"
         ? "#b45309"
         : tone === "error"
@@ -2102,8 +2102,8 @@ export function FeesWorkspace() {
                     disabled={row.original.status === "paid"}
                     onClick={() => setPaymentTarget(row.original)}
                     sx={{
-                      bgcolor: alpha("#10b981", 0.08),
-                      color: "#047857",
+                      bgcolor: alpha("#2563eb", 0.08),
+                      color: "#1d4ed8",
                       "&.Mui-disabled": { bgcolor: "transparent", opacity: 0.38 },
                     }}
                   >

@@ -206,8 +206,8 @@ export function DashboardWorkspace() {
                     p: 1.5,
                     borderRadius: 1.5,
                     border: "1px solid",
-                    borderColor: alpha("#10b981", 0.2),
-                    bgcolor: alpha("#10b981", 0.04),
+                    borderColor: alpha("#2563eb", 0.2),
+                    bgcolor: alpha("#2563eb", 0.04),
                   }}
                 >
                   <Stack direction="row" justifyContent="space-between" alignItems="center">

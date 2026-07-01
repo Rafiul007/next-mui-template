@@ -299,7 +299,7 @@ export function SkillsWorkspace() {
                 variant="contained"
                 startIcon={<AddRounded />}
                 onClick={() => { setSkillError(null); setSkillKey((k) => k + 1); setIsSkillOpen(true); }}
-                sx={{ backgroundImage: primaryGradient }}
+                sx={{ backgroundColor: primaryGradient }}
               >
                 Add skill
               </Button>
@@ -356,7 +356,7 @@ export function SkillsWorkspace() {
                   getRowId={(row) => row.id}
                   initialState={{ pagination: { pageIndex: 0, pageSize: 15 } }}
                   localization={{ noRecordsToDisplay: "No skills recorded for this employee" }}
-                  muiTableBodyRowProps={{ sx: { bgcolor: "#ffffff", "&:hover td": { bgcolor: alpha("#ecfdf5", 0.9) } } }}
+                  muiTableBodyRowProps={{ sx: { bgcolor: "#ffffff", "&:hover td": { bgcolor: alpha("#eff6ff", 0.9) } } }}
                   muiTableBodyCellProps={{ sx: { bgcolor: "#ffffff", borderBottom: "1px solid", borderColor: alpha("#0f172a", 0.06), py: 2 } }}
                   muiTableHeadCellProps={{ sx: { bgcolor: "#ffffff", color: alpha("#0f172a", 0.72), fontSize: 13, fontWeight: 700, py: 1.75, borderBottom: "1px solid", borderColor: alpha("#0f172a", 0.08) } }}
                   muiTablePaperProps={{ elevation: 0, sx: { border: "none", borderRadius: 0 } }}
@@ -382,7 +382,7 @@ export function SkillsWorkspace() {
                 getRowId={(row) => row.id}
                 initialState={{ pagination: { pageIndex: 0, pageSize: 15 } }}
                 localization={{ noRecordsToDisplay: "No certifications tracked" }}
-                muiTableBodyRowProps={{ sx: { bgcolor: "#ffffff", "&:hover td": { bgcolor: alpha("#ecfdf5", 0.9) } } }}
+                muiTableBodyRowProps={{ sx: { bgcolor: "#ffffff", "&:hover td": { bgcolor: alpha("#eff6ff", 0.9) } } }}
                 muiTableBodyCellProps={{ sx: { bgcolor: "#ffffff", borderBottom: "1px solid", borderColor: alpha("#0f172a", 0.06), py: 2 } }}
                 muiTableHeadCellProps={{ sx: { bgcolor: "#ffffff", color: alpha("#0f172a", 0.72), fontSize: 13, fontWeight: 700, py: 1.75, borderBottom: "1px solid", borderColor: alpha("#0f172a", 0.08) } }}
                 muiTablePaperProps={{ elevation: 0, sx: { border: "none", borderRadius: 0 } }}

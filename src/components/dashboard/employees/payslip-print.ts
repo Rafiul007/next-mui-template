@@ -58,9 +58,9 @@ export function printPayslip(params: {
     .col h3{font-size:12px;text-transform:uppercase;letter-spacing:0.6px;color:#64748b;padding-bottom:8px;border-bottom:1px solid #e2e8f0;margin-bottom:8px}
     .row{display:flex;justify-content:space-between;padding:6px 0;font-size:14px;color:#334155}
     .row.sub{font-weight:700;border-top:1px solid #e2e8f0;margin-top:6px;padding-top:10px}
-    .net{margin-top:8px;padding:16px 20px;background:#ecfdf5;border:1px solid #a7f3d0;border-radius:10px;display:flex;justify-content:space-between;align-items:center}
-    .net .lbl{font-size:13px;text-transform:uppercase;letter-spacing:0.6px;color:#047857;font-weight:700}
-    .net .amt{font-size:24px;font-weight:800;color:#047857}
+    .net{margin-top:8px;padding:16px 20px;background:#eff6ff;border:1px solid #bfdbfe;border-radius:10px;display:flex;justify-content:space-between;align-items:center}
+    .net .lbl{font-size:13px;text-transform:uppercase;letter-spacing:0.6px;color:#1d4ed8;font-weight:700}
+    .net .amt{font-size:24px;font-weight:800;color:#1d4ed8}
     .footer{margin-top:36px;padding-top:14px;border-top:1px solid #e2e8f0;text-align:center;font-size:11px;color:#94a3b8;line-height:1.6}
     @media print{body{padding:24px}@page{margin:16mm}}
   </style>

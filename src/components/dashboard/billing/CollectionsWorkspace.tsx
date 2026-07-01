@@ -279,7 +279,7 @@ export function CollectionsWorkspace() {
               startIcon={<PlaylistAddCheckRounded />}
               disabled={!ready}
               onClick={() => setConfirmGenerate(true)}
-              sx={{ backgroundImage: primaryGradient }}
+              sx={{ backgroundColor: primaryGradient }}
             >
               Generate invoices
             </Button>
@@ -495,7 +495,7 @@ function CountPill({
 }) {
   const color =
     tone === "success"
-      ? "#047857"
+      ? "#1d4ed8"
       : tone === "warning"
         ? "#b45309"
         : tone === "error"

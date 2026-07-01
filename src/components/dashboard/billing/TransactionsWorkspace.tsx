@@ -105,8 +105,8 @@ function PaymentRows({
               borderRadius: 1.5,
               display: "grid",
               placeItems: "center",
-              bgcolor: alpha("#10b981", 0.1),
-              color: "#047857",
+              bgcolor: alpha("#2563eb", 0.1),
+              color: "#1d4ed8",
             }}
           >
             <PaidRounded sx={{ fontSize: 18 }} />

@@ -126,8 +126,7 @@ export default function LoginPage() {
         sx={{
           position: "absolute",
           inset: 0,
-          background:
-            "radial-gradient(circle at top left, rgba(16,185,129,0.18), transparent 28%), radial-gradient(circle at bottom right, rgba(15,23,42,0.16), transparent 22%)",
+          background: "rgba(37, 99, 235, 0.06)",
           pointerEvents: "none",
         }}
       />

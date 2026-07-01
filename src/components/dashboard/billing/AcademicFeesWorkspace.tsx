@@ -127,8 +127,8 @@ function FeeTypesTab() {
               borderRadius: 1.5,
               display: "grid",
               placeItems: "center",
-              bgcolor: alpha("#10b981", 0.1),
-              color: "#047857",
+              bgcolor: alpha("#2563eb", 0.1),
+              color: "#1d4ed8",
               flexShrink: 0,
             }}
           >
@@ -211,7 +211,7 @@ function FeeTypesTab() {
           variant="contained"
           startIcon={<AddRounded />}
           onClick={() => setOpen(true)}
-          sx={{ backgroundImage: primaryGradient }}
+          sx={{ backgroundColor: primaryGradient }}
         >
           New fee type
         </Button>
@@ -486,7 +486,7 @@ function FeePlansTab() {
           variant="contained"
           startIcon={<AddRounded />}
           onClick={() => setOpen(true)}
-          sx={{ backgroundImage: primaryGradient }}
+          sx={{ backgroundColor: primaryGradient }}
         >
           New fee plan
         </Button>
@@ -769,7 +769,7 @@ function LateFinePolicyTab() {
               startIcon={
                 saving ? <CircularProgress size={14} color="inherit" /> : undefined
               }
-              sx={{ backgroundImage: primaryGradient }}
+              sx={{ backgroundColor: primaryGradient }}
             >
               {policy ? "Update policy" : "Save policy"}
             </Button>

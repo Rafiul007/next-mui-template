@@ -213,7 +213,7 @@ function PlanCard({
     <Card
       sx={{
         border: "1px solid",
-        borderColor: plan.active ? alpha("#10b981", 0.2) : "divider",
+        borderColor: plan.active ? alpha("#2563eb", 0.2) : "divider",
         transition: "border-color 0.2s",
       }}
     >

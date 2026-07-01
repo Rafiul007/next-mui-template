@@ -167,7 +167,7 @@ function HeroVisual() {
         <Chip
           label="Live"
           size="small"
-          sx={{ bgcolor: "#E4F6EC", color: "#0F9D58", fontWeight: 700 }}
+          sx={{ bgcolor: "#eff6ff", color: "#2563eb", fontWeight: 700 }}
         />
       </Stack>
 
@@ -189,8 +189,8 @@ function HeroVisual() {
           icon={<PaymentsRounded fontSize="small" />}
           value="৳8,40,000"
           label="Collected this month"
-          tint="#E7F7F0"
-          color="#0F9D58"
+          tint="#eff6ff"
+          color="#2563eb"
         />
         <HeroMetric
           icon={<EventAvailableRounded fontSize="small" />}
@@ -258,7 +258,7 @@ function HeroVisual() {
                   </Typography>
                 </Box>
               </Stack>
-              <Typography sx={{ fontWeight: 700, color: "#0F9D58", fontSize: 14 }}>
+              <Typography sx={{ fontWeight: 700, color: "#2563eb", fontSize: 14 }}>
                 {row.amount}
               </Typography>
             </Stack>
@@ -335,7 +335,7 @@ export function HeroSection() {
               {["14-day free trial", "No card required", "Setup in a day"].map(
                 (item) => (
                   <Stack key={item} direction="row" spacing={0.75} alignItems="center">
-                    <CheckCircleRounded sx={{ fontSize: 18, color: "#0F9D58" }} />
+                    <CheckCircleRounded sx={{ fontSize: 18, color: "#2563eb" }} />
                     <Typography sx={{ fontSize: 14, color: BRAND.body }}>
                       {item}
                     </Typography>

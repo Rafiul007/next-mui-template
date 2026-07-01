@@ -23,7 +23,7 @@ export function DashboardStatePage({
     mode === "construction"
       ? "rgba(37, 99, 235, 0.12)"
       : "rgba(15, 118, 110, 0.12)";
-  const accentColor = mode === "construction" ? "#2563eb" : "#0f766e";
+  const accentColor = mode === "construction" ? "#2563eb" : "#1d4ed8";
 
   return (
     <Paper

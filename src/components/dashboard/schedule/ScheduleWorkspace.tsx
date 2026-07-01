@@ -83,7 +83,7 @@ const DAY_ORDER = [
 
 const SUBJECT_COLORS = [
   { bg: "#eff6ff", fg: "#1d4ed8", border: "#bfdbfe" },
-  { bg: "#f0fdf4", fg: "#15803d", border: "#bbf7d0" },
+  { bg: "#eff6ff", fg: "#1d4ed8", border: "#bfdbfe" },
   { bg: "#fefce8", fg: "#a16207", border: "#fef08a" },
   { bg: "#fdf4ff", fg: "#7e22ce", border: "#e9d5ff" },
   { bg: "#fff1f2", fg: "#be123c", border: "#fecdd3" },
@@ -827,7 +827,7 @@ export function ScheduleWorkspace() {
       sx: {
         bgcolor: "#ffffff",
         transition: "background-color 140ms ease",
-        "&:hover td": { bgcolor: alpha("#ecfdf5", 0.9) },
+        "&:hover td": { bgcolor: alpha("#eff6ff", 0.9) },
       },
     },
     muiTableBodyCellProps: {
@@ -927,7 +927,7 @@ export function ScheduleWorkspace() {
                 startIcon={<AddRounded />}
                 disabled={noBatchSelected}
                 onClick={handleAddButtonClick}
-                sx={{ backgroundImage: primaryGradient, minWidth: 200 }}
+                sx={{ backgroundColor: primaryGradient, minWidth: 200 }}
               >
                 {addButtonLabel}
               </Button>
@@ -1037,7 +1037,7 @@ export function ScheduleWorkspace() {
                         variant="contained"
                         startIcon={<AddRounded />}
                         onClick={openSubjectForm}
-                        sx={{ backgroundImage: primaryGradient }}
+                        sx={{ backgroundColor: primaryGradient }}
                       >
                         Add first subject
                       </Button>

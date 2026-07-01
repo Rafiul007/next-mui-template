@@ -143,8 +143,8 @@ export function MyScheduleWorkspace() {
                         p: 1.5,
                         borderRadius: 1.5,
                         border: "1px solid",
-                        borderColor: alpha("#10b981", 0.2),
-                        bgcolor: alpha("#ecfdf5", 0.4),
+                        borderColor: alpha("#2563eb", 0.2),
+                        bgcolor: alpha("#eff6ff", 0.4),
                       }}
                     >
                       <Typography variant="body2" fontWeight={700}>

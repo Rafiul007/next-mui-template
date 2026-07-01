@@ -105,15 +105,15 @@ type ApiBatch = GetAllBatchesQuery["getAllBatches"][number];
 // ── Constants ────────────────────────────────────────────────────────────────
 
 const AVATAR_COLORS = [
-  "#10b981", "#3b82f6", "#8b5cf6", "#f59e0b",
+  "#2563eb", "#3b82f6", "#8b5cf6", "#f59e0b",
   "#ef4444", "#06b6d4", "#ec4899", "#f97316",
 ];
 
 const CLASS_CHIP_COLORS: Record<string, { bg: string; text: string }> = {
-  SSC: { bg: alpha("#06b6d4", 0.1), text: "#0e7490" },
+  SSC: { bg: alpha("#06b6d4", 0.1), text: "#1d4ed8" },
   HSC: { bg: alpha("#3b82f6", 0.1), text: "#1d4ed8" },
   JSC: { bg: alpha("#f59e0b", 0.1), text: "#b45309" },
-  PSC: { bg: alpha("#10b981", 0.1), text: "#047857" },
+  PSC: { bg: alpha("#2563eb", 0.1), text: "#1d4ed8" },
 };
 
 // ── Utilities ────────────────────────────────────────────────────────────────
@@ -583,7 +583,7 @@ export function AdmissionsWorkspace() {
             variant="contained"
             startIcon={<PersonAddRounded />}
             onClick={openCreateDialog}
-            sx={{ backgroundImage: primaryGradient, flexShrink: 0 }}
+            sx={{ backgroundColor: primaryGradient, flexShrink: 0 }}
           >
             New Admission
           </Button>
@@ -612,8 +612,8 @@ export function AdmissionsWorkspace() {
             subtitle="enrolled & attending"
             value={active}
             icon={<CheckCircleRounded />}
-            iconColor="#047857"
-            iconBg={alpha("#10b981", 0.1)}
+            iconColor="#1d4ed8"
+            iconBg={alpha("#2563eb", 0.1)}
           />
           <StatCard
             label="Graduated"
@@ -783,7 +783,7 @@ export function AdmissionsWorkspace() {
                     s.status === "suspended";
                   const statusDotColor =
                     s.status === "active"
-                      ? "#10b981"
+                      ? "#2563eb"
                       : s.status === "graduated"
                         ? "#3b82f6"
                         : "#94a3b8";
@@ -793,7 +793,7 @@ export function AdmissionsWorkspace() {
                       key={s.id}
                       sx={{
                         opacity: isClosed ? 0.72 : 1,
-                        "&:hover td": { bgcolor: alpha("#ecfdf5", 0.6) },
+                        "&:hover td": { bgcolor: alpha("#eff6ff", 0.6) },
                         transition: "background 100ms ease",
                       }}
                     >

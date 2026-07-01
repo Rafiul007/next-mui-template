@@ -287,7 +287,7 @@ export function LeavePolicyWorkspace() {
                 startIcon={<AddRounded />}
                 onClick={openDialog}
                 fullWidth
-                sx={{ maxWidth: { xs: "100%", lg: 220 }, backgroundImage: primaryGradient }}
+                sx={{ maxWidth: { xs: "100%", lg: 220 }, backgroundColor: primaryGradient }}
               >
                 Create policy
               </Button>

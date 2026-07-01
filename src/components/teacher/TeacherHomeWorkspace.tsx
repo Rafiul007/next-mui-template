@@ -98,8 +98,8 @@ function BatchTodayRow({ batch }: { batch: TeacherBatch }) {
               borderRadius: 2,
               display: "grid",
               placeItems: "center",
-              bgcolor: alpha("#10b981", 0.12),
-              color: "#047857",
+              bgcolor: alpha("#2563eb", 0.12),
+              color: "#1d4ed8",
               flexShrink: 0,
             }}
           >

@@ -80,7 +80,7 @@ export const dayLabel = (dow: string | number | null | undefined): string => {
 export type AttendanceStatus = "PRESENT" | "ABSENT" | "LATE";
 
 export const ATTENDANCE_COLORS: Record<AttendanceStatus, string> = {
-  PRESENT: "#10b981",
+  PRESENT: "#2563eb",
   ABSENT: "#ef4444",
   LATE: "#f59e0b",
 };

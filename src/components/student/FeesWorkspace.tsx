@@ -62,7 +62,7 @@ function InvoiceRow({ invoice }: { invoice: MyInvoice }) {
         borderColor: isOverdue
           ? alpha("#ef4444", 0.3)
           : isPaid
-            ? alpha("#10b981", 0.2)
+            ? alpha("#2563eb", 0.2)
             : "divider",
         borderRadius: 2,
         overflow: "hidden",
@@ -78,7 +78,7 @@ function InvoiceRow({ invoice }: { invoice: MyInvoice }) {
           bgcolor: isOverdue
             ? alpha("#fef2f2", 0.5)
             : isPaid
-              ? alpha("#f0fdf4", 0.5)
+              ? alpha("#eff6ff", 0.5)
               : "transparent",
           cursor: invoice.lineItems.length > 0 ? "pointer" : "default",
         }}

@@ -116,12 +116,12 @@ function AssignmentCard({
           p: 2.5,
           border: "1px solid",
           borderColor: mySubmission
-            ? alpha("#10b981", 0.25)
+            ? alpha("#2563eb", 0.25)
             : isOverdue
               ? alpha("#ef4444", 0.25)
               : "divider",
           bgcolor: mySubmission
-            ? alpha("#f0fdf4", 0.5)
+            ? alpha("#eff6ff", 0.5)
             : isOverdue
               ? alpha("#fef2f2", 0.4)
               : "transparent",

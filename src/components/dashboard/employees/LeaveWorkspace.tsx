@@ -210,7 +210,7 @@ const buildLeaveColumns = ({
                 color="success"
                 disabled={isActioning}
                 onClick={() => onApprove(row.original.id)}
-                sx={{ bgcolor: alpha("#10b981", 0.08) }}
+                sx={{ bgcolor: alpha("#2563eb", 0.08) }}
               >
                 <CheckCircleRounded fontSize="small" />
               </IconButton>
@@ -448,7 +448,7 @@ export function LeaveWorkspace() {
                 fullWidth
                 sx={{
                   maxWidth: { xs: "100%", lg: 220 },
-                  backgroundImage: primaryGradient,
+                  backgroundColor: primaryGradient,
                 }}
               >
                 Apply for leave
@@ -574,7 +574,7 @@ export function LeaveWorkspace() {
                 startIcon={<PersonAddAlt1Rounded />}
                 onClick={handleInitBalances}
                 disabled={initBalancesState.loading}
-                sx={{ backgroundImage: primaryGradient, whiteSpace: "nowrap" }}
+                sx={{ backgroundColor: primaryGradient, whiteSpace: "nowrap" }}
               >
                 Initialise balances
               </Button>
@@ -657,7 +657,7 @@ export function LeaveWorkspace() {
               sx: {
                 bgcolor: "#ffffff",
                 transition: "background-color 140ms ease",
-                "&:hover td": { bgcolor: alpha("#ecfdf5", 0.9) },
+                "&:hover td": { bgcolor: alpha("#eff6ff", 0.9) },
               },
             }}
             muiTableBodyCellProps={{

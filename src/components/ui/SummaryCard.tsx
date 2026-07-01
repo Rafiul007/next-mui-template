@@ -16,7 +16,7 @@ export function SummaryCard({
 }) {
   const borderColor =
     tone === "success"
-      ? alpha("#10b981", 0.22)
+      ? alpha("#2563eb", 0.22)
       : tone === "error"
         ? alpha("#ef4444", 0.22)
         : tone === "warning"
@@ -27,7 +27,7 @@ export function SummaryCard({
 
   const iconBackground =
     tone === "success"
-      ? alpha("#10b981", 0.12)
+      ? alpha("#2563eb", 0.12)
       : tone === "error"
         ? alpha("#ef4444", 0.10)
         : tone === "warning"
@@ -36,7 +36,7 @@ export function SummaryCard({
 
   const iconColor =
     tone === "success"
-      ? "#047857"
+      ? "#1d4ed8"
       : tone === "error"
         ? "#b91c1c"
         : tone === "warning"

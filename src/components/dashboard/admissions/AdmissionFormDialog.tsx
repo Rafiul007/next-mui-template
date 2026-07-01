@@ -237,9 +237,9 @@ function WizardStepper({
                 borderRadius: "50%",
                 bgcolor:
                   i < active
-                    ? "#10b981"
+                    ? "#2563eb"
                     : i === active
-                      ? "#10b981"
+                      ? "#2563eb"
                       : alpha("#0f172a", 0.1),
                 display: "flex",
                 alignItems: "center",
@@ -264,7 +264,7 @@ function WizardStepper({
               fontWeight={i === active ? 700 : 400}
               color={
                 i === active
-                  ? "#10b981"
+                  ? "#2563eb"
                   : i < active
                     ? "text.secondary"
                     : alpha("#0f172a", 0.4)
@@ -281,7 +281,7 @@ function WizardStepper({
                 height: 2,
                 mt: "17px",
                 mx: 0.5,
-                bgcolor: i < active ? "#10b981" : alpha("#0f172a", 0.1),
+                bgcolor: i < active ? "#2563eb" : alpha("#0f172a", 0.1),
                 transition: "background 200ms ease",
               }}
             />
@@ -406,7 +406,7 @@ function FeeGroup({
           <Typography variant="body2" fontWeight={600}>{r.display}</Typography>
         </Stack>
       ))}
-      <Stack direction="row" justifyContent="space-between" sx={{ pt: 0.75, borderTop: "1px dashed", borderColor: alpha("#10b981", 0.3) }}>
+      <Stack direction="row" justifyContent="space-between" sx={{ pt: 0.75, borderTop: "1px dashed", borderColor: alpha("#2563eb", 0.3) }}>
         <Typography variant="body2" fontWeight={700}>Total</Typography>
         <Typography variant="body2" fontWeight={700}>{total}</Typography>
       </Stack>
@@ -537,7 +537,7 @@ export function AdmissionFormDialog({
               variant="contained"
               disabled={isSubmitting}
               startIcon={isSubmitting ? <CircularProgress size={14} color="inherit" /> : undefined}
-              sx={{ backgroundImage: primaryGradient }}
+              sx={{ backgroundColor: primaryGradient }}
             >
               Save Changes
             </Button>
@@ -778,8 +778,8 @@ export function AdmissionFormDialog({
                       p: 2,
                       borderRadius: 2,
                       border: "1px solid",
-                      borderColor: alpha("#10b981", 0.25),
-                      bgcolor: alpha("#f0fdf4", 0.5),
+                      borderColor: alpha("#2563eb", 0.25),
+                      bgcolor: alpha("#eff6ff", 0.5),
                     }}
                   >
                     <Typography variant="subtitle2" fontWeight={700} mb={1}>
@@ -813,8 +813,8 @@ export function AdmissionFormDialog({
                               onClick={() => toggleDiscount(idx)}
                               sx={{
                                 p: 1.5, border: "1px solid", borderRadius: 1.5, cursor: "pointer",
-                                borderColor: applied ? alpha("#10b981", 0.4) : "divider",
-                                bgcolor: applied ? alpha("#f0fdf4", 0.8) : "transparent",
+                                borderColor: applied ? alpha("#2563eb", 0.4) : "divider",
+                                bgcolor: applied ? alpha("#eff6ff", 0.8) : "transparent",
                                 display: "flex", alignItems: "center", gap: 1,
                                 transition: "all 100ms ease",
                               }}
@@ -828,7 +828,7 @@ export function AdmissionFormDialog({
                           );
                         })}
                         {(appliedDiscountIndexes ?? []).length > 0 && (
-                          <Stack direction="row" justifyContent="space-between" sx={{ pt: 1, borderTop: "1px dashed", borderColor: alpha("#10b981", 0.3) }}>
+                          <Stack direction="row" justifyContent="space-between" sx={{ pt: 1, borderTop: "1px dashed", borderColor: alpha("#2563eb", 0.3) }}>
                             <Typography variant="body2" fontWeight={700}>Final one-time total</Typography>
                             <Typography variant="body2" fontWeight={700} color="success.main">{fmtAmt(finalOneTime)}</Typography>
                           </Stack>
@@ -960,7 +960,7 @@ export function AdmissionFormDialog({
                 variant="contained"
                 endIcon={<ArrowForwardRounded />}
                 onClick={handleContinue}
-                sx={{ backgroundImage: primaryGradient }}
+                sx={{ backgroundColor: primaryGradient }}
               >
                 Continue
               </Button>
@@ -976,7 +976,7 @@ export function AdmissionFormDialog({
                     <CheckRounded />
                   )
                 }
-                sx={{ backgroundImage: primaryGradient }}
+                sx={{ backgroundColor: primaryGradient }}
               >
                 Create admission
               </Button>

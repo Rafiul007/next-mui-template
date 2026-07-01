@@ -302,7 +302,7 @@ export function TeacherExamsWorkspace() {
             startIcon={<AddRounded />}
             onClick={() => setCreateOpen(true)}
             disabled={!batchId}
-            sx={{ alignSelf: "flex-start", backgroundImage: primaryGradient }}
+            sx={{ alignSelf: "flex-start", backgroundColor: primaryGradient }}
           >
             Create exam
           </Button>
@@ -583,7 +583,7 @@ export function TeacherExamsWorkspace() {
                             r.grade === "F"
                               ? alpha("#ef4444", 0.1)
                               : r.grade
-                                ? alpha("#10b981", 0.1)
+                                ? alpha("#2563eb", 0.1)
                                 : "transparent",
                         }}
                       />

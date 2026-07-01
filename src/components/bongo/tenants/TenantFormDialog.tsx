@@ -132,7 +132,7 @@ export function TenantFormDialog({
   };
 
   const renderField = (field: TenantFieldConfig) => {
-    const spanSx = field.fullSpan ? { gridColumn: "1 / -1" } : undefined;
+    const spanSx = { minWidth: 0, ...(field.fullSpan ? { gridColumn: "1 / -1" } : {}) };
 
     if (field.kind === "select") {
       return (
@@ -158,7 +158,7 @@ export function TenantFormDialog({
   };
 
   return (
-    <Dialog open={open} onClose={busy ? undefined : onClose} maxWidth="sm" fullWidth>
+    <Dialog open={open} onClose={busy ? undefined : onClose} maxWidth="md" fullWidth>
       <DialogTitle sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", pb: 1 }}>
         <Box component="span" sx={{ fontWeight: 700 }}>
           {mode === "edit" ? "Edit Tenant" : "Add New Tenant"}

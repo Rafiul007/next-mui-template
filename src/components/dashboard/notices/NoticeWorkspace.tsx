@@ -450,7 +450,7 @@ export function NoticeWorkspace() {
                 fullWidth
                 sx={{
                   maxWidth: { xs: "100%", lg: 220 },
-                  backgroundImage: primaryGradient,
+                  backgroundColor: primaryGradient,
                 }}
               >
                 Post Notice

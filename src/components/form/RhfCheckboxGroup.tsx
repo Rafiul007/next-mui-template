@@ -100,7 +100,7 @@ export const RhfCheckboxGroup = <TFieldValues extends FieldValues>({
                       borderRadius: 2,
                       borderColor: isChecked ? "primary.main" : "divider",
                       bgcolor: isChecked
-                        ? alpha("#10b981", 0.08)
+                        ? alpha("#2563eb", 0.08)
                         : "background.paper",
                       transition:
                         "border-color 120ms ease, background-color 120ms ease",

@@ -23,10 +23,10 @@ const matchesKeyword = (
 export const isAdminRole = (roles?: readonly string[] | null) =>
   matchesKeyword(roles, ADMIN_ROLE_KEYWORDS);
 
-// "USER" is the legacy role name the student portal was first built around;
-// treat it as an alias for STUDENT so existing accounts keep routing correctly.
+// Students carry the STUDENT role. (The old "USER" alias was dropped once the
+// backend started issuing STUDENT for student accounts.)
 export const isStudentRole = (roles?: readonly string[] | null) =>
-  hasRole(roles, "STUDENT") || hasRole(roles, "USER");
+  hasRole(roles, "STUDENT");
 
 export const isTeacherRole = (roles?: readonly string[] | null) =>
   hasRole(roles, "TEACHER");

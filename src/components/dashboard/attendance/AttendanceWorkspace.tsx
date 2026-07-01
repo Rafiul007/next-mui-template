@@ -92,7 +92,7 @@ const DAY_NAMES = [
 ];
 
 const AVATAR_COLORS = [
-  "#10b981",
+  "#2563eb",
   "#3b82f6",
   "#8b5cf6",
   "#f59e0b",
@@ -179,7 +179,7 @@ function StudentAvatar({
 // ── P / A / L Button ─────────────────────────────────────────────────────────
 
 const PAL_COLORS: Record<AttendanceStatus, string> = {
-  PRESENT: "#10b981",
+  PRESENT: "#2563eb",
   ABSENT: "#ef4444",
   LATE: "#f59e0b",
 };
@@ -254,13 +254,13 @@ function SessionPickerCard({
       sx={{
         p: 2.5,
         border: "1px solid",
-        borderColor: hasSession ? alpha("#10b981", 0.35) : "divider",
+        borderColor: hasSession ? alpha("#2563eb", 0.35) : "divider",
         borderRadius: 2,
         display: "flex",
         alignItems: "center",
         gap: 2,
         transition: "border-color 120ms ease",
-        "&:hover": hasSession ? { borderColor: "#10b981" } : {},
+        "&:hover": hasSession ? { borderColor: "#2563eb" } : {},
       }}
     >
       <Box
@@ -268,7 +268,7 @@ function SessionPickerCard({
           width: 44,
           height: 44,
           borderRadius: "50%",
-          bgcolor: hasSession ? alpha("#10b981", 0.1) : alpha("#0f172a", 0.05),
+          bgcolor: hasSession ? alpha("#2563eb", 0.1) : alpha("#0f172a", 0.05),
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
@@ -276,7 +276,7 @@ function SessionPickerCard({
         }}
       >
         <ScheduleRounded
-          sx={{ fontSize: 22, color: hasSession ? "#10b981" : "text.disabled" }}
+          sx={{ fontSize: 22, color: hasSession ? "#2563eb" : "text.disabled" }}
         />
       </Box>
 
@@ -322,7 +322,7 @@ function SessionPickerCard({
           size="medium"
           startIcon={<EventAvailableRounded />}
           onClick={onTake}
-          sx={{ backgroundImage: primaryGradient, flexShrink: 0 }}
+          sx={{ backgroundColor: primaryGradient, flexShrink: 0 }}
         >
           Take attendance
         </Button>
@@ -368,7 +368,7 @@ function SessionSummaryRow({
   const pct =
     enrolledCount > 0 ? Math.round((present / enrolledCount) * 100) : 0;
   const barColor =
-    pct >= 80 ? "#10b981" : pct >= 60 ? "#f59e0b" : "#ef4444";
+    pct >= 80 ? "#2563eb" : pct >= 60 ? "#f59e0b" : "#ef4444";
 
   return (
     <TableRow>
@@ -388,7 +388,7 @@ function SessionSummaryRow({
       ) : (
         <>
           <TableCell align="center">
-            <Typography variant="body2" fontWeight={700} color="#10b981">
+            <Typography variant="body2" fontWeight={700} color="#2563eb">
               {present}
             </Typography>
           </TableCell>
@@ -467,8 +467,8 @@ function BatchSummaryView({
       label: "Sessions held",
       value: completedCount || sessions.length,
       icon: <CalendarMonthRounded />,
-      color: "#10b981",
-      bg: alpha("#10b981", 0.1),
+      color: "#2563eb",
+      bg: alpha("#2563eb", 0.1),
     },
     {
       label: "Enrolled students",
@@ -947,7 +947,7 @@ export function AttendanceWorkspace() {
   const hasPending = Object.keys(pendingStatus).length > 0;
   const allMarked = unmarkedCount === 0 && enrolledStudents.length > 0;
   const statBarColor =
-    presentPct >= 80 ? "#10b981" : presentPct >= 60 ? "#f59e0b" : "#ef4444";
+    presentPct >= 80 ? "#2563eb" : presentPct >= 60 ? "#f59e0b" : "#ef4444";
 
   // ── Render ────────────────────────────────────────────────────────────────
 
@@ -1335,7 +1335,7 @@ export function AttendanceWorkspace() {
                     size="small"
                     startIcon={<CheckCircleRounded />}
                     onClick={handleMarkAllPresent}
-                    sx={{ backgroundImage: primaryGradient, flexShrink: 0 }}
+                    sx={{ backgroundColor: primaryGradient, flexShrink: 0 }}
                   >
                     Mark all Present
                   </Button>
@@ -1502,7 +1502,7 @@ export function AttendanceWorkspace() {
                           const status = getStatus(student.id);
                           const rowBg =
                             status === "PRESENT"
-                              ? alpha("#10b981", 0.045)
+                              ? alpha("#2563eb", 0.045)
                               : status === "ABSENT"
                                 ? alpha("#ef4444", 0.04)
                                 : status === "LATE"
@@ -1518,7 +1518,7 @@ export function AttendanceWorkspace() {
                                 "&:hover td": {
                                   bgcolor:
                                     status === "PRESENT"
-                                      ? alpha("#10b981", 0.09)
+                                      ? alpha("#2563eb", 0.09)
                                       : alpha("#f8fafc", 0.8),
                                 },
                               }}
@@ -1746,7 +1746,7 @@ export function AttendanceWorkspace() {
                       }}
                     >
                       {[
-                        { label: "Present", value: presentCount, color: "#10b981" },
+                        { label: "Present", value: presentCount, color: "#2563eb" },
                         { label: "Absent", value: absentCount, color: "#ef4444" },
                         { label: "Late", value: lateCount, color: "#f59e0b" },
                         {
@@ -1814,7 +1814,7 @@ export function AttendanceWorkspace() {
                       }
                       disabled={!hasPending || isSaving}
                       onClick={handleSubmit}
-                      sx={{ backgroundImage: primaryGradient }}
+                      sx={{ backgroundColor: primaryGradient }}
                     >
                       Submit attendance
                     </Button>

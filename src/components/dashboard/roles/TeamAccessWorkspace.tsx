@@ -142,15 +142,15 @@ function SummaryCard({
 }) {
   const borderColor =
     tone === "success"
-      ? alpha("#10b981", 0.22)
+      ? alpha("#2563eb", 0.22)
       : tone === "muted"
         ? alpha("#64748b", 0.16)
         : alpha("#0f172a", 0.08);
 
   const iconBackground =
-    tone === "success" ? alpha("#10b981", 0.12) : alpha("#0f172a", 0.06);
+    tone === "success" ? alpha("#2563eb", 0.12) : alpha("#0f172a", 0.06);
 
-  const iconColor = tone === "success" ? "#047857" : "#0f172a";
+  const iconColor = tone === "success" ? "#1d4ed8" : "#0f172a";
 
   return (
     <Paper
@@ -200,8 +200,8 @@ const buildColumns = (): MRT_ColumnDef<EmployeeRow>[] => [
           sx={{
             width: 40,
             height: 40,
-            bgcolor: alpha("#10b981", 0.16),
-            color: "#047857",
+            bgcolor: alpha("#2563eb", 0.16),
+            color: "#1d4ed8",
             fontWeight: 700,
           }}
         >
@@ -633,10 +633,10 @@ export function TeamAccessWorkspace() {
                     bgcolor: "#ffffff",
                     transition:
                       "background-color 140ms ease, transform 140ms ease, box-shadow 140ms ease",
-                    "&:hover td": { bgcolor: alpha("#ecfdf5", 0.9) },
+                    "&:hover td": { bgcolor: alpha("#eff6ff", 0.9) },
                     "&:hover": {
                       transform: "translateY(-1px)",
-                      boxShadow: `inset 0 0 0 1px ${alpha("#10b981", 0.12)}`,
+                      boxShadow: `inset 0 0 0 1px ${alpha("#2563eb", 0.12)}`,
                     },
                   },
                 })}
@@ -770,8 +770,8 @@ export function TeamAccessWorkspace() {
                             sx={{
                               bgcolor: isActive
                                 ? alpha("#ef4444", 0.08)
-                                : alpha("#10b981", 0.1),
-                              color: isActive ? "#b91c1c" : "#047857",
+                                : alpha("#2563eb", 0.1),
+                              color: isActive ? "#b91c1c" : "#1d4ed8",
                             }}
                           >
                             {isActive ? (
@@ -901,8 +901,8 @@ export function TeamAccessWorkspace() {
                                   placeItems: "center",
                                   bgcolor: role.system
                                     ? alpha("#0f172a", 0.06)
-                                    : alpha("#10b981", 0.12),
-                                  color: role.system ? "#0f172a" : "#047857",
+                                    : alpha("#2563eb", 0.12),
+                                  color: role.system ? "#0f172a" : "#1d4ed8",
                                 }}
                               >
                                 <LockPersonRounded />
@@ -993,8 +993,8 @@ export function TeamAccessWorkspace() {
                         sx={{
                           width: 52,
                           height: 52,
-                          bgcolor: alpha("#10b981", 0.12),
-                          color: "#047857",
+                          bgcolor: alpha("#2563eb", 0.12),
+                          color: "#1d4ed8",
                         }}
                       >
                         <ShieldRounded />
@@ -1107,7 +1107,7 @@ export function TeamAccessWorkspace() {
                           return (
                             <Stack key={opt.value} direction="row" spacing={1.5} alignItems="flex-start">
                               <CheckCircleRounded
-                                sx={{ fontSize: 18, color: "#10b981", mt: 0.15, flexShrink: 0 }}
+                                sx={{ fontSize: 18, color: "#2563eb", mt: 0.15, flexShrink: 0 }}
                               />
                               <Box sx={{ flex: 1, minWidth: 0 }}>
                                 <Stack direction="row" spacing={1} alignItems="center">
@@ -1126,7 +1126,7 @@ export function TeamAccessWorkspace() {
                                       <Chip
                                         label="Write"
                                         size="small"
-                                        sx={{ fontSize: 10, height: 18, bgcolor: alpha("#10b981", 0.12), color: "#047857" }}
+                                        sx={{ fontSize: 10, height: 18, bgcolor: alpha("#2563eb", 0.12), color: "#1d4ed8" }}
                                       />
                                     )}
                                   </Stack>

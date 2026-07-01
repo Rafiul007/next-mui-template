@@ -66,7 +66,7 @@ function StudentSidebar({
             borderRadius: 8,
             background: primaryGradient,
             color: "#ffffff",
-            boxShadow: "0 10px 22px rgba(16, 185, 129, 0.22)",
+            boxShadow: "0 10px 22px rgba(37, 99, 235, 0.22)",
           }}
         >
           <SchoolRounded />
@@ -102,11 +102,11 @@ function StudentSidebar({
                   px: 1.5,
                   borderRadius: 2,
                   color: active ? "#ffffff" : "inherit",
-                  bgcolor: active ? alpha("#10b981", 0.16) : "transparent",
+                  bgcolor: active ? alpha("#2563eb", 0.16) : "transparent",
                   border: active
                     ? "1px solid rgba(74, 222, 128, 0.16)"
                     : "1px solid transparent",
-                  "&:hover": { bgcolor: alpha("#10b981", 0.1) },
+                  "&:hover": { bgcolor: alpha("#2563eb", 0.1) },
                 }}
               >
                 <ListItemIcon sx={{ minWidth: 40, color: "inherit" }}>

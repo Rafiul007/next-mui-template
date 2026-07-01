@@ -16,7 +16,7 @@ import { useMutation, useQuery } from "@apollo/client/react";
 import { toast } from "react-hot-toast";
 import {
   GetCenterDocument,
-  GetSubscriptionPlanDocument,
+  GetMyPlanDocument,
   GetTenantDocument,
   SetupCenterDocument,
   UpdateCenterDocument,
@@ -73,11 +73,8 @@ export function CenterDetailsWorkspace() {
     error: planError,
     loading: isPlanLoading,
     refetch: refetchPlan,
-  } = useQuery(GetSubscriptionPlanDocument, {
-    skip: !tenant?.planId,
-    variables: { id: tenant?.planId ?? "" },
-  });
-  const plan = planData?.getSubscriptionPlan ?? null;
+  } = useQuery(GetMyPlanDocument);
+  const plan = planData?.getMyPlan ?? null;
 
   const [setupCenter, setupCenterState] = useMutation(SetupCenterDocument);
   const [updateCenter, updateCenterState] = useMutation(UpdateCenterDocument);

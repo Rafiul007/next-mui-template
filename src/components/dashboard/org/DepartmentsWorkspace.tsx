@@ -269,7 +269,7 @@ export function DepartmentsWorkspace() {
                 variant="contained"
                 startIcon={<AddRounded />}
                 onClick={openCreate}
-                sx={{ backgroundImage: primaryGradient, maxWidth: { xs: "100%", lg: 200 } }}
+                sx={{ backgroundColor: primaryGradient, maxWidth: { xs: "100%", lg: 200 } }}
                 fullWidth
               >
                 New department
@@ -301,7 +301,7 @@ export function DepartmentsWorkspace() {
           initialState={{ pagination: { pageIndex: 0, pageSize: 20 } }}
           localization={{ noRecordsToDisplay: "No departments yet" }}
           muiSearchTextFieldProps={{ placeholder: "Search departments", size: "small", sx: { minWidth: { xs: "100%", md: 280 } } }}
-          muiTableBodyRowProps={{ sx: { bgcolor: "#ffffff", transition: "background-color 140ms ease", "&:hover td": { bgcolor: alpha("#ecfdf5", 0.9) } } }}
+          muiTableBodyRowProps={{ sx: { bgcolor: "#ffffff", transition: "background-color 140ms ease", "&:hover td": { bgcolor: alpha("#eff6ff", 0.9) } } }}
           muiTableBodyCellProps={{ sx: { bgcolor: "#ffffff", borderBottom: "1px solid", borderColor: alpha("#0f172a", 0.06), py: 2.25 } }}
           muiTableContainerProps={{ sx: { maxHeight: 580, bgcolor: "#ffffff" } }}
           muiTableHeadCellProps={{ sx: { bgcolor: "#ffffff", color: alpha("#0f172a", 0.72), fontSize: 13, fontWeight: 700, py: 1.75, borderBottom: "1px solid", borderColor: alpha("#0f172a", 0.08) } }}

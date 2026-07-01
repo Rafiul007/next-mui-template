@@ -70,7 +70,7 @@ const recentTenants = [
 ];
 
 const statusColors: Record<string, string> = {
-  active: "#10b981",
+  active: "#2563eb",
   trial: "#f59e0b",
   suspended: "#ef4444",
 };
@@ -111,7 +111,7 @@ export default function BongoDashboardPage() {
                       label={item.trend}
                       size="small"
                       sx={{
-                        bgcolor: alpha("#10b981", 0.1),
+                        bgcolor: alpha("#2563eb", 0.1),
                         color: "primary.dark",
                       }}
                     />
@@ -125,7 +125,7 @@ export default function BongoDashboardPage() {
                       borderRadius: 8,
                       background: primaryGradient,
                       color: "#ffffff",
-                      boxShadow: "0 10px 22px rgba(16, 185, 129, 0.22)",
+                      boxShadow: "0 10px 22px rgba(37, 99, 235, 0.22)",
                     }}
                   >
                     <Icon />
@@ -170,7 +170,7 @@ export default function BongoDashboardPage() {
                         height: `${value * 1.6}px`,
                         borderRadius: 8,
                         background:
-                          index > 8 ? primaryGradient : alpha("#10b981", 0.18),
+                          index > 8 ? primaryGradient : alpha("#2563eb", 0.18),
                       }}
                     />
                   </Box>

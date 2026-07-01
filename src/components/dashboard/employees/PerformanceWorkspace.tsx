@@ -139,7 +139,7 @@ const buildDashboardColumns = ({
     Cell: ({ cell }) => {
       const score = cell.getValue<number>();
       const color =
-        score >= 8 ? "#047857" : score >= 5 ? "#0369a1" : "#b91c1c";
+        score >= 8 ? "#1d4ed8" : score >= 5 ? "#0369a1" : "#b91c1c";
       return (
         <Stack direction="row" spacing={0.5} alignItems="center">
           <StarRounded sx={{ fontSize: 16, color }} />
@@ -388,7 +388,7 @@ export function PerformanceWorkspace() {
                 variant="contained"
                 startIcon={<AddRounded />}
                 onClick={openCycleDialog}
-                sx={{ backgroundImage: primaryGradient, whiteSpace: "nowrap" }}
+                sx={{ backgroundColor: primaryGradient, whiteSpace: "nowrap" }}
               >
                 Launch cycle
               </Button>
@@ -443,7 +443,7 @@ export function PerformanceWorkspace() {
             <Typography variant="body2" color="text.secondary" sx={{ mt: 1, mb: 3 }}>
               Launch a new review cycle or enter a cycle ID to view the performance dashboard.
             </Typography>
-            <Button variant="contained" onClick={openCycleDialog} sx={{ backgroundImage: primaryGradient }}>
+            <Button variant="contained" onClick={openCycleDialog} sx={{ backgroundColor: primaryGradient }}>
               Launch review cycle
             </Button>
           </Paper>
@@ -472,7 +472,7 @@ export function PerformanceWorkspace() {
               sx: {
                 bgcolor: "#ffffff",
                 transition: "background-color 140ms ease",
-                "&:hover td": { bgcolor: alpha("#ecfdf5", 0.9) },
+                "&:hover td": { bgcolor: alpha("#eff6ff", 0.9) },
               },
             }}
             muiTableBodyCellProps={{

@@ -33,7 +33,7 @@ import { primaryGradient } from "@/theme/theme";
 const fmt = (n: number) => n.toLocaleString("en-BD");
 
 const STATUS_COLOR: Record<string, string> = {
-  ongoing: "#10b981",
+  ongoing: "#2563eb",
   upcoming: "#3b82f6",
   completed: "#64748b",
   cancelled: "#ef4444",
@@ -97,7 +97,7 @@ function MetricCard({
               borderRadius: 2.5,
               background: accent ?? primaryGradient,
               color: "#ffffff",
-              boxShadow: `0 8px 20px ${alpha(shadowColor ?? "#10b981", 0.28)}`,
+              boxShadow: `0 8px 20px ${alpha(shadowColor ?? "#2563eb", 0.28)}`,
             }}
           >
             <Icon />
@@ -381,7 +381,7 @@ export default function DashboardPage() {
                   label={`${recentNotices.length} live`}
                   size="small"
                   icon={<CheckCircleRounded sx={{ fontSize: "14px !important" }} />}
-                  sx={{ bgcolor: alpha("#10b981", 0.1), color: "primary.dark", fontWeight: 600 }}
+                  sx={{ bgcolor: alpha("#2563eb", 0.1), color: "primary.dark", fontWeight: 600 }}
                 />
               )}
             </Stack>
@@ -422,8 +422,8 @@ export default function DashboardPage() {
                       p: 2,
                       borderRadius: 2,
                       border: "1px solid",
-                      borderColor: i === 0 ? alpha("#10b981", 0.3) : "divider",
-                      bgcolor: i === 0 ? alpha("#10b981", 0.04) : "transparent",
+                      borderColor: i === 0 ? alpha("#2563eb", 0.3) : "divider",
+                      bgcolor: i === 0 ? alpha("#2563eb", 0.04) : "transparent",
                     }}
                   >
                     <Typography variant="subtitle2" fontWeight={700} noWrap>
@@ -480,7 +480,7 @@ export default function DashboardPage() {
           {
             label: "Available Seats",
             value: isLoading ? null : fmt(Math.max(totalCapacity - totalEnrolled, 0)),
-            color: "#10b981",
+            color: "#2563eb",
           },
           {
             label: "Total Batches",

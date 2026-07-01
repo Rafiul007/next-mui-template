@@ -397,7 +397,7 @@ export function TeacherAttendanceWorkspace() {
                       border: "1px solid",
                       borderColor: active ? "primary.main" : "divider",
                       bgcolor: active
-                        ? alpha("#10b981", 0.06)
+                        ? alpha("#2563eb", 0.06)
                         : "transparent",
                     }}
                   >

@@ -175,8 +175,8 @@ const buildEmployeeColumns = ({
               height: 38,
               fontSize: 13,
               fontWeight: 700,
-              bgcolor: alpha("#10b981", 0.18),
-              color: "#047857",
+              bgcolor: alpha("#2563eb", 0.18),
+              color: "#1d4ed8",
               flexShrink: 0,
             }}
           >
@@ -525,7 +525,7 @@ export function EmployeesWorkspace() {
                 fullWidth
                 sx={{
                   maxWidth: { xs: "100%", lg: 220 },
-                  backgroundImage: primaryGradient,
+                  backgroundColor: primaryGradient,
                 }}
               >
                 Onboard employee
@@ -616,10 +616,10 @@ export function EmployeesWorkspace() {
               bgcolor: "#ffffff",
               transition:
                 "background-color 140ms ease, transform 140ms ease, box-shadow 140ms ease",
-              "&:hover td": { bgcolor: alpha("#ecfdf5", 0.9) },
+              "&:hover td": { bgcolor: alpha("#eff6ff", 0.9) },
               "&:hover": {
                 transform: "translateY(-1px)",
-                boxShadow: `inset 0 0 0 1px ${alpha("#10b981", 0.12)}`,
+                boxShadow: `inset 0 0 0 1px ${alpha("#2563eb", 0.12)}`,
               },
             },
           })}

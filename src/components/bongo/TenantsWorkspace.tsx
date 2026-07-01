@@ -88,7 +88,7 @@ const buildTenantColumns = (
           size="small"
           sx={{
             fontWeight: 600,
-            bgcolor: alpha("#10b981", 0.08),
+            bgcolor: alpha("#2563eb", 0.08),
             color: "primary.dark",
           }}
         />
@@ -293,7 +293,7 @@ export function TenantsWorkspace() {
               startIcon={<AddRounded />}
               onClick={openCreateDialog}
               sx={{
-                backgroundImage: primaryGradient,
+                backgroundColor: primaryGradient,
                 color: "#fff",
                 fontWeight: 700,
                 whiteSpace: "nowrap",
@@ -370,7 +370,7 @@ export function TenantsWorkspace() {
               sx: {
                 bgcolor: "#ffffff",
                 transition: "background-color 140ms ease",
-                "&:hover td": { bgcolor: alpha("#ecfdf5", 0.9) },
+                "&:hover td": { bgcolor: alpha("#eff6ff", 0.9) },
               },
             }}
             muiTableBodyCellProps={{

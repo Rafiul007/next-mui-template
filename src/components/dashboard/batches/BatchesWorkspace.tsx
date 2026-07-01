@@ -402,7 +402,7 @@ function SummaryCard({
 }) {
   const borderColor =
     tone === "success"
-      ? alpha("#10b981", 0.22)
+      ? alpha("#2563eb", 0.22)
       : tone === "info"
         ? alpha("#3b82f6", 0.22)
         : tone === "muted"
@@ -411,14 +411,14 @@ function SummaryCard({
 
   const iconBackground =
     tone === "success"
-      ? alpha("#10b981", 0.12)
+      ? alpha("#2563eb", 0.12)
       : tone === "info"
         ? alpha("#3b82f6", 0.12)
         : alpha("#0f172a", 0.06);
 
   const iconColor =
     tone === "success"
-      ? "#047857"
+      ? "#1d4ed8"
       : tone === "info"
         ? "#1d4ed8"
         : "#0f172a";
@@ -663,7 +663,7 @@ export function BatchesWorkspace() {
                 fullWidth
                 sx={{
                   maxWidth: { xs: "100%", lg: 220 },
-                  backgroundImage: primaryGradient,
+                  backgroundColor: primaryGradient,
                 }}
               >
                 Create Batch
@@ -750,10 +750,10 @@ export function BatchesWorkspace() {
               bgcolor: "#ffffff",
               transition:
                 "background-color 140ms ease, transform 140ms ease, box-shadow 140ms ease",
-              "&:hover td": { bgcolor: alpha("#ecfdf5", 0.9) },
+              "&:hover td": { bgcolor: alpha("#eff6ff", 0.9) },
               "&:hover": {
                 transform: "translateY(-1px)",
-                boxShadow: `inset 0 0 0 1px ${alpha("#10b981", 0.12)}`,
+                boxShadow: `inset 0 0 0 1px ${alpha("#2563eb", 0.12)}`,
               },
             },
           })}
@@ -865,7 +865,7 @@ export function BatchesWorkspace() {
                       borderColor: "divider",
                       borderRadius: 1.5,
                       color: "text.secondary",
-                      "&:hover": { borderColor: "primary.main", color: "primary.main", bgcolor: alpha("#10b981", 0.06) },
+                      "&:hover": { borderColor: "primary.main", color: "primary.main", bgcolor: alpha("#2563eb", 0.06) },
                     }}
                   >
                     <EditRounded sx={{ fontSize: 16 }} />
@@ -901,10 +901,10 @@ export function BatchesWorkspace() {
                       }
                       sx={{
                         border: "1px solid",
-                        borderColor: alpha("#10b981", 0.35),
+                        borderColor: alpha("#2563eb", 0.35),
                         borderRadius: 1.5,
                         color: "success.main",
-                        "&:hover": { bgcolor: alpha("#10b981", 0.08) },
+                        "&:hover": { bgcolor: alpha("#2563eb", 0.08) },
                       }}
                     >
                       <DoneRounded sx={{ fontSize: 16 }} />

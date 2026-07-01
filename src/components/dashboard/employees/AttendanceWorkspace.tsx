@@ -512,7 +512,7 @@ export function AttendanceWorkspace() {
             sx: {
               bgcolor: "#ffffff",
               transition: "background-color 140ms ease",
-              "&:hover td": { bgcolor: alpha("#ecfdf5", 0.9) },
+              "&:hover td": { bgcolor: alpha("#eff6ff", 0.9) },
             },
           }}
           muiTableBodyCellProps={{

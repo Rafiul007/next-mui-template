@@ -67,7 +67,7 @@ const DAY_SHORT: Record<string, string> = {
 };
 
 const DAY_BG: Record<string, string> = {
-  SUNDAY: "#f0fdf4",
+  SUNDAY: "#eff6ff",
   MONDAY: "#eff6ff",
   TUESDAY: "#fefce8",
   WEDNESDAY: "#fff7ed",
@@ -77,7 +77,7 @@ const DAY_BG: Record<string, string> = {
 };
 
 const DAY_ACCENT: Record<string, string> = {
-  SUNDAY: "#15803d",
+  SUNDAY: "#1d4ed8",
   MONDAY: "#1d4ed8",
   TUESDAY: "#a16207",
   WEDNESDAY: "#c2410c",
@@ -158,8 +158,8 @@ function DayCard({
   }
 
   const duration = calcDurationMinutes(schedule.startTime, schedule.endTime);
-  const accent = DAY_ACCENT[schedule.dayOfWeek] ?? "#10b981";
-  const bg = DAY_BG[schedule.dayOfWeek] ?? "#f0fdf4";
+  const accent = DAY_ACCENT[schedule.dayOfWeek] ?? "#2563eb";
+  const bg = DAY_BG[schedule.dayOfWeek] ?? "#eff6ff";
 
   return (
     <Box
@@ -381,7 +381,7 @@ export function ClassRoutineWorkspace() {
                 startIcon={<DownloadRounded />}
                 disabled={!selectedBatchId || classDaysCount === 0}
                 onClick={handleDownloadPdf}
-                sx={{ backgroundImage: primaryGradient, minWidth: 180 }}
+                sx={{ backgroundColor: primaryGradient, minWidth: 180 }}
               >
                 Download PDF
               </Button>
@@ -455,7 +455,7 @@ export function ClassRoutineWorkspace() {
                   sx={{
                     px: 3,
                     py: 2.5,
-                    backgroundImage: primaryGradient,
+                    backgroundColor: primaryGradient,
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "space-between",

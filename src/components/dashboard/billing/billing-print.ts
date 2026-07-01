@@ -67,7 +67,7 @@ export function printInvoiceReceipt(params: {
   const badge = isSettled
     ? invoice.status === "WAIVED"
       ? { bg: "#e0f2fe", fg: "#0369a1", border: "#bae6fd" }
-      : { bg: "#dcfce7", fg: "#15803d", border: "#bbf7d0" }
+      : { bg: "#dbeafe", fg: "#1d4ed8", border: "#bfdbfe" }
     : { bg: "#fef9c3", fg: "#a16207", border: "#fde68a" };
 
   const lineItemsHtml = invoice.lineItems.length
@@ -116,9 +116,9 @@ export function printInvoiceReceipt(params: {
     .totals{margin-left:auto;width:280px;margin-bottom:24px}
     .tr{display:flex;justify-content:space-between;align-items:center;padding:5px 0;font-size:14px;color:#475569}
     .tr.grand{font-weight:700;font-size:16px;color:#0f172a;border-top:2px solid #e2e8f0;padding-top:12px;margin-top:6px}
-    .tr.paid-row{color:#15803d;font-weight:600}
+    .tr.paid-row{color:#1d4ed8;font-weight:600}
     .tr.due-row{color:#b91c1c;font-weight:700}
-    .tr.disc{color:#10b981}
+    .tr.disc{color:#2563eb}
     .tr.fine{color:#ef4444}
     .badge{display:inline-block;padding:5px 16px;border-radius:20px;font-size:12px;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;background:${badge.bg};color:${badge.fg};border:1px solid ${badge.border}}
     .footer{margin-top:36px;padding-top:14px;border-top:1px solid #e2e8f0;text-align:center;font-size:11px;color:#94a3b8;line-height:1.6}

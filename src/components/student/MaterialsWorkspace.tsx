@@ -67,7 +67,7 @@ function BatchMaterials({ batchId }: { batchId: string }) {
             display: "flex",
             flexDirection: "column",
             gap: 1.5,
-            "&:hover": { borderColor: alpha("#10b981", 0.4), boxShadow: `0 0 0 1px ${alpha("#10b981", 0.2)}` },
+            "&:hover": { borderColor: alpha("#2563eb", 0.4), boxShadow: `0 0 0 1px ${alpha("#2563eb", 0.2)}` },
             transition: "all 0.15s ease",
           }}
         >
@@ -81,8 +81,8 @@ function BatchMaterials({ batchId }: { batchId: string }) {
                 placeItems: "center",
                 bgcolor: mat.videoUrl
                   ? alpha("#8b5cf6", 0.1)
-                  : alpha("#10b981", 0.1),
-                color: mat.videoUrl ? "#7c3aed" : "#047857",
+                  : alpha("#2563eb", 0.1),
+                color: mat.videoUrl ? "#7c3aed" : "#1d4ed8",
                 flexShrink: 0,
               }}
             >

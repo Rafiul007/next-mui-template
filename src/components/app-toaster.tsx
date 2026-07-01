@@ -18,7 +18,7 @@ export function AppToaster() {
         },
         success: {
           iconTheme: {
-            primary: "#10b981",
+            primary: "#2563eb",
             secondary: "#ffffff",
           },
         },

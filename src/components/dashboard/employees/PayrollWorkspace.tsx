@@ -347,7 +347,7 @@ export function PayrollWorkspace() {
               variant="contained"
               startIcon={<AddRounded />}
               onClick={() => setIsRunPayrollOpen(true)}
-              sx={{ alignSelf: "flex-start", backgroundImage: primaryGradient }}
+              sx={{ alignSelf: "flex-start", backgroundColor: primaryGradient }}
             >
               Run payroll
             </Button>
@@ -468,7 +468,7 @@ export function PayrollWorkspace() {
                 {selectedEmployeeId && salary ? (
                   <Paper
                     elevation={0}
-                    sx={{ p: 2.5, border: "1px solid", borderColor: alpha("#10b981", 0.2), borderRadius: 2, bgcolor: alpha("#ecfdf5", 0.5) }}
+                    sx={{ p: 2.5, border: "1px solid", borderColor: alpha("#2563eb", 0.2), borderRadius: 2, bgcolor: alpha("#eff6ff", 0.5) }}
                   >
                     <Typography variant="subtitle2" sx={{ mb: 2 }}>
                       Current salary structure
@@ -611,9 +611,9 @@ export function PayrollWorkspace() {
                     sx={{
                       p: 3,
                       border: "1px solid",
-                      borderColor: alpha("#10b981", 0.2),
+                      borderColor: alpha("#2563eb", 0.2),
                       borderRadius: 2,
-                      bgcolor: alpha("#ecfdf5", 0.4),
+                      bgcolor: alpha("#eff6ff", 0.4),
                     }}
                   >
                     <Stack
