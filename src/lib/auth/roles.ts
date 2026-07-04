@@ -9,6 +9,30 @@
 
 const ADMIN_ROLE_KEYWORDS = ["admin", "owner", "principal", "director"];
 
+// The base role every account carries. It is never the meaningful role when a
+// more specific one is present.
+const BASE_ROLE = "USER";
+
+const isBaseRole = (role: string) => role.toUpperCase() === BASE_ROLE;
+
+// Roles that actually drive routing, permissions, and display. When an account
+// holds a specific role alongside the base "USER" (e.g. ["USER", "CENTER_ADMIN"]),
+// "USER" is dropped and the specific role(s) win. A plain account with nothing
+// but "USER" keeps it, so it still resolves to something.
+export const effectiveRoles = (
+  roles?: readonly string[] | null,
+): string[] => {
+  const all = (roles ?? []).filter(Boolean);
+  const specific = all.filter((role) => !isBaseRole(role));
+
+  return specific.length ? specific : all;
+};
+
+// The single role to show or act on. Prefers a specific role over base "USER".
+export const primaryRole = (
+  roles?: readonly string[] | null,
+): string | null => effectiveRoles(roles)[0] ?? null;
+
 const hasRole = (roles: readonly string[] | null | undefined, role: string) =>
   (roles ?? []).some((r) => r.toUpperCase() === role.toUpperCase());
 
@@ -30,6 +54,12 @@ export const isStudentRole = (roles?: readonly string[] | null) =>
 
 export const isTeacherRole = (roles?: readonly string[] | null) =>
   hasRole(roles, "TEACHER");
+
+// The center admin owns tenant setup (center details, branches, calendar, org
+// structure, roles). Gated strictly on the CENTER_ADMIN role, not the broader
+// admin keyword match.
+export const isCenterAdmin = (roles?: readonly string[] | null) =>
+  hasRole(roles, "CENTER_ADMIN");
 
 // A "teacher-only" user teaches but holds no admin/owner role. Used to pick which
 // "My Profile" screen to show, not for landing-page routing.

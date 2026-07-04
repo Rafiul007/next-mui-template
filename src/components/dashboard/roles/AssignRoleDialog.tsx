@@ -17,6 +17,7 @@ import { useForm } from "react-hook-form";
 import * as yup from "yup";
 import { RhfSelect, type RhfSelectOption } from "@/components/form";
 import type { GetTenantRolesQuery, GetUsersQuery } from "@/graphql/generated";
+import { primaryRole } from "@/lib/auth/roles";
 import { formatPermissionLabel } from "./permission-registry";
 import { useWatch } from "react-hook-form";
 
@@ -65,7 +66,7 @@ export function AssignRoleDialog({
   const { control, handleSubmit } = useForm<AssignRoleFormValues>({
     resolver: yupResolver(assignRoleSchema),
     defaultValues: {
-      roleName: user?.roles[0] ?? "",
+      roleName: primaryRole(user?.roles) ?? "",
     },
     mode: "onTouched",
   });
