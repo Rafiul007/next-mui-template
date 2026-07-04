@@ -259,11 +259,6 @@ export function ScheduleWorkspace() {
   const [scheduleFormInitialValues, setScheduleFormInitialValues] =
     useState<RecurringScheduleFormValues>(emptyScheduleValues);
 
-  // Local map: scheduleId → subjectId (UI-only until API adds subjectId to RecurringSchedule)
-  const [scheduleSubjectMap, setScheduleSubjectMap] = useState<
-    Map<string, string>
-  >(new Map());
-
   const { data: batchesData, loading: isBatchesLoading } = useQuery(
     GetAllBatchesDocument,
   );
@@ -325,6 +320,11 @@ export function ScheduleWorkspace() {
   );
 
   const subjectLookup = new Map(batchSubjects.map((s) => [s.id, s.name]));
+  const scheduleById = new Map(schedules.map((s) => [s.id, s]));
+  const subjectColorIndex = (subjectId: string) => {
+    const idx = batchSubjects.findIndex((s) => s.id === subjectId);
+    return idx >= 0 ? idx : 0;
+  };
 
   const teacherOptions: RhfSelectOption[] = [
     { label: "Not assigned", value: "" },
@@ -350,7 +350,6 @@ export function ScheduleWorkspace() {
 
   const handleBatchChange = (batchId: string) => {
     setSelectedBatchId(batchId);
-    setScheduleSubjectMap(new Map());
   };
 
   const openSubjectForm = () => {
@@ -416,18 +415,11 @@ export function ScheduleWorkspace() {
             endTime: values.endTime,
             roomName: values.roomName?.trim() || undefined,
             teacherId: values.teacherId?.trim() || undefined,
+            subjectId: values.subjectId?.trim() || undefined,
           },
         },
       });
       if (result.error) throw result.error;
-
-      // Store subject association locally until API supports subjectId on RecurringSchedule
-      const scheduleId = result.data?.createRecurringSchedule?.id;
-      if (scheduleId && values.subjectId) {
-        setScheduleSubjectMap((prev) =>
-          new Map(prev).set(scheduleId, values.subjectId!),
-        );
-      }
 
       await refetchSchedules();
       toast.success("Recurring schedule added.");
@@ -493,24 +485,24 @@ export function ScheduleWorkspace() {
       header: "Subject",
       size: 150,
       enableSorting: false,
-      accessorFn: (row) => {
-        const subjectId = scheduleSubjectMap.get(row.id);
-        return subjectId ? (subjectLookup.get(subjectId) ?? "—") : "—";
-      },
+      accessorFn: (row) =>
+        row.subjectName ??
+        (row.subjectId ? (subjectLookup.get(row.subjectId) ?? "—") : "—"),
       Cell: ({ row }) => {
-        const subjectId = scheduleSubjectMap.get(row.original.id);
-        if (!subjectId) {
+        const { subjectId, subjectName } = row.original;
+        if (!subjectId && !subjectName) {
           return (
             <Typography variant="body2" color="text.disabled">
               —
             </Typography>
           );
         }
-        const idx = batchSubjects.findIndex((s) => s.id === subjectId);
-        const { fg, bg } = subjectColor(idx >= 0 ? idx : 0);
+        const { fg, bg } = subjectColor(
+          subjectId ? subjectColorIndex(subjectId) : 0,
+        );
         return (
           <Chip
-            label={subjectLookup.get(subjectId) ?? "—"}
+            label={subjectName ?? subjectLookup.get(subjectId!) ?? "—"}
             size="small"
             sx={{ bgcolor: bg, color: fg, fontWeight: 600, fontSize: 12 }}
           />
@@ -634,7 +626,6 @@ export function ScheduleWorkspace() {
       size: 90,
       enableSorting: false,
       Cell: ({ row }) => {
-        const subjectId = scheduleSubjectMap.get(row.original.id);
         return (
           <Tooltip title="Duplicate schedule">
             <IconButton
@@ -646,7 +637,7 @@ export function ScheduleWorkspace() {
                   endTime: row.original.endTime,
                   roomName: row.original.roomName ?? "",
                   teacherId: row.original.teacherId ?? "",
-                  subjectId: subjectId ?? "",
+                  subjectId: row.original.subjectId ?? "",
                 })
               }
               sx={{ bgcolor: alpha("#0f172a", 0.04) }}
@@ -694,26 +685,30 @@ export function ScheduleWorkspace() {
       size: 140,
       enableSorting: false,
       accessorFn: (row) => {
-        if (!row.recurringScheduleId) return "—";
-        const subjectId = scheduleSubjectMap.get(row.recurringScheduleId);
-        return subjectId ? (subjectLookup.get(subjectId) ?? "—") : "—";
+        const schedule = row.recurringScheduleId
+          ? scheduleById.get(row.recurringScheduleId)
+          : undefined;
+        return schedule?.subjectName ?? "—";
       },
       Cell: ({ row }) => {
-        const subjectId = row.original.recurringScheduleId
-          ? scheduleSubjectMap.get(row.original.recurringScheduleId)
+        const schedule = row.original.recurringScheduleId
+          ? scheduleById.get(row.original.recurringScheduleId)
           : undefined;
-        if (!subjectId) {
+        const subjectId = schedule?.subjectId;
+        const subjectName = schedule?.subjectName;
+        if (!subjectId && !subjectName) {
           return (
             <Typography variant="body2" color="text.disabled">
               —
             </Typography>
           );
         }
-        const idx = batchSubjects.findIndex((s) => s.id === subjectId);
-        const { fg, bg } = subjectColor(idx >= 0 ? idx : 0);
+        const { fg, bg } = subjectColor(
+          subjectId ? subjectColorIndex(subjectId) : 0,
+        );
         return (
           <Chip
-            label={subjectLookup.get(subjectId) ?? "—"}
+            label={subjectName ?? subjectLookup.get(subjectId!) ?? "—"}
             size="small"
             sx={{ bgcolor: bg, color: fg, fontWeight: 600, fontSize: 12 }}
           />

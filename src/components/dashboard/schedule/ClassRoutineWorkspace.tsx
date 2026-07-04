@@ -203,6 +203,27 @@ function DayCard({
 
       {/* Class details */}
       <Stack spacing={1.25} sx={{ px: 2.5, py: 2, flex: 1 }}>
+        {/* Subject */}
+        {schedule.subjectName ? (
+          <Chip
+            label={schedule.subjectName}
+            size="small"
+            sx={{
+              alignSelf: "flex-start",
+              maxWidth: "100%",
+              bgcolor: accent,
+              color: "#ffffff",
+              fontWeight: 700,
+              fontSize: "0.72rem",
+              height: 22,
+              "& .MuiChip-label": {
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+              },
+            }}
+          />
+        ) : null}
+
         {/* Time */}
         <Stack direction="row" spacing={1} alignItems="center">
           <ScheduleRounded sx={{ fontSize: 15, color: accent, flexShrink: 0 }} />
@@ -590,6 +611,7 @@ export function ClassRoutineWorkspace() {
                             <thead>
                               <tr>
                                 <th>Day</th>
+                                <th>Subject</th>
                                 <th>Time</th>
                                 <th>Duration</th>
                                 <th>Room</th>
@@ -614,6 +636,19 @@ export function ClassRoutineWorkspace() {
                                         sx={{ fontWeight: 700 }}
                                       >
                                         {DAY_LABELS[day]}
+                                      </Typography>
+                                    </td>
+                                    <td>
+                                      <Typography
+                                        variant="body2"
+                                        color={
+                                          s.subjectName
+                                            ? "text.primary"
+                                            : "text.disabled"
+                                        }
+                                        sx={{ fontWeight: s.subjectName ? 600 : 400 }}
+                                      >
+                                        {s.subjectName ?? "—"}
                                       </Typography>
                                     </td>
                                     <td>

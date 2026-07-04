@@ -93,20 +93,23 @@ export function SearchSelect({
       isOptionEqualToValue={(a, b) => a.value === b.value}
       onChange={(_, opt) => onChange(opt?.value ?? "")}
       onBlur={onBlur}
-      renderOption={(props, o) => (
-        <Box component="li" {...props} key={o.value}>
-          <Stack spacing={0.25}>
-            <Typography variant="body2" fontWeight={600}>
-              {o.label}
-            </Typography>
-            {o.description ? (
-              <Typography variant="caption" color="text.secondary">
-                {o.description}
+      renderOption={(props, o) => {
+        const { key, ...optionProps } = props;
+        return (
+          <Box component="li" key={key} {...optionProps}>
+            <Stack spacing={0.25}>
+              <Typography variant="body2" fontWeight={600}>
+                {o.label}
               </Typography>
-            ) : null}
-          </Stack>
-        </Box>
-      )}
+              {o.description ? (
+                <Typography variant="caption" color="text.secondary">
+                  {o.description}
+                </Typography>
+              ) : null}
+            </Stack>
+          </Box>
+        );
+      }}
       renderInput={(params) => (
         <TextField
           {...params}

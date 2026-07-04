@@ -190,28 +190,34 @@ export function ProgramFormDialog({
                     onChange={(_, selected) =>
                       field.onChange(selected.map((s) => s.id))
                     }
-                    renderOption={(props, option, { selected }) => (
-                      <li {...props} key={option.id}>
-                        <Checkbox
-                          icon={
-                            <CheckBoxOutlineBlankRounded fontSize="small" />
-                          }
-                          checkedIcon={<CheckBoxRounded fontSize="small" />}
-                          checked={selected}
-                          sx={{ mr: 1 }}
-                        />
-                        {option.name}
-                      </li>
-                    )}
+                    renderOption={(props, option, { selected }) => {
+                      const { key, ...optionProps } = props;
+                      return (
+                        <li key={key} {...optionProps}>
+                          <Checkbox
+                            icon={
+                              <CheckBoxOutlineBlankRounded fontSize="small" />
+                            }
+                            checkedIcon={<CheckBoxRounded fontSize="small" />}
+                            checked={selected}
+                            sx={{ mr: 1 }}
+                          />
+                          {option.name}
+                        </li>
+                      );
+                    }}
                     renderTags={(selected, getTagProps) =>
-                      selected.map((option, index) => (
-                        <Chip
-                          {...getTagProps({ index })}
-                          key={option.id}
-                          label={option.name}
-                          size="small"
-                        />
-                      ))
+                      selected.map((option, index) => {
+                        const { key, ...tagProps } = getTagProps({ index });
+                        return (
+                          <Chip
+                            {...tagProps}
+                            key={key}
+                            label={option.name}
+                            size="small"
+                          />
+                        );
+                      })
                     }
                     renderInput={(params) => (
                       <TextField

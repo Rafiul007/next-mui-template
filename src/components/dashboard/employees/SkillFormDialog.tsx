@@ -87,7 +87,7 @@ export function AddSkillDialog({ open, isSubmitting, employeeOptions, errorMessa
             <RhfSearchSelect control={control} name="employeeId" label="Employee *" options={employeeOptions} placeholder="Search by name or code…" />
             <Box sx={{ display: "grid", gap: 2, gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr" } }}>
               <RhfTextField control={control} name="skill" label="Skill *" placeholder="e.g. React, Excel, Leadership" trim />
-              <RhfSelect control={control} name="proficiencyLevel" label="Proficiency *" options={PROFICIENCY_OPTIONS} placeholder="Select level" />
+              <RhfSelect control={control} name="proficiencyLevel" label="Proficiency *" options={PROFICIENCY_OPTIONS} />
             </Box>
           </Stack>
         </DialogContent>

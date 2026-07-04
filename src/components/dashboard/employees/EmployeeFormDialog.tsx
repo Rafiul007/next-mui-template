@@ -213,14 +213,12 @@ export function EmployeeFormDialog({
                   name="branchId"
                   label="Branch *"
                   options={branchOptions}
-                  placeholder="Select branch"
                 />
                 <RhfSelect
                   control={control}
                   name="employmentType"
                   label="Employment type *"
                   options={employmentTypeOptions}
-                  placeholder="Select type"
                 />
                 <RhfDatePicker
                   control={control}
@@ -247,7 +245,6 @@ export function EmployeeFormDialog({
                   name="departmentId"
                   label="Department"
                   options={[{ label: "None", value: "" }, ...departmentOptions]}
-                  placeholder="Select department"
                 />
                 {mode === "edit" && (
                   <RhfTextField

@@ -17,7 +17,12 @@ import {
   Switch,
   Typography,
 } from "@mui/material";
-import { RhfSelect, RhfTextField } from "@/components/form";
+import {
+  RhfSearchSelect,
+  RhfSelect,
+  RhfTextField,
+  type SearchSelectOption,
+} from "@/components/form";
 
 const CLASS_LEVEL_OPTIONS = [
   { label: "Class 1", value: "CLASS_1" },
@@ -57,6 +62,7 @@ const subjectFormSchema = yup
       .trim()
       .max(50, "Must be 50 characters or fewer")
       .default(""),
+    batchId: yup.string().default(""),
     active: yup.boolean().required().default(true),
   })
   .required();
@@ -68,10 +74,13 @@ export const emptySubjectFormValues: SubjectFormValues = {
   nameBangla: "",
   code: "",
   classLevel: "",
+  batchId: "",
   active: true,
 };
 
 type SubjectFormDialogProps = {
+  batchOptions: SearchSelectOption[];
+  batchesLoading?: boolean;
   errorMessage?: string | null;
   initialValues: SubjectFormValues;
   isSubmitting: boolean;
@@ -82,6 +91,8 @@ type SubjectFormDialogProps = {
 };
 
 export function SubjectFormDialog({
+  batchOptions,
+  batchesLoading,
   errorMessage,
   initialValues,
   isSubmitting,
@@ -156,11 +167,24 @@ export function SubjectFormDialog({
                   name="classLevel"
                   label="Class level"
                   options={CLASS_LEVEL_OPTIONS}
-                  placeholder="All levels"
                   displayEmpty
                   fullWidth
                   helperText="Leave blank if applicable to all levels"
                 />
+                <Box sx={{ gridColumn: { sm: "1 / -1" } }}>
+                  <RhfSearchSelect
+                    control={control}
+                    name="batchId"
+                    label="Batch"
+                    options={[
+                      { value: "", label: "Unassigned (library subject)" },
+                      ...batchOptions,
+                    ]}
+                    loading={batchesLoading}
+                    placeholder="Search batches…"
+                    helperText="Assign to a batch to use it in that batch's routine, or leave unassigned for the program library"
+                  />
+                </Box>
               </Box>
             </Stack>
 

@@ -784,6 +784,8 @@ export type MeResponse = {
   permissions: Array<PermissionInfo>;
   roles: Array<Scalars['String']['output']>;
   subscription?: Maybe<SubscriptionInfo>;
+  tenantId?: Maybe<Scalars['ID']['output']>;
+  tenantName?: Maybe<Scalars['String']['output']>;
   user: UserInfo;
   userType: UserType;
 };

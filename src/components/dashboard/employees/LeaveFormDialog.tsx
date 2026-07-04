@@ -114,7 +114,6 @@ export function LeaveFormDialog({
               name="leaveType"
               label="Leave type *"
               options={leaveTypeOptions}
-              placeholder="Select leave type"
             />
             <Box
               sx={{

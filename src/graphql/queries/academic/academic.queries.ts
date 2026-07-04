@@ -160,6 +160,8 @@ export const GET_SCHEDULES_BY_BATCH_QUERY = /* GraphQL */ `
       endTime
       roomName
       teacherId
+      subjectId
+      subjectName
       active
       tenantId
     }
@@ -176,6 +178,8 @@ export const GET_MY_ROUTINE_QUERY = /* GraphQL */ `
       endTime
       roomName
       teacherId
+      subjectId
+      subjectName
       active
       tenantId
     }

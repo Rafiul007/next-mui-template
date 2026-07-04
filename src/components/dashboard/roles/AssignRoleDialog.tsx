@@ -120,7 +120,6 @@ export function AssignRoleDialog({
                   name="roleName"
                   label="Role"
                   options={roleOptions}
-                  placeholder="Select a role"
                 />
 
                 <Box>

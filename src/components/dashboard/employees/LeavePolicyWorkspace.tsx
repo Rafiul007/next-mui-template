@@ -412,7 +412,6 @@ export function LeavePolicyWorkspace() {
                 name="leaveType"
                 label="Leave type *"
                 options={leaveTypeOptions}
-                placeholder="Select type"
               />
 
               <Box

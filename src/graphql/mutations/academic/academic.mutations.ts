@@ -212,6 +212,7 @@ export const CREATE_SUBJECT_MUTATION = /* GraphQL */ `
       nameBangla
       code
       classLevel
+      batchId
       active
       tenantId
     }
@@ -226,6 +227,7 @@ export const UPDATE_SUBJECT_MUTATION = /* GraphQL */ `
       nameBangla
       code
       classLevel
+      batchId
       active
       tenantId
     }
@@ -242,6 +244,8 @@ export const CREATE_RECURRING_SCHEDULE_MUTATION = /* GraphQL */ `
       endTime
       roomName
       teacherId
+      subjectId
+      subjectName
       active
       tenantId
     }

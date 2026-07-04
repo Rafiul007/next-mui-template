@@ -565,7 +565,6 @@ export function PerformanceWorkspace() {
                   name="cycleType"
                   label="Cycle type *"
                   options={cycleTypeOptions}
-                  placeholder="Select type"
                 />
                 <RhfTextField
                   control={cycleControl}
@@ -640,7 +639,6 @@ export function PerformanceWorkspace() {
                 name="reviewerType"
                 label="Reviewer type *"
                 options={reviewerTypeOptions}
-                placeholder="Select type"
               />
               <RhfTextField
                 control={reviewControl}

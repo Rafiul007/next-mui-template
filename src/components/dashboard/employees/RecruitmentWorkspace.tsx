@@ -519,7 +519,6 @@ export function RecruitmentWorkspace() {
                   name="jobType"
                   label="Job type *"
                   options={jobTypeOptions}
-                  placeholder="Select type"
                 />
                 <RhfTextField
                   control={control}

@@ -139,7 +139,7 @@ const mapApiStudent = (s: ApiStudent): StudentRecord => ({
   firstName: s.firstName,
   lastName: s.lastName ?? "",
   firstNameBangla: s.firstNameBangla ?? "",
-  gender: (s.gender as Gender) ?? "other",
+  gender: (s.gender?.toLowerCase() as Gender) ?? "other",
   bloodGroup: s.bloodGroup ?? "",
   phone: s.phone ?? "",
   email: s.email ?? "",
@@ -153,7 +153,7 @@ const mapApiStudent = (s: ApiStudent): StudentRecord => ({
   previousResult: s.previousResult ?? "",
   admissionSource: s.admissionSource ?? "",
   notes: s.notes ?? "",
-  status: (s.status as AdmissionStatus) ?? "active",
+  status: (s.status?.toLowerCase() as AdmissionStatus) ?? "active",
   qualifications: (s.qualifications ?? []).map((q) => ({
     id: q.id,
     institution: q.institution,

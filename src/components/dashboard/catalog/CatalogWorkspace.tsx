@@ -33,6 +33,7 @@ import { getErrorMessage } from "@/lib/errors";
 import {
   CreateProgramDocument,
   CreateSubjectDocument,
+  GetAllBatchesDocument,
   GetProgramsDocument,
   GetSubjectsDocument,
   UpdateProgramDocument,
@@ -40,6 +41,7 @@ import {
   type GetProgramsQuery,
   type GetSubjectsQuery,
 } from "@/graphql/generated";
+import { batchSearchOptions } from "@/lib/search-options";
 import {
   SubjectFormDialog,
   emptySubjectFormValues,
@@ -60,6 +62,7 @@ type SubjectRecord = {
   nameBangla: string | null;
   code: string | null;
   classLevel: string | null;
+  batchId: string | null;
   active: boolean;
 };
 
@@ -84,6 +87,7 @@ const mapApiSubject = (s: ApiSubject): SubjectRecord => ({
   nameBangla: s.nameBangla ?? null,
   code: s.code ?? null,
   classLevel: s.classLevel ?? null,
+  batchId: s.batchId ?? null,
   active: s.active,
 });
 
@@ -243,7 +247,9 @@ const tableProps = {
 
 // ─── Column definitions ────────────────────────────────────────────────────────
 
-const buildSubjectColumns = (): MRT_ColumnDef<SubjectRecord>[] => [
+const buildSubjectColumns = (
+  batchMap: Map<string, string>,
+): MRT_ColumnDef<SubjectRecord>[] => [
   {
     accessorKey: "name",
     header: "Subject",
@@ -284,6 +290,35 @@ const buildSubjectColumns = (): MRT_ColumnDef<SubjectRecord>[] => [
         <Typography variant="body2" color={level ? "text.primary" : "text.disabled"}>
           {level ?? "—"}
         </Typography>
+      );
+    },
+  },
+  {
+    id: "batch",
+    header: "Batch",
+    size: 180,
+    accessorFn: (row) =>
+      row.batchId ? (batchMap.get(row.batchId) ?? "Unknown batch") : "",
+    Cell: ({ row }) => {
+      const { batchId } = row.original;
+      if (!batchId) {
+        return (
+          <Chip
+            label="Library"
+            size="small"
+            variant="outlined"
+            sx={{ fontSize: 11 }}
+          />
+        );
+      }
+      return (
+        <Chip
+          label={batchMap.get(batchId) ?? "Unknown batch"}
+          size="small"
+          color="primary"
+          variant="outlined"
+          sx={{ fontSize: 11 }}
+        />
       );
     },
   },
@@ -420,6 +455,10 @@ export function CatalogWorkspace() {
     { fetchPolicy: "cache-and-network" },
   );
 
+  const { data: batchesData, loading: batchesLoading } = useQuery(
+    GetAllBatchesDocument,
+  );
+
   // Subject mutations
   const [createSubject, { loading: isCreatingSubject }] = useMutation(
     CreateSubjectDocument,
@@ -451,6 +490,10 @@ export function CatalogWorkspace() {
     .map((s) => ({ id: s.id, name: s.name }));
 
   const subjectMap = new Map(subjects.map((s) => [s.id, s.name]));
+
+  const batches = batchesData?.getAllBatches ?? [];
+  const batchOptions = batchSearchOptions(batches);
+  const batchMap = new Map(batches.map((b) => [b.id, b.name]));
 
   const isSubjectSubmitting = isCreatingSubject || isUpdatingSubject;
   const isProgramSubmitting = isCreatingProgram || isUpdatingProgram;
@@ -485,6 +528,7 @@ export function CatalogWorkspace() {
     nameBangla: subject.nameBangla ?? "",
     code: subject.code ?? "",
     classLevel: subject.classLevel ?? "",
+    batchId: subject.batchId ?? "",
     active: subject.active,
   });
 
@@ -500,6 +544,7 @@ export function CatalogWorkspace() {
               nameBangla: values.nameBangla || undefined,
               code: values.code || undefined,
               classLevel: values.classLevel || undefined,
+              batchId: values.batchId || null,
               active: values.active,
             },
           },
@@ -514,6 +559,7 @@ export function CatalogWorkspace() {
               nameBangla: values.nameBangla || undefined,
               code: values.code || undefined,
               classLevel: values.classLevel || undefined,
+              batchId: values.batchId || undefined,
             },
           },
         });
@@ -731,7 +777,7 @@ export function CatalogWorkspace() {
 
                 {/* Table */}
                 <MaterialReactTable
-                  columns={buildSubjectColumns()}
+                  columns={buildSubjectColumns(batchMap)}
                   data={subjects}
                   enableColumnFilters
                   enableDensityToggle={false}
@@ -942,6 +988,8 @@ export function CatalogWorkspace() {
       {/* ── Subject dialog ── */}
       <SubjectFormDialog
         key={`subject-${subjectFormKey}`}
+        batchOptions={batchOptions}
+        batchesLoading={batchesLoading}
         errorMessage={subjectFormError}
         initialValues={
           selectedSubject

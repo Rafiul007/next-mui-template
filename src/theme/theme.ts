@@ -43,7 +43,7 @@ export const appTheme = createTheme({
   typography: {
     fontSize: 13,
     fontFamily:
-      '"Inter", "Manrope", "Segoe UI", "Helvetica Neue", Arial, sans-serif',
+      'var(--font-sans), "Inter", "Manrope", "Segoe UI", "Helvetica Neue", Arial, sans-serif',
     h3: {
       fontWeight: 800,
       letterSpacing: -1,

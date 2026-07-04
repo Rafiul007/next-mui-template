@@ -137,7 +137,7 @@ export function TenantFormDialog({
     if (field.kind === "select") {
       return (
         <Box key={field.name} sx={spanSx}>
-          <RhfSelect control={control} name={field.name} label={field.label} options={field.options} placeholder={field.placeholder} fullWidth />
+          <RhfSelect control={control} name={field.name} label={field.label} options={field.options} fullWidth />
         </Box>
       );
     }
