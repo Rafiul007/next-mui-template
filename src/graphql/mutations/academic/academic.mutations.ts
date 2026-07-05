@@ -252,6 +252,48 @@ export const CREATE_RECURRING_SCHEDULE_MUTATION = /* GraphQL */ `
   }
 `;
 
+export const UPDATE_RECURRING_SCHEDULE_MUTATION = /* GraphQL */ `
+  mutation UpdateRecurringSchedule($schedule: UpdateRecurringScheduleInput!) {
+    updateRecurringSchedule(schedule: $schedule) {
+      id
+      batchId
+      dayOfWeek
+      startTime
+      endTime
+      roomName
+      teacherId
+      subjectId
+      subjectName
+      active
+      tenantId
+    }
+  }
+`;
+
+export const DELETE_RECURRING_SCHEDULE_MUTATION = /* GraphQL */ `
+  mutation DeleteRecurringSchedule($scheduleId: ID!) {
+    deleteRecurringSchedule(scheduleId: $scheduleId)
+  }
+`;
+
+export const UNASSIGN_SCHEDULE_TEACHER_MUTATION = /* GraphQL */ `
+  mutation UnassignScheduleTeacher($scheduleId: ID!) {
+    unassignScheduleTeacher(scheduleId: $scheduleId) {
+      id
+      batchId
+      dayOfWeek
+      startTime
+      endTime
+      roomName
+      teacherId
+      subjectId
+      subjectName
+      active
+      tenantId
+    }
+  }
+`;
+
 export const ADD_ONE_OFF_SESSION_MUTATION = /* GraphQL */ `
   mutation AddOneOffSession($session: CreateOneOffSessionInput!) {
     addOneOffSession(session: $session) {

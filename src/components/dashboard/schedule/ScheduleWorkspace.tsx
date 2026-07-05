@@ -6,6 +6,8 @@ import {
   AutoStoriesRounded,
   CalendarMonthRounded,
   ContentCopyRounded,
+  DeleteOutlineRounded,
+  EditRounded,
   EventRounded,
   PersonRounded,
   RepeatRounded,
@@ -21,6 +23,10 @@ import {
   Button,
   Chip,
   CircularProgress,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
   IconButton,
   Paper,
   Stack,
@@ -40,15 +46,17 @@ import {
   AssignSubstituteDocument,
   CreateRecurringScheduleDocument,
   CreateSubjectDocument,
+  DeleteRecurringScheduleDocument,
+  UpdateRecurringScheduleDocument,
   GetAllBatchesDocument,
+  GetTeachersDocument,
   GetSchedulesByBatchDocument,
   GetSessionsByBatchDocument,
   GetSubjectsByBatchDocument,
-  GetUsersDocument,
+  type GetTeachersQuery,
   type GetSchedulesByBatchQuery,
   type GetSessionsByBatchQuery,
   type GetSubjectsByBatchQuery,
-  type GetUsersQuery,
 } from "@/graphql/generated";
 import { getErrorMessage } from "@/lib/errors";
 import { primaryGradient } from "@/theme/theme";
@@ -69,7 +77,7 @@ import { SubstituteDialog } from "./SubstituteDialog";
 type ScheduleRecord = GetSchedulesByBatchQuery["getSchedulesByBatch"][number];
 type SessionRecord = GetSessionsByBatchQuery["getSessionsByBatch"][number];
 type SubjectRecord = GetSubjectsByBatchQuery["getSubjectsByBatch"][number];
-type UserRecord = NonNullable<GetUsersQuery["getUsers"][number]>;
+type TeacherRecord = NonNullable<GetTeachersQuery["getTeachers"][number]>;
 
 const DAY_ORDER = [
   "SUNDAY",
@@ -258,14 +266,20 @@ export function ScheduleWorkspace() {
   const [substituteError, setSubstituteError] = useState<string | null>(null);
   const [scheduleFormInitialValues, setScheduleFormInitialValues] =
     useState<RecurringScheduleFormValues>(emptyScheduleValues);
+  const [scheduleFormMode, setScheduleFormMode] = useState<"create" | "edit">(
+    "create",
+  );
+  const [editingScheduleId, setEditingScheduleId] = useState<string | null>(
+    null,
+  );
+  const [deleteScheduleTarget, setDeleteScheduleTarget] =
+    useState<ScheduleRecord | null>(null);
 
   const { data: batchesData, loading: isBatchesLoading } = useQuery(
     GetAllBatchesDocument,
   );
-  const { data: usersData, loading: isUsersLoading } = useQuery(
-    GetUsersDocument,
-    { variables: { page: 1, limit: 200 } },
-  );
+  const { data: teachersData, loading: isTeachersLoading } =
+    useQuery(GetTeachersDocument);
   const {
     data: subjectsData,
     loading: isSubjectsLoading,
@@ -295,14 +309,20 @@ export function ScheduleWorkspace() {
   const [createRecurringSchedule, createScheduleState] = useMutation(
     CreateRecurringScheduleDocument,
   );
+  const [updateRecurringSchedule, updateScheduleState] = useMutation(
+    UpdateRecurringScheduleDocument,
+  );
+  const [deleteRecurringSchedule, deleteScheduleState] = useMutation(
+    DeleteRecurringScheduleDocument,
+  );
   const [addOneOffSession, addSessionState] = useMutation(AddOneOffSessionDocument);
   const [assignSubstitute, assignSubstituteState] = useMutation(
     AssignSubstituteDocument,
   );
 
   const batches = batchesData?.getAllBatches ?? [];
-  const users = (usersData?.getUsers ?? []).filter(
-    (u): u is UserRecord => !!u,
+  const teachers = (teachersData?.getTeachers ?? []).filter(
+    (t): t is TeacherRecord => !!t,
   );
   const batchSubjects = subjectsData?.getSubjectsByBatch ?? [];
   const schedules = [...(schedulesData?.getSchedulesByBatch ?? [])].sort(
@@ -312,12 +332,11 @@ export function ScheduleWorkspace() {
     (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime(),
   );
 
-  const userLookup = new Map(
-    users.map((u) => [
-      u.id,
-      `${u.firstName} ${u.lastName}`.trim() || u.email,
-    ]),
-  );
+  const teacherName = (t: TeacherRecord) =>
+    `${t.firstName} ${t.lastName}`.trim() || t.email;
+
+  // Teacher assignments are keyed by the teacher's user id (teacherId).
+  const teacherLookup = new Map(teachers.map((t) => [t.id, teacherName(t)]));
 
   const subjectLookup = new Map(batchSubjects.map((s) => [s.id, s.name]));
   const scheduleById = new Map(schedules.map((s) => [s.id, s]));
@@ -328,10 +347,7 @@ export function ScheduleWorkspace() {
 
   const teacherOptions: RhfSelectOption[] = [
     { label: "Not assigned", value: "" },
-    ...users.map((u) => ({
-      label: `${u.firstName} ${u.lastName}`.trim() || u.email,
-      value: u.id,
-    })),
+    ...teachers.map((t) => ({ label: teacherName(t), value: t.id })),
   ];
 
   const subjectOptions: RhfSelectOption[] = [
@@ -342,7 +358,8 @@ export function ScheduleWorkspace() {
   const selectedBatch = batches.find((b) => b.id === selectedBatchId) ?? null;
   const activeSchedules = schedules.filter((s) => s.active);
   const upcomingSessions = sessions.filter((s) => /scheduled/i.test(s.status)).length;
-  const isSubmittingSchedule = createScheduleState.loading;
+  const isSubmittingSchedule =
+    createScheduleState.loading || updateScheduleState.loading;
   const isSubmittingSession = addSessionState.loading;
   const isSubmittingSubstitute = assignSubstituteState.loading;
 
@@ -386,8 +403,26 @@ export function ScheduleWorkspace() {
 
   const openScheduleForm = (prefill?: RecurringScheduleFormValues) => {
     setScheduleFormError(null);
+    setScheduleFormMode("create");
+    setEditingScheduleId(null);
     setScheduleFormKey((k) => k + 1);
     setScheduleFormInitialValues(prefill ?? emptyScheduleValues);
+    setIsScheduleFormOpen(true);
+  };
+
+  const openEditScheduleForm = (schedule: ScheduleRecord) => {
+    setScheduleFormError(null);
+    setScheduleFormMode("edit");
+    setEditingScheduleId(schedule.id);
+    setScheduleFormKey((k) => k + 1);
+    setScheduleFormInitialValues({
+      dayOfWeek: schedule.dayOfWeek,
+      startTime: schedule.startTime,
+      endTime: schedule.endTime,
+      roomName: schedule.roomName ?? "",
+      teacherId: schedule.teacherId ?? "",
+      subjectId: schedule.subjectId ?? "",
+    });
     setIsScheduleFormOpen(true);
   };
 
@@ -402,32 +437,65 @@ export function ScheduleWorkspace() {
     setSubstituteSession(session);
   };
 
-  const handleCreateSchedule = async (values: RecurringScheduleFormValues) => {
+  const handleSubmitSchedule = async (values: RecurringScheduleFormValues) => {
     if (!selectedBatchId) return;
     setScheduleFormError(null);
     try {
-      const result = await createRecurringSchedule({
-        variables: {
-          schedule: {
-            batchId: selectedBatchId,
-            dayOfWeek: values.dayOfWeek,
-            startTime: values.startTime,
-            endTime: values.endTime,
-            roomName: values.roomName?.trim() || undefined,
-            teacherId: values.teacherId?.trim() || undefined,
-            subjectId: values.subjectId?.trim() || undefined,
+      if (scheduleFormMode === "edit" && editingScheduleId) {
+        const result = await updateRecurringSchedule({
+          variables: {
+            schedule: {
+              id: editingScheduleId,
+              dayOfWeek: values.dayOfWeek,
+              startTime: values.startTime,
+              endTime: values.endTime,
+              roomName: values.roomName?.trim() || null,
+              teacherId: values.teacherId?.trim() || null,
+              subjectId: values.subjectId?.trim() || null,
+            },
           },
-        },
-      });
-      if (result.error) throw result.error;
-
-      await refetchSchedules();
-      toast.success("Recurring schedule added.");
+        });
+        if (result.error) throw result.error;
+        await refetchSchedules();
+        toast.success("Recurring schedule updated.");
+      } else {
+        const result = await createRecurringSchedule({
+          variables: {
+            schedule: {
+              batchId: selectedBatchId,
+              dayOfWeek: values.dayOfWeek,
+              startTime: values.startTime,
+              endTime: values.endTime,
+              roomName: values.roomName?.trim() || undefined,
+              teacherId: values.teacherId?.trim() || undefined,
+              subjectId: values.subjectId?.trim() || undefined,
+            },
+          },
+        });
+        if (result.error) throw result.error;
+        await refetchSchedules();
+        toast.success("Recurring schedule added.");
+      }
       setIsScheduleFormOpen(false);
     } catch (error) {
-      const message = getErrorMessage(error, "Unable to add schedule.");
+      const message = getErrorMessage(error, "Unable to save schedule.");
       setScheduleFormError(message);
       toast.error(message);
+    }
+  };
+
+  const handleDeleteSchedule = async () => {
+    if (!deleteScheduleTarget) return;
+    try {
+      const result = await deleteRecurringSchedule({
+        variables: { scheduleId: deleteScheduleTarget.id },
+      });
+      if (result.error) throw result.error;
+      await refetchSchedules();
+      toast.success("Recurring schedule deleted.");
+      setDeleteScheduleTarget(null);
+    } catch (error) {
+      toast.error(getErrorMessage(error, "Unable to delete schedule."));
     }
   };
 
@@ -572,7 +640,7 @@ export function ScheduleWorkspace() {
     {
       id: "teacher",
       accessorFn: (row) =>
-        row.teacherId ? (userLookup.get(row.teacherId) ?? "Unknown") : "—",
+        row.teacherId ? (teacherLookup.get(row.teacherId) ?? "Unknown") : "—",
       header: "Teacher",
       size: 180,
       Cell: ({ row, cell }) => (
@@ -623,28 +691,52 @@ export function ScheduleWorkspace() {
     {
       id: "scheduleActions",
       header: "Actions",
-      size: 90,
+      size: 140,
       enableSorting: false,
       Cell: ({ row }) => {
         return (
-          <Tooltip title="Duplicate schedule">
-            <IconButton
-              size="small"
-              onClick={() =>
-                openScheduleForm({
-                  dayOfWeek: row.original.dayOfWeek,
-                  startTime: row.original.startTime,
-                  endTime: row.original.endTime,
-                  roomName: row.original.roomName ?? "",
-                  teacherId: row.original.teacherId ?? "",
-                  subjectId: row.original.subjectId ?? "",
-                })
-              }
-              sx={{ bgcolor: alpha("#0f172a", 0.04) }}
-            >
-              <ContentCopyRounded fontSize="small" />
-            </IconButton>
-          </Tooltip>
+          <Stack direction="row" spacing={0.5}>
+            <Tooltip title="Edit schedule">
+              <IconButton
+                size="small"
+                onClick={() => openEditScheduleForm(row.original)}
+                sx={{ bgcolor: alpha("#0f172a", 0.04) }}
+              >
+                <EditRounded fontSize="small" />
+              </IconButton>
+            </Tooltip>
+            <Tooltip title="Duplicate schedule">
+              <IconButton
+                size="small"
+                onClick={() =>
+                  openScheduleForm({
+                    dayOfWeek: row.original.dayOfWeek,
+                    startTime: row.original.startTime,
+                    endTime: row.original.endTime,
+                    roomName: row.original.roomName ?? "",
+                    teacherId: row.original.teacherId ?? "",
+                    subjectId: row.original.subjectId ?? "",
+                  })
+                }
+                sx={{ bgcolor: alpha("#0f172a", 0.04) }}
+              >
+                <ContentCopyRounded fontSize="small" />
+              </IconButton>
+            </Tooltip>
+            <Tooltip title="Delete schedule">
+              <IconButton
+                size="small"
+                onClick={() => setDeleteScheduleTarget(row.original)}
+                sx={{
+                  bgcolor: alpha("#ef4444", 0.06),
+                  color: "#ef4444",
+                  "&:hover": { bgcolor: alpha("#ef4444", 0.12) },
+                }}
+              >
+                <DeleteOutlineRounded fontSize="small" />
+              </IconButton>
+            </Tooltip>
+          </Stack>
         );
       },
     },
@@ -751,7 +843,7 @@ export function ScheduleWorkspace() {
     {
       id: "teacher",
       accessorFn: (row) =>
-        row.teacherId ? (userLookup.get(row.teacherId) ?? "Unknown") : "—",
+        row.teacherId ? (teacherLookup.get(row.teacherId) ?? "Unknown") : "—",
       header: "Teacher",
       size: 180,
       Cell: ({ row, cell }) => (
@@ -772,7 +864,7 @@ export function ScheduleWorkspace() {
       size: 180,
       Cell: ({ row }) => {
         const name = row.original.substituteTeacherId
-          ? (userLookup.get(row.original.substituteTeacherId) ?? "Unknown")
+          ? (teacherLookup.get(row.original.substituteTeacherId) ?? "Unknown")
           : null;
         return name ? (
           <Stack direction="row" spacing={1} alignItems="center">
@@ -1144,7 +1236,7 @@ export function ScheduleWorkspace() {
                     </Typography>
                   )}
                   state={{
-                    isLoading: isSchedulesLoading || isUsersLoading,
+                    isLoading: isSchedulesLoading || isTeachersLoading,
                     showProgressBars: isSchedulesLoading,
                   }}
                   {...sharedTableProps}
@@ -1197,7 +1289,7 @@ export function ScheduleWorkspace() {
                     </Typography>
                   )}
                   state={{
-                    isLoading: isSessionsLoading || isUsersLoading,
+                    isLoading: isSessionsLoading || isTeachersLoading,
                     showProgressBars: isSessionsLoading,
                   }}
                   {...sharedTableProps}
@@ -1243,6 +1335,7 @@ export function ScheduleWorkspace() {
             errorMessage={scheduleFormError}
             initialValues={scheduleFormInitialValues}
             isSubmitting={isSubmittingSchedule}
+            mode={scheduleFormMode}
             teacherOptions={teacherOptions}
             subjectOptions={subjectOptions}
             onClose={() => {
@@ -1251,7 +1344,7 @@ export function ScheduleWorkspace() {
                 setScheduleFormError(null);
               }
             }}
-            onSubmit={handleCreateSchedule}
+            onSubmit={handleSubmitSchedule}
             open={isScheduleFormOpen}
           />
 
@@ -1291,6 +1384,54 @@ export function ScheduleWorkspace() {
           open={!!substituteSession}
         />
       ) : null}
+
+      <Dialog
+        open={!!deleteScheduleTarget}
+        onClose={() =>
+          !deleteScheduleState.loading && setDeleteScheduleTarget(null)
+        }
+        fullWidth
+        maxWidth="xs"
+      >
+        <DialogTitle>Delete recurring schedule</DialogTitle>
+        <DialogContent>
+          <Typography variant="body2" color="text.secondary">
+            Delete the{" "}
+            <strong>
+              {deleteScheduleTarget
+                ? formatDay(deleteScheduleTarget.dayOfWeek)
+                : ""}
+            </strong>{" "}
+            {deleteScheduleTarget
+              ? `${formatTime(deleteScheduleTarget.startTime)} – ${formatTime(deleteScheduleTarget.endTime)}`
+              : ""}{" "}
+            slot? This removes the weekly slot from the routine. This action
+            cannot be undone.
+          </Typography>
+        </DialogContent>
+        <DialogActions sx={{ px: 3, py: 2 }}>
+          <Button
+            color="inherit"
+            onClick={() => setDeleteScheduleTarget(null)}
+            disabled={deleteScheduleState.loading}
+          >
+            Cancel
+          </Button>
+          <Button
+            variant="contained"
+            color="error"
+            onClick={handleDeleteSchedule}
+            disabled={deleteScheduleState.loading}
+            startIcon={
+              deleteScheduleState.loading ? (
+                <CircularProgress size={14} color="inherit" />
+              ) : undefined
+            }
+          >
+            Delete
+          </Button>
+        </DialogActions>
+      </Dialog>
     </>
   );
 }

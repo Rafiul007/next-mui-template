@@ -25,12 +25,9 @@ import {
   Chip,
   CircularProgress,
   Divider,
-  FormControl,
   InputAdornment,
   LinearProgress,
-  MenuItem,
   Paper,
-  Select,
   Stack,
   Tab,
   Table,
@@ -40,6 +37,7 @@ import {
   TableRow,
   Tabs,
   TextField,
+  Tooltip,
   Typography,
   alpha,
 } from "@mui/material";
@@ -57,7 +55,6 @@ import {
   StartSessionDocument,
   type GetAttendanceBySessionQuery,
   type GetEnrollmentsByBatchQuery,
-  type GetSchedulesByBatchQuery,
   type GetSessionsByBatchQuery,
   type GetStudentsQuery,
 } from "@/graphql/generated";
@@ -73,7 +70,6 @@ type AttendanceRecord =
 type EnrollmentRecord =
   GetEnrollmentsByBatchQuery["getEnrollmentsByBatch"][number];
 type StudentRecord = NonNullable<GetStudentsQuery["getStudents"][number]>;
-type ScheduleRecord = GetSchedulesByBatchQuery["getSchedulesByBatch"][number];
 type SessionRecord = GetSessionsByBatchQuery["getSessionsByBatch"][number];
 
 type AttendanceStatus = "PRESENT" | "ABSENT" | "LATE";
@@ -143,6 +139,16 @@ const avatarColor = (name: string): string => {
 
 const getInitials = (first: string, last?: string | null): string =>
   first.charAt(0).toUpperCase() + (last ? last.charAt(0).toUpperCase() : "");
+
+const SESSION_TYPE_LABELS: Record<string, string> = {
+  EXTRA: "Extra class",
+  MAKEUP: "Make-up class",
+  MAKE_UP: "Make-up class",
+};
+
+const formatSessionType = (type: string): string =>
+  SESSION_TYPE_LABELS[type.toUpperCase()] ??
+  type.charAt(0).toUpperCase() + type.slice(1).toLowerCase();
 
 // ── Student Avatar ─────────────────────────────────────────────────────────────
 
@@ -230,19 +236,27 @@ function PALButton({
 // ── Session Picker Card ───────────────────────────────────────────────────────
 
 function SessionPickerCard({
-  schedule,
-  session,
+  startTime,
+  endTime,
+  roomName,
   teacherName,
   enrolledCount,
+  session,
+  typeLabel,
   isStarting,
+  canStart = true,
   onTake,
   onStart,
 }: {
-  schedule: ScheduleRecord;
-  session: SessionRecord | null;
+  startTime: string;
+  endTime: string;
+  roomName?: string | null;
   teacherName: string | null;
   enrolledCount: number;
+  session: SessionRecord | null;
+  typeLabel?: string | null;
   isStarting: boolean;
+  canStart?: boolean;
   onTake: () => void;
   onStart: () => void;
 }) {
@@ -281,9 +295,20 @@ function SessionPickerCard({
       </Box>
 
       <Box flex={1} minWidth={0}>
-        <Typography variant="subtitle1" fontWeight={700}>
-          {fmt12(schedule.startTime)} – {fmt12(schedule.endTime)}
-        </Typography>
+        <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap" useFlexGap>
+          <Typography variant="subtitle1" fontWeight={700}>
+            {fmt12(startTime)} – {fmt12(endTime)}
+          </Typography>
+          {typeLabel && (
+            <Chip
+              label={typeLabel}
+              size="small"
+              color="secondary"
+              variant="outlined"
+              sx={{ height: 20, fontSize: 11, fontWeight: 700 }}
+            />
+          )}
+        </Stack>
         <Stack
           direction="row"
           spacing={2}
@@ -291,11 +316,11 @@ function SessionPickerCard({
           useFlexGap
           sx={{ mt: 0.5 }}
         >
-          {schedule.roomName && (
+          {roomName && (
             <Stack direction="row" spacing={0.5} alignItems="center">
               <RoomRounded sx={{ fontSize: 13, color: "text.secondary" }} />
               <Typography variant="caption" color="text.secondary">
-                {schedule.roomName}
+                {roomName}
               </Typography>
             </Stack>
           )}
@@ -326,7 +351,7 @@ function SessionPickerCard({
         >
           Take attendance
         </Button>
-      ) : (
+      ) : canStart ? (
         <Button
           variant="outlined"
           size="medium"
@@ -343,8 +368,48 @@ function SessionPickerCard({
         >
           {isStarting ? "Starting…" : "Start session"}
         </Button>
+      ) : (
+        <Tooltip title="You can't start a class before its scheduled day">
+          <span style={{ flexShrink: 0 }}>
+            <Button
+              variant="outlined"
+              size="medium"
+              startIcon={<PlayArrowRounded />}
+              disabled
+            >
+              Start session
+            </Button>
+          </span>
+        </Tooltip>
       )}
     </Paper>
+  );
+}
+
+// ── Category heading ───────────────────────────────────────────────────────────
+
+function CategoryHeading({ label, count }: { label: string; count: number }) {
+  return (
+    <Stack
+      direction="row"
+      spacing={1}
+      alignItems="center"
+      sx={{ mb: 1.25 }}
+    >
+      <Typography
+        variant="overline"
+        fontWeight={800}
+        color="text.secondary"
+        sx={{ letterSpacing: 0.8, lineHeight: 1.6 }}
+      >
+        {label}
+      </Typography>
+      <Chip
+        label={count}
+        size="small"
+        sx={{ height: 18, fontSize: 11, fontWeight: 700 }}
+      />
+    </Stack>
   );
 }
 
@@ -636,7 +701,6 @@ export function AttendanceWorkspace() {
   const [startingScheduleId, setStartingScheduleId] = useState<string | null>(
     null,
   );
-  const [showAllSessions, setShowAllSessions] = useState(false);
 
   const initDoneRef = useRef<string>("");
 
@@ -724,9 +788,22 @@ export function AttendanceWorkspace() {
   const selectedDayOfWeek =
     DAY_NAMES[new Date(selectedDate + "T00:00:00").getDay()];
 
+  // Block starting sessions for future dates (today's classes and past are fine).
+  const isFutureDate = selectedDate > todayIso;
+
   const daySchedules = useMemo(
     () => schedules.filter((s) => s.dayOfWeek === selectedDayOfWeek),
     [schedules, selectedDayOfWeek],
+  );
+
+  // One-off classes (extra / make-up) for the selected date — sessions not tied
+  // to a recurring schedule. Recurring-schedule sessions are shown via their card.
+  const oneOffDaySessions = useMemo(
+    () =>
+      sessions
+        .filter((s) => s.date === selectedDate && !s.recurringScheduleId)
+        .sort((a, b) => a.startTime.localeCompare(b.startTime)),
+    [sessions, selectedDate],
   );
 
   const sessionByScheduleDate = useMemo(() => {
@@ -740,7 +817,6 @@ export function AttendanceWorkspace() {
 
   const selectedSession =
     sessions.find((s) => s.id === selectedSessionId) ?? null;
-  const selectedBatch = batches.find((b) => b.id === selectedBatchId) ?? null;
 
   const enrolledStudentIds = useMemo(
     () => enrollments.map((e) => e.studentId),
@@ -839,7 +915,6 @@ export function AttendanceWorkspace() {
   const handleBatchChange = (batchId: string) => {
     setSelectedBatchId(batchId);
     resetSession();
-    setShowAllSessions(false);
   };
 
   const handleSessionSelect = (sessionId: string) => {
@@ -847,7 +922,6 @@ export function AttendanceWorkspace() {
     initDoneRef.current = "";
     setSelectedSessionId(sessionId);
     setSaveError(null);
-    setShowAllSessions(false);
     setSearchQuery("");
     setStatusFilter("ALL");
   };
@@ -871,6 +945,10 @@ export function AttendanceWorkspace() {
   };
 
   const handleStartSession = async (scheduleId: string) => {
+    if (isFutureDate) {
+      toast.error("You can't start a class before its scheduled day.");
+      return;
+    }
     setStartingScheduleId(scheduleId);
     try {
       const result = await startSessionMutation({
@@ -1070,92 +1148,27 @@ export function AttendanceWorkspace() {
                 >
                   <CircularProgress size={28} />
                 </Box>
-              ) : showAllSessions ? (
-                /* Browse all sessions */
-                <Paper
-                  elevation={0}
-                  sx={{
-                    p: 2.5,
-                    border: "1px solid",
-                    borderColor: "divider",
-                    borderRadius: 2,
-                  }}
-                >
-                  <Stack spacing={2}>
-                    <Stack
-                      direction="row"
-                      justifyContent="space-between"
-                      alignItems="center"
-                    >
-                      <Typography variant="subtitle2" fontWeight={700}>
-                        All sessions · {selectedBatch?.name}
-                      </Typography>
-                      <Button
-                        size="small"
-                        startIcon={<ArrowBackRounded />}
-                        onClick={() => setShowAllSessions(false)}
-                      >
-                        Back to schedule
-                      </Button>
-                    </Stack>
-                    {sessions.length === 0 ? (
-                      <Typography variant="body2" color="text.secondary">
-                        No sessions found.
-                      </Typography>
-                    ) : (
-                      <FormControl size="small" fullWidth>
-                        <Select
-                          value=""
-                          displayEmpty
-                          onChange={(e) =>
-                            e.target.value &&
-                            handleSessionSelect(e.target.value)
-                          }
-                          renderValue={() => (
-                            <Typography color="text.secondary" variant="body2">
-                              Pick a session…
-                            </Typography>
-                          )}
-                        >
-                          {sessions.map((s) => (
-                            <MenuItem key={s.id} value={s.id}>
-                              {fmtDateShort(s.date)} · {fmt12(s.startTime)} –{" "}
-                              {fmt12(s.endTime)}
-                              {s.type !== "REGULAR" ? ` (${s.type})` : ""}
-                            </MenuItem>
-                          ))}
-                        </Select>
-                      </FormControl>
-                    )}
-                  </Stack>
-                </Paper>
               ) : (
-                /* Day schedule cards */
                 <>
-                  <Stack
-                    direction="row"
-                    justifyContent="space-between"
-                    alignItems="center"
+                  <Typography
+                    variant="subtitle2"
+                    color="text.secondary"
+                    fontWeight={700}
                   >
-                    <Typography
-                      variant="subtitle2"
-                      color="text.secondary"
-                      fontWeight={700}
-                    >
-                      {selectedDayOfWeek.charAt(0) +
-                        selectedDayOfWeek.slice(1).toLowerCase()}{" "}
-                      · {fmtDateLong(selectedDate)}
-                    </Typography>
-                    <Button
-                      size="small"
-                      variant="text"
-                      onClick={() => setShowAllSessions(true)}
-                    >
-                      Browse all sessions
-                    </Button>
-                  </Stack>
+                    {selectedDayOfWeek.charAt(0) +
+                      selectedDayOfWeek.slice(1).toLowerCase()}{" "}
+                    · {fmtDateLong(selectedDate)}
+                  </Typography>
 
-                  {daySchedules.length === 0 ? (
+                  {isFutureDate && (
+                    <Alert severity="warning" sx={{ fontSize: 13 }}>
+                      This date is in the future. You can review its classes, but
+                      a session can only be started on or after the class day.
+                    </Alert>
+                  )}
+
+                  {daySchedules.length === 0 &&
+                  oneOffDaySessions.length === 0 ? (
                     <Paper
                       elevation={0}
                       sx={{
@@ -1170,73 +1183,97 @@ export function AttendanceWorkspace() {
                         sx={{ fontSize: 40, color: "text.disabled", mb: 1.5 }}
                       />
                       <Typography variant="subtitle1" fontWeight={700}>
-                        No classes scheduled
+                        No classes on this date
                       </Typography>
                       <Typography
                         variant="body2"
                         color="text.secondary"
-                        sx={{ mt: 0.75, mb: 2.5 }}
+                        sx={{ mt: 0.75 }}
                       >
-                        No recurring classes on{" "}
+                        No scheduled, extra, or make-up classes on{" "}
                         {selectedDayOfWeek.charAt(0) +
                           selectedDayOfWeek.slice(1).toLowerCase()}
-                        . Try a different date or browse all sessions.
+                        . Pick a different date above.
                       </Typography>
-                      <Button
-                        variant="outlined"
-                        size="small"
-                        onClick={() => setShowAllSessions(true)}
-                      >
-                        Browse all sessions
-                      </Button>
                     </Paper>
                   ) : (
-                    <Stack spacing={1.5}>
-                      {daySchedules.map((schedule) => {
-                        const session =
-                          sessionByScheduleDate.get(
-                            `${schedule.id}::${selectedDate}`,
-                          ) ?? null;
-                        return (
-                          <SessionPickerCard
-                            key={schedule.id}
-                            schedule={schedule}
-                            session={session}
-                            teacherName={
-                              schedule.teacherId
-                                ? (userLookup.get(schedule.teacherId) ?? null)
-                                : null
-                            }
-                            enrolledCount={enrollments.length}
-                            isStarting={startingScheduleId === schedule.id}
-                            onTake={() =>
-                              session && handleSessionSelect(session.id)
-                            }
-                            onStart={() => handleStartSession(schedule.id)}
+                    <Stack spacing={3}>
+                      {/* Scheduled / recurring classes */}
+                      {daySchedules.length > 0 && (
+                        <Box>
+                          <CategoryHeading
+                            label="Scheduled classes"
+                            count={daySchedules.length}
                           />
-                        );
-                      })}
+                          <Stack spacing={1.5}>
+                            {daySchedules.map((schedule) => {
+                              const session =
+                                sessionByScheduleDate.get(
+                                  `${schedule.id}::${selectedDate}`,
+                                ) ?? null;
+                              return (
+                                <SessionPickerCard
+                                  key={schedule.id}
+                                  startTime={schedule.startTime}
+                                  endTime={schedule.endTime}
+                                  roomName={schedule.roomName}
+                                  teacherName={
+                                    schedule.teacherId
+                                      ? (userLookup.get(schedule.teacherId) ??
+                                        null)
+                                      : null
+                                  }
+                                  enrolledCount={enrollments.length}
+                                  session={session}
+                                  canStart={!isFutureDate}
+                                  isStarting={
+                                    startingScheduleId === schedule.id
+                                  }
+                                  onTake={() =>
+                                    session && handleSessionSelect(session.id)
+                                  }
+                                  onStart={() =>
+                                    handleStartSession(schedule.id)
+                                  }
+                                />
+                              );
+                            })}
+                          </Stack>
+                        </Box>
+                      )}
+
+                      {/* Extra & make-up classes */}
+                      {oneOffDaySessions.length > 0 && (
+                        <Box>
+                          <CategoryHeading
+                            label="Extra & make-up classes"
+                            count={oneOffDaySessions.length}
+                          />
+                          <Stack spacing={1.5}>
+                            {oneOffDaySessions.map((s) => (
+                              <SessionPickerCard
+                                key={s.id}
+                                startTime={s.startTime}
+                                endTime={s.endTime}
+                                roomName={s.roomName}
+                                teacherName={
+                                  s.teacherId
+                                    ? (userLookup.get(s.teacherId) ?? null)
+                                    : null
+                                }
+                                enrolledCount={enrollments.length}
+                                session={s}
+                                typeLabel={formatSessionType(s.type)}
+                                isStarting={false}
+                                onTake={() => handleSessionSelect(s.id)}
+                                onStart={() => undefined}
+                              />
+                            ))}
+                          </Stack>
+                        </Box>
+                      )}
                     </Stack>
                   )}
-
-                  <Alert severity="info" sx={{ fontSize: 13 }}>
-                    Only recurring schedule slots are shown. For extra or
-                    make-up classes,{" "}
-                    <Button
-                      size="small"
-                      variant="text"
-                      sx={{
-                        p: 0,
-                        minWidth: 0,
-                        fontSize: 13,
-                        fontWeight: 700,
-                        verticalAlign: "baseline",
-                      }}
-                      onClick={() => setShowAllSessions(true)}
-                    >
-                      browse all sessions.
-                    </Button>
-                  </Alert>
                 </>
               )}
             </Stack>
@@ -1247,15 +1284,8 @@ export function AttendanceWorkspace() {
             <Box sx={{ display: "flex", gap: 2.5, alignItems: "flex-start" }}>
               {/* LEFT: student list */}
               <Box sx={{ flex: 1, minWidth: 0 }}>
-                {/* Back + session info */}
-                <Stack
-                  direction="row"
-                  justifyContent="space-between"
-                  alignItems="center"
-                  flexWrap="wrap"
-                  useFlexGap
-                  sx={{ mb: 2 }}
-                >
+                {/* Back */}
+                <Box sx={{ mb: 2 }}>
                   <Button
                     size="small"
                     startIcon={<ArrowBackRounded />}
@@ -1263,19 +1293,51 @@ export function AttendanceWorkspace() {
                   >
                     Back
                   </Button>
-                  {selectedSession && (
+                </Box>
+
+                {/* Session card */}
+                {selectedSession && (
+                  <Paper
+                    elevation={0}
+                    sx={{
+                      p: 2.5,
+                      mb: 2,
+                      border: "1px solid",
+                      borderColor: alpha("#2563eb", 0.25),
+                      borderRadius: 2,
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 2,
+                      flexWrap: "wrap",
+                    }}
+                  >
+                    <Box
+                      sx={{
+                        width: 44,
+                        height: 44,
+                        borderRadius: "50%",
+                        bgcolor: alpha("#2563eb", 0.1),
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        flexShrink: 0,
+                      }}
+                    >
+                      <ScheduleRounded sx={{ fontSize: 22, color: "#2563eb" }} />
+                    </Box>
                     <Stack
                       direction="row"
-                      spacing={2}
+                      spacing={3}
                       alignItems="center"
                       flexWrap="wrap"
                       useFlexGap
+                      sx={{ flex: 1, minWidth: 0 }}
                     >
-                      <Stack direction="row" spacing={0.5} alignItems="center">
+                      <Stack direction="row" spacing={0.75} alignItems="center">
                         <ScheduleRounded
-                          sx={{ fontSize: 14, color: "text.secondary" }}
+                          sx={{ fontSize: 16, color: "text.secondary" }}
                         />
-                        <Typography variant="caption" color="text.secondary">
+                        <Typography variant="body2" fontWeight={700}>
                           {fmt12(selectedSession.startTime)} –{" "}
                           {fmt12(selectedSession.endTime)}
                         </Typography>
@@ -1283,28 +1345,36 @@ export function AttendanceWorkspace() {
                       {selectedSession.roomName && (
                         <Stack
                           direction="row"
-                          spacing={0.5}
+                          spacing={0.75}
                           alignItems="center"
                         >
                           <RoomRounded
-                            sx={{ fontSize: 14, color: "text.secondary" }}
+                            sx={{ fontSize: 16, color: "text.secondary" }}
                           />
-                          <Typography variant="caption" color="text.secondary">
+                          <Typography variant="body2" color="text.secondary">
                             {selectedSession.roomName}
                           </Typography>
                         </Stack>
                       )}
-                      <Stack direction="row" spacing={0.5} alignItems="center">
+                      <Stack direction="row" spacing={0.75} alignItems="center">
                         <CalendarMonthRounded
-                          sx={{ fontSize: 14, color: "text.secondary" }}
+                          sx={{ fontSize: 16, color: "text.secondary" }}
                         />
-                        <Typography variant="caption" color="text.secondary">
+                        <Typography variant="body2" color="text.secondary">
                           {fmtDateLong(selectedSession.date)}
                         </Typography>
                       </Stack>
+                      <Stack direction="row" spacing={0.75} alignItems="center">
+                        <PeopleRounded
+                          sx={{ fontSize: 16, color: "text.secondary" }}
+                        />
+                        <Typography variant="body2" color="text.secondary">
+                          {enrolledStudents.length} enrolled
+                        </Typography>
+                      </Stack>
                     </Stack>
-                  )}
-                </Stack>
+                  </Paper>
+                )}
 
                 {/* Search + bulk actions */}
                 <Stack
@@ -1613,84 +1683,6 @@ export function AttendanceWorkspace() {
                     overflow: "hidden",
                   }}
                 >
-                  {/* Session block */}
-                  <Box
-                    sx={{
-                      p: 2,
-                      borderBottom: "1px solid",
-                      borderColor: "divider",
-                    }}
-                  >
-                    <Typography
-                      variant="caption"
-                      fontWeight={700}
-                      color="text.secondary"
-                      sx={{
-                        textTransform: "uppercase",
-                        letterSpacing: 0.9,
-                        display: "block",
-                        mb: 1.25,
-                      }}
-                    >
-                      Session
-                    </Typography>
-                    {selectedSession && (
-                      <Stack spacing={0.75}>
-                        <Stack
-                          direction="row"
-                          spacing={0.75}
-                          alignItems="center"
-                        >
-                          <ScheduleRounded
-                            sx={{ fontSize: 14, color: "text.secondary" }}
-                          />
-                          <Typography variant="body2" fontWeight={600}>
-                            {fmt12(selectedSession.startTime)} –{" "}
-                            {fmt12(selectedSession.endTime)}
-                          </Typography>
-                        </Stack>
-                        {selectedSession.roomName && (
-                          <Stack
-                            direction="row"
-                            spacing={0.75}
-                            alignItems="center"
-                          >
-                            <RoomRounded
-                              sx={{ fontSize: 14, color: "text.secondary" }}
-                            />
-                            <Typography variant="body2">
-                              {selectedSession.roomName}
-                            </Typography>
-                          </Stack>
-                        )}
-                        <Stack
-                          direction="row"
-                          spacing={0.75}
-                          alignItems="center"
-                        >
-                          <CalendarMonthRounded
-                            sx={{ fontSize: 14, color: "text.secondary" }}
-                          />
-                          <Typography variant="body2">
-                            {fmtDateShort(selectedSession.date)}
-                          </Typography>
-                        </Stack>
-                        <Stack
-                          direction="row"
-                          spacing={0.75}
-                          alignItems="center"
-                        >
-                          <PeopleRounded
-                            sx={{ fontSize: 14, color: "text.secondary" }}
-                          />
-                          <Typography variant="body2">
-                            {enrolledStudents.length} enrolled
-                          </Typography>
-                        </Stack>
-                      </Stack>
-                    )}
-                  </Box>
-
                   {/* Attendance stats */}
                   <Box sx={{ p: 2 }}>
                     <Typography

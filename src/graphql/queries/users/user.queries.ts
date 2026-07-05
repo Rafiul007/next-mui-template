@@ -53,6 +53,20 @@ export const GET_USERS_QUERY = /* GraphQL */ `
   }
 `;
 
+export const GET_TEACHERS_QUERY = /* GraphQL */ `
+  query GetTeachers {
+    getTeachers {
+      id
+      firstName
+      lastName
+      email
+      phone
+      profilePicture
+      roles
+    }
+  }
+`;
+
 export const GET_MY_PLAN_QUERY = /* GraphQL */ `
   query GetMyPlan {
     getMyPlan {

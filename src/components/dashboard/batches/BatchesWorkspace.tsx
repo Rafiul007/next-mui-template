@@ -44,6 +44,7 @@ import {
   DeleteBatchDocument,
   GetAllBatchesDocument,
   GetFeeTypesDocument,
+  GetTeachersDocument,
   UpdateBatchDocument,
   type GetAllBatchesQuery,
 } from "@/graphql/generated";
@@ -56,6 +57,7 @@ import {
   type DeliveryMode,
   type FeePlanFrequency,
   type MediumOfInstruction,
+  type TeacherOption,
 } from "./BatchFormDialog";
 import { FeeTypesSection } from "./FeeTypesSection";
 
@@ -74,6 +76,8 @@ type BatchRecord = {
   className?: string;
   section?: string;
   classLevel?: string;
+  headTeacherId?: string;
+  coTeacherIds: string[];
   totalSeats: number;
   enrolledCount: number;
   status: BatchStatus;
@@ -146,6 +150,8 @@ const mapApiBatch = (batch: ApiBatch): BatchRecord => {
     className: isClass ? (nameParts[0] ?? "") : "",
     section: isClass ? (nameParts[1] ?? "") : "",
     classLevel: batch.classLevel?.toLowerCase() ?? undefined,
+    headTeacherId: batch.headTeacherId ?? undefined,
+    coTeacherIds: batch.coTeacherIds ?? [],
     totalSeats: batch.capacity,
     enrolledCount: batch.enrolledCount,
     status: batchStatus,
@@ -213,6 +219,8 @@ const getBatchFormValues = (batch: BatchRecord): BatchFormValues => ({
   className: batch.type === "class" ? (batch.className || batch.rawName) : "",
   section: batch.type === "class" ? (batch.section ?? "") : "",
   classLevel: batch.classLevel ?? "",
+  headTeacherId: batch.headTeacherId ?? "",
+  coTeacherIds: batch.coTeacherIds ?? [],
   totalSeats: batch.totalSeats,
   startDate: batch.startDate ?? "",
   endDate: batch.endDate ?? "",
@@ -478,6 +486,17 @@ export function BatchesWorkspace() {
 
   const feeTypes = feeTypesData?.getFeeTypes ?? [];
 
+  const { data: teachersData } = useQuery(GetTeachersDocument, {
+    fetchPolicy: "cache-and-network",
+  });
+
+  const teacherOptions: TeacherOption[] = (teachersData?.getTeachers ?? [])
+    .filter((t): t is NonNullable<typeof t> => !!t)
+    .map((t) => ({
+      id: t.id,
+      name: `${t.firstName} ${t.lastName}`.trim() || t.email,
+    }));
+
   const [createBatch, { loading: isCreating }] = useMutation(CreateBatchDocument, {
     refetchQueries: [GetAllBatchesDocument],
   });
@@ -550,6 +569,8 @@ export function BatchesWorkspace() {
               courseName: values.type === "course" ? (values.courseName?.trim() || undefined) : undefined,
               capacity: values.totalSeats,
               classLevel: values.classLevel ? toApiEnum(values.classLevel) : undefined,
+              headTeacherId: values.headTeacherId || null,
+              coTeacherIds: values.coTeacherIds ?? [],
               startDate: values.startDate || undefined,
               endDate: values.endDate || undefined,
               feePlans,
@@ -568,6 +589,8 @@ export function BatchesWorkspace() {
               type: toApiEnum(values.type),
               status: toApiEnum(values.status),
               classLevel: values.classLevel ? toApiEnum(values.classLevel) : undefined,
+              headTeacherId: values.headTeacherId || undefined,
+              coTeacherIds: values.coTeacherIds ?? [],
               startDate: values.startDate || undefined,
               endDate: values.endDate || undefined,
               deliveryMode: toApiEnum(values.deliveryMode),
@@ -966,6 +989,7 @@ export function BatchesWorkspace() {
         key={formDialogKey}
         errorMessage={formErrorMessage}
         feeTypes={feeTypes}
+        teacherOptions={teacherOptions}
         initialValues={
           selectedBatch
             ? getBatchFormValues(selectedBatch)

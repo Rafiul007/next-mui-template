@@ -5,6 +5,7 @@ import {
   FactCheckRounded,
   AssessmentRounded,
   BeachAccessRounded,
+  PaymentsRounded,
 } from "@mui/icons-material";
 
 export type TeacherSidebarSubMenuItem = {
@@ -61,8 +62,15 @@ export const teacherSidebarMenuItems: TeacherSidebarMenuItem[] = [
     status: "active",
   },
   {
+    key: "payments",
+    label: "My Payments",
+    icon: PaymentsRounded,
+    href: buildTeacherHref(["payments"]),
+    status: "active",
+  },
+  {
     key: "leave",
-    label: "Leave",
+    label: "My Leaves",
     icon: BeachAccessRounded,
     href: buildTeacherHref(["leave"]),
     status: "active",

@@ -47,6 +47,7 @@ type RecurringScheduleFormDialogProps = {
   errorMessage?: string | null;
   initialValues: RecurringScheduleFormValues;
   isSubmitting: boolean;
+  mode?: "create" | "edit";
   teacherOptions: RhfSelectOption[];
   subjectOptions: RhfSelectOption[];
   onClose: () => void;
@@ -59,6 +60,7 @@ export function RecurringScheduleFormDialog({
   errorMessage,
   initialValues,
   isSubmitting,
+  mode = "create",
   teacherOptions,
   subjectOptions,
   onClose,
@@ -71,6 +73,8 @@ export function RecurringScheduleFormDialog({
     mode: "onTouched",
   });
 
+  const isEdit = mode === "edit";
+
   return (
     <Dialog
       open={open}
@@ -78,7 +82,9 @@ export function RecurringScheduleFormDialog({
       fullWidth
       maxWidth="sm"
     >
-      <DialogTitle>Add Recurring Schedule</DialogTitle>
+      <DialogTitle>
+        {isEdit ? "Edit Recurring Schedule" : "Add Recurring Schedule"}
+      </DialogTitle>
       <Box component="form" onSubmit={handleSubmit(onSubmit)} noValidate>
         <DialogContent dividers>
           <Stack spacing={3}>
@@ -160,7 +166,7 @@ export function RecurringScheduleFormDialog({
             Cancel
           </Button>
           <Button type="submit" variant="contained" disabled={isSubmitting}>
-            Add Schedule
+            {isEdit ? "Save Changes" : "Add Schedule"}
           </Button>
         </DialogActions>
       </Box>

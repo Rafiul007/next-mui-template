@@ -55,6 +55,14 @@ export const isStudentRole = (roles?: readonly string[] | null) =>
 export const isTeacherRole = (roles?: readonly string[] | null) =>
   hasRole(roles, "TEACHER");
 
+// HR staff. The backend role string isn't fixed yet, so match the common forms:
+// "HR", "HR_MANAGER", "HR_ADMIN", or anything containing "HUMAN_RESOURCE".
+export const isHrRole = (roles?: readonly string[] | null) =>
+  (roles ?? []).some((r) => {
+    const u = r.toUpperCase();
+    return u === "HR" || u.startsWith("HR_") || u.includes("HUMAN_RESOURCE");
+  });
+
 // The center admin owns tenant setup (center details, branches, calendar, org
 // structure, roles). Gated strictly on the CENTER_ADMIN role, not the broader
 // admin keyword match.
@@ -89,5 +97,7 @@ export const resolveHomePath = (me: MeLike): string => {
   if (me.userType === "BONGO") return "/bongo/dashboard";
   if (isStudentRole(me.roles)) return "/student/dashboard";
   if (isTeacherRole(me.roles)) return "/teacher/dashboard";
+  // HR staff who are not also admins land on the dedicated HR portal.
+  if (isHrRole(me.roles) && !isAdminRole(me.roles)) return "/hr/dashboard";
   return "/dashboard";
 };

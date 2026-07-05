@@ -6,6 +6,8 @@ import * as yup from "yup";
 import {
   AddRounded,
   AutoStoriesRounded,
+  CheckBoxOutlineBlankRounded,
+  CheckBoxRounded,
   DeleteRounded,
   DevicesRounded,
   PeopleRounded,
@@ -14,8 +16,11 @@ import {
 } from "@mui/icons-material";
 import {
   Alert,
+  Autocomplete,
   Box,
   Button,
+  Checkbox,
+  Chip,
   Dialog,
   DialogActions,
   DialogContent,
@@ -26,12 +31,15 @@ import {
   InputAdornment,
   Stack,
   Switch,
+  TextField,
   ToggleButton,
   ToggleButtonGroup,
   Tooltip,
   Typography,
 } from "@mui/material";
 import { RhfSelect, RhfTextField } from "@/components/form";
+
+export type TeacherOption = { id: string; name: string };
 
 export type BatchType = "course" | "class";
 export type BatchStatus = "upcoming" | "ongoing" | "completed" | "cancelled";
@@ -141,6 +149,8 @@ const batchFormSchema = yup
       .default(""),
     section: yup.string().trim().max(50, "Too long").default(""),
     classLevel: yup.string().default(""),
+    headTeacherId: yup.string().default(""),
+    coTeacherIds: yup.array(yup.string().required()).default([]),
     totalSeats: yup
       .number()
       .typeError("Total seats must be a number")
@@ -178,6 +188,8 @@ export const emptyBatchFormValues: BatchFormValues = {
   className: "",
   section: "",
   classLevel: "",
+  headTeacherId: "",
+  coTeacherIds: [],
   totalSeats: 30,
   startDate: "",
   endDate: "",
@@ -196,6 +208,7 @@ type FeeTypeOption = { id: string; typeName: string; isRecurring: boolean };
 type BatchFormDialogProps = {
   errorMessage?: string | null;
   feeTypes: FeeTypeOption[];
+  teacherOptions: TeacherOption[];
   initialValues: BatchFormValues;
   isSubmitting: boolean;
   mode: "create" | "edit";
@@ -207,6 +220,7 @@ type BatchFormDialogProps = {
 export function BatchFormDialog({
   errorMessage,
   feeTypes,
+  teacherOptions,
   initialValues,
   isSubmitting,
   mode,
@@ -408,6 +422,97 @@ export function BatchFormDialog({
                     fullWidth
                   />
                 )}
+              </Box>
+            </Stack>
+
+            <Divider />
+
+            {/* ── Teaching staff ── */}
+            <Stack spacing={2}>
+              <Typography variant="subtitle2" fontWeight={700}>
+                Teaching staff
+              </Typography>
+              <Box
+                sx={{
+                  display: "grid",
+                  gap: 2,
+                  gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr" },
+                }}
+              >
+                <RhfSelect
+                  control={control}
+                  name="headTeacherId"
+                  label="Head teacher"
+                  options={[
+                    { label: "— None —", value: "" },
+                    ...teacherOptions.map((t) => ({
+                      label: t.name,
+                      value: t.id,
+                    })),
+                  ]}
+                  fullWidth
+                  helperText="Main teacher responsible for this batch"
+                />
+                <Controller
+                  control={control}
+                  name="coTeacherIds"
+                  render={({ field }) => (
+                    <Autocomplete
+                      multiple
+                      disableCloseOnSelect
+                      options={teacherOptions}
+                      getOptionLabel={(o) => o.name}
+                      isOptionEqualToValue={(o, v) => o.id === v.id}
+                      value={teacherOptions.filter((t) =>
+                        (field.value ?? []).includes(t.id),
+                      )}
+                      onChange={(_, selected) =>
+                        field.onChange(selected.map((s) => s.id))
+                      }
+                      renderOption={(props, option, { selected }) => {
+                        const { key, ...optionProps } = props;
+                        return (
+                          <li key={key} {...optionProps}>
+                            <Checkbox
+                              icon={
+                                <CheckBoxOutlineBlankRounded fontSize="small" />
+                              }
+                              checkedIcon={<CheckBoxRounded fontSize="small" />}
+                              checked={selected}
+                              sx={{ mr: 1 }}
+                            />
+                            {option.name}
+                          </li>
+                        );
+                      }}
+                      renderTags={(selected, getTagProps) =>
+                        selected.map((option, index) => {
+                          const { key, ...tagProps } = getTagProps({ index });
+                          return (
+                            <Chip
+                              {...tagProps}
+                              key={key}
+                              label={option.name}
+                              size="small"
+                            />
+                          );
+                        })
+                      }
+                      renderInput={(params) => (
+                        <TextField
+                          {...params}
+                          size="small"
+                          label="Co-teachers"
+                          placeholder={
+                            (field.value ?? []).length === 0
+                              ? "Add co-teachers…"
+                              : ""
+                          }
+                        />
+                      )}
+                    />
+                  )}
+                />
               </Box>
             </Stack>
 

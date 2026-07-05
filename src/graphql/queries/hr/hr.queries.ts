@@ -25,6 +25,7 @@ export const GET_EMPLOYEES_QUERY = /* GraphQL */ `
         email
         phone
         profilePicture
+        roles
       }
     }
   }

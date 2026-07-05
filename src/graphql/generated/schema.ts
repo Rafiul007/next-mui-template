@@ -837,6 +837,7 @@ export type Mutation = {
   createTenant: Tenant;
   deactivateBranch: Branch;
   deleteBatch: Scalars['Boolean']['output'];
+  deleteRecurringSchedule: Scalars['Boolean']['output'];
   deleteUser?: Maybe<Scalars['Boolean']['output']>;
   disbursePayroll: PayrollRun;
   dropEnrollment: Enrollment;
@@ -888,6 +889,7 @@ export type Mutation = {
   submitReview: PerformanceReview;
   suspendTenant: Tenant;
   terminateTenant: Tenant;
+  unassignScheduleTeacher: RecurringSchedule;
   updateBatch: Batch;
   updateBranch: Branch;
   updateCenter: Center;
@@ -896,6 +898,7 @@ export type Mutation = {
   updatePIPProgress: Pip;
   updateProfile?: Maybe<User>;
   updateProgram: Program;
+  updateRecurringSchedule: RecurringSchedule;
   updateStudent: Student;
   updateSubject: Subject;
   updateSubscriptionPlan: SubscriptionPlan;
@@ -1142,6 +1145,11 @@ export type MutationDeactivateBranchArgs = {
 
 export type MutationDeleteBatchArgs = {
   batchId: Scalars['ID']['input'];
+};
+
+
+export type MutationDeleteRecurringScheduleArgs = {
+  scheduleId: Scalars['ID']['input'];
 };
 
 
@@ -1406,6 +1414,11 @@ export type MutationTerminateTenantArgs = {
 };
 
 
+export type MutationUnassignScheduleTeacherArgs = {
+  scheduleId: Scalars['ID']['input'];
+};
+
+
 export type MutationUpdateBatchArgs = {
   batch: UpdateBatchInput;
 };
@@ -1444,6 +1457,11 @@ export type MutationUpdateProfileArgs = {
 
 export type MutationUpdateProgramArgs = {
   program: UpdateProgramInput;
+};
+
+
+export type MutationUpdateRecurringScheduleArgs = {
+  schedule: UpdateRecurringScheduleInput;
 };
 
 
@@ -1736,6 +1754,7 @@ export type Query = {
   getSubmissions: Array<Submission>;
   getSubscriptionPlan?: Maybe<SubscriptionPlan>;
   getSubscriptionPlans: Array<SubscriptionPlan>;
+  getTeachers: Array<User>;
   getTenant?: Maybe<Tenant>;
   getTenantRoles: Array<TenantRole>;
   getTenants: Array<Tenant>;
@@ -2428,6 +2447,16 @@ export type UpdateProgramInput = {
   subjectIds?: InputMaybe<Array<Scalars['ID']['input']>>;
   syllabusPath?: InputMaybe<Scalars['String']['input']>;
   targetLevel?: InputMaybe<Scalars['String']['input']>;
+};
+
+export type UpdateRecurringScheduleInput = {
+  dayOfWeek?: InputMaybe<Scalars['String']['input']>;
+  endTime?: InputMaybe<Scalars['String']['input']>;
+  id: Scalars['ID']['input'];
+  roomName?: InputMaybe<Scalars['String']['input']>;
+  startTime?: InputMaybe<Scalars['String']['input']>;
+  subjectId?: InputMaybe<Scalars['ID']['input']>;
+  teacherId?: InputMaybe<Scalars['ID']['input']>;
 };
 
 export type UpdateStudentInput = {
