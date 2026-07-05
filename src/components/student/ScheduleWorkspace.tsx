@@ -13,7 +13,7 @@ import {
   alpha,
 } from "@mui/material";
 import { useQuery } from "@apollo/client/react";
-import { Calendar, dateFnsLocalizer, type Event } from "react-big-calendar";
+import { Calendar, dateFnsLocalizer, type Event, type EventProps } from "react-big-calendar";
 import { format, parse, startOfWeek, getDay, setHours, setMinutes, addDays } from "date-fns";
 import { enUS } from "date-fns/locale/en-US";
 import { MyEnrollmentsDocument } from "@/graphql/student-portal";
@@ -188,7 +188,7 @@ function BatchCalendar({ batchId }: { batchId: string }) {
         max={setMinutes(setHours(new Date(), maxHour), 0)}
         toolbar={false}
         components={{
-          event: EventBlock as React.ComponentType<{ event: Event & { resource?: { room?: string | null } } }>,
+          event: EventBlock as React.ComponentType<EventProps<Event & { resource: { room?: string | null } }>>,
         }}
         style={{ height: "100%" }}
       />
