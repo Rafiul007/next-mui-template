@@ -1,18 +1,31 @@
 "use client";
 
+import { useMemo, useState } from "react";
+import dayjs from "dayjs";
 import {
   AccountBalanceWalletRounded,
-  CalendarMonthRounded,
-  EventAvailableRounded,
-  HourglassBottomRounded,
+  CheckCircleRounded,
+  DescriptionRounded,
   PaidRounded,
-  SchoolRounded,
+  ReceiptLongRounded,
+  RequestQuoteRounded,
+  SavingsRounded,
 } from "@mui/icons-material";
+import { useQuery } from "@apollo/client/react";
 import {
   Alert,
   Box,
   Chip,
+  CircularProgress,
+  Dialog,
+  DialogContent,
+  Divider,
+  FormControl,
+  IconButton,
+  InputLabel,
+  MenuItem,
   Paper,
+  Select,
   Stack,
   Table,
   TableBody,
@@ -22,203 +35,62 @@ import {
   Typography,
   alpha,
 } from "@mui/material";
+import CloseRounded from "@mui/icons-material/CloseRounded";
+import {
+  GetMyPayrollRunsDocument,
+  GetMyPayrollSummaryDocument,
+  GetMyPayslipsDocument,
+  GetMySalaryStructureDocument,
+  type GetMyPayrollRunsQuery,
+  type GetMyPayslipsQuery,
+} from "@/graphql/generated";
 import { SummaryCard } from "@/components/ui";
 
-// ── Dummy data ──────────────────────────────────────────────────────────────
-// Illustrative earnings for online-batch teaching. Replace with a teacher
-// payouts API (e.g. getMyTeacherPayouts) once the backend exposes it.
-
-const RATE_PER_SESSION = 500; // ৳ per class taken
-
-type PayoutStatus = "paid" | "pending" | "upcoming";
-
-type Payout = {
-  id: string;
-  period: string;
-  batchName: string;
-  sessions: number;
-  amount: number;
-  status: PayoutStatus;
-  date: string; // paid-on for history, due date for upcoming
-  method?: string;
-};
-
-const PAYMENT_HISTORY: Payout[] = [
-  {
-    id: "p-2026-06",
-    period: "June 2026",
-    batchName: "Learn Python · 1",
-    sessions: 12,
-    amount: 12 * RATE_PER_SESSION,
-    status: "paid",
-    date: "2026-07-02",
-    method: "bKash",
-  },
-  {
-    id: "p-2026-05",
-    period: "May 2026",
-    batchName: "Learn Python · 1",
-    sessions: 12,
-    amount: 12 * RATE_PER_SESSION,
-    status: "paid",
-    date: "2026-06-03",
-    method: "Bank transfer",
-  },
-  {
-    id: "p-2026-04",
-    period: "April 2026",
-    batchName: "Learn Python · 1",
-    sessions: 10,
-    amount: 10 * RATE_PER_SESSION,
-    status: "paid",
-    date: "2026-05-04",
-    method: "bKash",
-  },
-];
-
-const UPCOMING_PAYMENTS: Payout[] = [
-  {
-    id: "u-2026-07",
-    period: "July 2026",
-    batchName: "Learn Python · 1",
-    sessions: 8,
-    amount: 8 * RATE_PER_SESSION,
-    status: "pending",
-    date: "2026-08-02",
-    method: "bKash",
-  },
-];
+type Payslip = GetMyPayslipsQuery["getMyPayslips"][number];
+type PayrollRun = GetMyPayrollRunsQuery["getMyPayrollRuns"][number];
 
 // ── Helpers ─────────────────────────────────────────────────────────────────
 
-const formatTk = (amount: number) => `৳${amount.toLocaleString("en-BD")}`;
+const formatTk = (amount: number) =>
+  `৳${amount.toLocaleString("en-BD", { maximumFractionDigits: 2 })}`;
 
-const formatDate = (iso: string) =>
-  new Date(iso + "T00:00:00").toLocaleDateString("en-BD", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-  });
+// Runs carry a numeric month (1-12) and year; format to "June 2026".
+const runPeriod = (run?: PayrollRun) =>
+  run
+    ? dayjs(`${run.year}-${String(run.month).padStart(2, "0")}-01`).format(
+        "MMMM YYYY",
+      )
+    : "—";
 
-const STATUS_META: Record<
-  PayoutStatus,
-  { label: string; color: "success" | "warning" | "default" }
+// Payroll run lifecycle → chip presentation. DISBURSED means money is out.
+const RUN_STATUS_META: Record<
+  string,
+  { label: string; color: "success" | "info" | "warning" | "default" }
 > = {
-  paid: { label: "Paid", color: "success" },
-  pending: { label: "Pending", color: "warning" },
-  upcoming: { label: "Upcoming", color: "default" },
+  disbursed: { label: "Paid", color: "success" },
+  approved: { label: "Approved", color: "info" },
+  draft: { label: "Processing", color: "warning" },
 };
 
-// ── Table ───────────────────────────────────────────────────────────────────
+const runStatusMeta = (status?: string) =>
+  RUN_STATUS_META[(status ?? "").toLowerCase()] ?? {
+    label: status ?? "—",
+    color: "default" as const,
+  };
 
-function PayoutTable({
-  rows,
-  dateHeader,
-  emptyText,
-}: {
-  rows: Payout[];
-  dateHeader: string;
-  emptyText: string;
-}) {
-  if (rows.length === 0) {
-    return (
-      <Box sx={{ py: 5, textAlign: "center" }}>
-        <Typography variant="body2" color="text.secondary">
-          {emptyText}
-        </Typography>
-      </Box>
-    );
-  }
-
-  return (
-    <Box sx={{ overflowX: "auto" }}>
-      <Table size="small" sx={{ minWidth: 640 }}>
-        <TableHead>
-          <TableRow sx={{ bgcolor: alpha("#0f172a", 0.02) }}>
-            {["Period", "Batch", "Sessions", "Amount", dateHeader, "Status"].map(
-              (h, i) => (
-                <TableCell
-                  key={h}
-                  align={i === 2 || i === 3 ? "right" : "left"}
-                  sx={{
-                    fontWeight: 700,
-                    fontSize: 11,
-                    color: "text.secondary",
-                    textTransform: "uppercase",
-                    letterSpacing: 0.6,
-                    py: 1.5,
-                  }}
-                >
-                  {h}
-                </TableCell>
-              ),
-            )}
-          </TableRow>
-        </TableHead>
-        <TableBody>
-          {rows.map((row) => {
-            const status = STATUS_META[row.status];
-            return (
-              <TableRow key={row.id} hover>
-                <TableCell sx={{ py: 1.5 }}>
-                  <Typography variant="body2" fontWeight={700}>
-                    {row.period}
-                  </Typography>
-                </TableCell>
-                <TableCell>
-                  <Typography variant="body2">{row.batchName}</Typography>
-                </TableCell>
-                <TableCell align="right">
-                  <Chip
-                    label={row.sessions}
-                    size="small"
-                    variant="outlined"
-                    sx={{ fontWeight: 700, height: 22 }}
-                  />
-                </TableCell>
-                <TableCell align="right">
-                  <Typography variant="body2" fontWeight={700}>
-                    {formatTk(row.amount)}
-                  </Typography>
-                </TableCell>
-                <TableCell>
-                  <Stack spacing={0.25}>
-                    <Typography variant="body2">
-                      {formatDate(row.date)}
-                    </Typography>
-                    {row.method ? (
-                      <Typography variant="caption" color="text.secondary">
-                        {row.method}
-                      </Typography>
-                    ) : null}
-                  </Stack>
-                </TableCell>
-                <TableCell>
-                  <Chip
-                    label={status.label}
-                    size="small"
-                    color={status.color}
-                    variant={row.status === "paid" ? "filled" : "outlined"}
-                  />
-                </TableCell>
-              </TableRow>
-            );
-          })}
-        </TableBody>
-      </Table>
-    </Box>
-  );
-}
+// ── Reusable section shell ───────────────────────────────────────────────────
 
 function SectionCard({
   icon,
   title,
   subtitle,
+  action,
   children,
 }: {
   icon: React.ReactNode;
   title: string;
   subtitle?: string;
+  action?: React.ReactNode;
   children: React.ReactNode;
 }) {
   return (
@@ -238,7 +110,7 @@ function SectionCard({
         sx={{ px: 3, py: 2, borderBottom: "1px solid", borderColor: "divider" }}
       >
         <Box sx={{ color: "text.secondary", display: "flex" }}>{icon}</Box>
-        <Box>
+        <Box sx={{ flex: 1, minWidth: 0 }}>
           <Typography variant="h6" fontWeight={700}>
             {title}
           </Typography>
@@ -248,26 +120,221 @@ function SectionCard({
             </Typography>
           ) : null}
         </Box>
+        {action}
       </Stack>
-      <Box sx={{ px: { xs: 1.5, md: 2 }, py: 1 }}>{children}</Box>
+      {children}
     </Paper>
+  );
+}
+
+// ── Payslip detail dialog ─────────────────────────────────────────────────────
+
+function BreakdownRow({
+  label,
+  value,
+  strong,
+  tone,
+}: {
+  label: string;
+  value: string;
+  strong?: boolean;
+  tone?: "default" | "negative";
+}) {
+  return (
+    <Stack direction="row" justifyContent="space-between" alignItems="center">
+      <Typography
+        variant="body2"
+        color={strong ? "text.primary" : "text.secondary"}
+        fontWeight={strong ? 700 : 400}
+      >
+        {label}
+      </Typography>
+      <Typography
+        variant="body2"
+        fontWeight={strong ? 800 : 600}
+        color={tone === "negative" ? "error.main" : "text.primary"}
+      >
+        {value}
+      </Typography>
+    </Stack>
+  );
+}
+
+function PayslipDialog({
+  payslip,
+  run,
+  onClose,
+}: {
+  payslip: Payslip | null;
+  run?: PayrollRun;
+  onClose: () => void;
+}) {
+  const open = payslip != null;
+  const meta = runStatusMeta(run?.status);
+  const gross = payslip ? payslip.basicSalary + payslip.allowances : 0;
+
+  return (
+    <Dialog open={open} onClose={onClose} fullWidth maxWidth="xs">
+      {payslip ? (
+        <>
+          <Box
+            sx={{
+              px: 3,
+              py: 2.5,
+              color: "#fff",
+              background:
+                "linear-gradient(135deg, #0f766e 0%, #14b8a6 100%)",
+            }}
+          >
+            <Stack direction="row" justifyContent="space-between" alignItems="flex-start">
+              <Box>
+                <Typography variant="overline" sx={{ opacity: 0.85, letterSpacing: 1 }}>
+                  Payslip
+                </Typography>
+                <Typography variant="h6" fontWeight={800}>
+                  {runPeriod(run)}
+                </Typography>
+              </Box>
+              <IconButton size="small" onClick={onClose} sx={{ color: "#fff" }}>
+                <CloseRounded fontSize="small" />
+              </IconButton>
+            </Stack>
+            <Stack direction="row" spacing={1} alignItems="center" sx={{ mt: 1 }}>
+              <Chip
+                label={meta.label}
+                size="small"
+                sx={{
+                  bgcolor: alpha("#fff", 0.2),
+                  color: "#fff",
+                  fontWeight: 700,
+                  height: 22,
+                }}
+              />
+              <Typography variant="caption" sx={{ opacity: 0.85 }}>
+                Ref #{payslip.id.slice(0, 8)}
+              </Typography>
+            </Stack>
+          </Box>
+
+          <DialogContent sx={{ px: 3, py: 2.5 }}>
+            <Stack spacing={1.25}>
+              <Typography variant="caption" color="text.secondary" fontWeight={700}>
+                EARNINGS
+              </Typography>
+              <BreakdownRow label="Basic salary" value={formatTk(payslip.basicSalary)} />
+              <BreakdownRow label="Allowances" value={formatTk(payslip.allowances)} />
+              <BreakdownRow label="Gross" value={formatTk(gross)} strong />
+
+              <Divider sx={{ my: 1 }} />
+
+              <Typography variant="caption" color="text.secondary" fontWeight={700}>
+                DEDUCTIONS
+              </Typography>
+              <BreakdownRow
+                label="Taxable income"
+                value={formatTk(payslip.taxableIncome)}
+              />
+              <BreakdownRow
+                label="Tax"
+                value={`− ${formatTk(payslip.taxes)}`}
+                tone="negative"
+              />
+              <BreakdownRow
+                label="Other deductions"
+                value={`− ${formatTk(payslip.deductions)}`}
+                tone="negative"
+              />
+
+              <Divider sx={{ my: 1 }} />
+
+              <Stack
+                direction="row"
+                justifyContent="space-between"
+                alignItems="center"
+                sx={{
+                  p: 2,
+                  borderRadius: 2,
+                  bgcolor: alpha("#14b8a6", 0.1),
+                }}
+              >
+                <Typography variant="subtitle2" fontWeight={700}>
+                  Net pay
+                </Typography>
+                <Typography variant="h5" fontWeight={800} color="success.main">
+                  {formatTk(payslip.netAmount)}
+                </Typography>
+              </Stack>
+            </Stack>
+          </DialogContent>
+        </>
+      ) : null}
+    </Dialog>
   );
 }
 
 // ── Workspace ────────────────────────────────────────────────────────────────
 
 export function TeacherPaymentsWorkspace() {
-  const totalEarned = PAYMENT_HISTORY.filter((p) => p.status === "paid").reduce(
-    (sum, p) => sum + p.amount,
-    0,
+  const currentYear = dayjs().year();
+  const [year, setYear] = useState(currentYear);
+  const [selected, setSelected] = useState<Payslip | null>(null);
+
+  const { data: structureData, loading: structureLoading } = useQuery(
+    GetMySalaryStructureDocument,
+    { fetchPolicy: "cache-and-network", errorPolicy: "all" },
   );
-  const pendingAmount = UPCOMING_PAYMENTS.reduce((sum, p) => sum + p.amount, 0);
-  const sessionsTaught = [...PAYMENT_HISTORY, ...UPCOMING_PAYMENTS].reduce(
-    (sum, p) => sum + p.sessions,
-    0,
+  const { data: payslipData, loading: payslipLoading } = useQuery(
+    GetMyPayslipsDocument,
+    { fetchPolicy: "cache-and-network", errorPolicy: "all" },
+  );
+  const { data: runsData } = useQuery(GetMyPayrollRunsDocument, {
+    fetchPolicy: "cache-and-network",
+    errorPolicy: "all",
+  });
+  const { data: summaryData, loading: summaryLoading } = useQuery(
+    GetMyPayrollSummaryDocument,
+    { variables: { year }, fetchPolicy: "cache-and-network", errorPolicy: "all" },
   );
 
-  const nextPayout = UPCOMING_PAYMENTS[0];
+  const structure = structureData?.getMySalaryStructure ?? null;
+  const payslips = useMemo(
+    () => payslipData?.getMyPayslips ?? [],
+    [payslipData],
+  );
+  const runs = useMemo(() => runsData?.getMyPayrollRuns ?? [], [runsData]);
+  const summary = summaryData?.getMyPayrollSummary ?? null;
+
+  // Index runs by id so each payslip can resolve its period + status.
+  const runById = useMemo(() => {
+    const map = new Map<string, PayrollRun>();
+    runs.forEach((r) => map.set(r.id, r));
+    return map;
+  }, [runs]);
+
+  // Years the teacher actually has runs in, plus the current year, newest first.
+  const availableYears = useMemo(() => {
+    const set = new Set<number>([currentYear]);
+    runs.forEach((r) => set.add(r.year));
+    return Array.from(set).sort((a, b) => b - a);
+  }, [runs, currentYear]);
+
+  // Payslips for the selected year, newest first (by run period).
+  const yearPayslips = useMemo(() => {
+    return payslips
+      .filter((p) => runById.get(p.payrollRunId)?.year === year)
+      .sort((a, b) => {
+        const ra = runById.get(a.payrollRunId);
+        const rb = runById.get(b.payrollRunId);
+        return (rb?.month ?? 0) - (ra?.month ?? 0);
+      });
+  }, [payslips, runById, year]);
+
+  const netPaid = summary?.totalNetAmount ?? 0;
+  const payslipCount = summary?.payslipCount ?? 0;
+  const totalTaxes = summary?.totalTaxes ?? 0;
+  const totalDeductions = summary?.totalDeductions ?? 0;
+
+  const loadingKpis = summaryLoading && !summary;
 
   return (
     <Stack spacing={3}>
@@ -282,16 +349,37 @@ export function TeacherPaymentsWorkspace() {
             "linear-gradient(135deg, rgba(255,255,255,0.94) 0%, rgba(240,253,250,0.98) 100%)",
         }}
       >
-        <Typography variant="h4" component="h1">
-          Payments &amp; Earnings
-        </Typography>
-        <Typography variant="body2" color="text.secondary" sx={{ mt: 1.5 }}>
-          Track your payouts from online batches, upcoming payments, and the
-          total classes you have taught.
-        </Typography>
+        <Stack
+          direction={{ xs: "column", sm: "row" }}
+          justifyContent="space-between"
+          spacing={2}
+        >
+          <Box>
+            <Typography variant="h4" component="h1">
+              Payments &amp; Payroll
+            </Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ mt: 1.5 }}>
+              Your salary structure, payslips, and payroll history.
+            </Typography>
+          </Box>
+          <FormControl size="small" sx={{ minWidth: 120, alignSelf: "flex-start" }}>
+            <InputLabel>Tax year</InputLabel>
+            <Select
+              label="Tax year"
+              value={year}
+              onChange={(e) => setYear(Number(e.target.value))}
+            >
+              {availableYears.map((y) => (
+                <MenuItem key={y} value={y}>
+                  {y}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+        </Stack>
       </Paper>
 
-      {/* KPIs */}
+      {/* KPIs — from getMyPayrollSummary for the selected year */}
       <Box
         sx={{
           display: "grid",
@@ -304,72 +392,226 @@ export function TeacherPaymentsWorkspace() {
         }}
       >
         <SummaryCard
-          caption="Total earned"
-          title={formatTk(totalEarned)}
+          caption={`Net paid · ${year}`}
+          title={loadingKpis ? "…" : formatTk(netPaid)}
           icon={<PaidRounded />}
           tone="success"
         />
         <SummaryCard
-          caption="Pending payout"
-          title={formatTk(pendingAmount)}
-          icon={<HourglassBottomRounded />}
+          caption={`Payslips · ${year}`}
+          title={loadingKpis ? "…" : String(payslipCount)}
+          icon={<ReceiptLongRounded />}
+        />
+        <SummaryCard
+          caption={`Tax · ${year}`}
+          title={loadingKpis ? "…" : formatTk(totalTaxes)}
+          icon={<RequestQuoteRounded />}
           tone="warning"
         />
         <SummaryCard
-          caption="Sessions taught"
-          title={String(sessionsTaught)}
-          icon={<SchoolRounded />}
-        />
-        <SummaryCard
-          caption="Rate / session"
-          title={formatTk(RATE_PER_SESSION)}
+          caption={`Deductions · ${year}`}
+          title={loadingKpis ? "…" : formatTk(totalDeductions)}
           icon={<AccountBalanceWalletRounded />}
           tone="muted"
         />
       </Box>
 
-      {nextPayout ? (
-        <Alert
-          severity="info"
-          icon={<CalendarMonthRounded fontSize="inherit" />}
-          sx={{ fontSize: 14 }}
-        >
-          Next payout of <strong>{formatTk(nextPayout.amount)}</strong> for{" "}
-          <strong>{nextPayout.period}</strong> ({nextPayout.sessions} sessions)
-          is due on <strong>{formatDate(nextPayout.date)}</strong>.
-        </Alert>
-      ) : null}
-
-      {/* Upcoming payments */}
+      {/* Salary structure */}
       <SectionCard
-        icon={<EventAvailableRounded />}
-        title="Upcoming Payments"
-        subtitle="Payouts accrued this period, not yet paid"
+        icon={<SavingsRounded />}
+        title="Salary Structure"
+        subtitle="Your current monthly pay rates"
       >
-        <PayoutTable
-          rows={UPCOMING_PAYMENTS}
-          dateHeader="Due"
-          emptyText="No upcoming payments."
-        />
+        {structureLoading && !structure ? (
+          <Box sx={{ p: 4, textAlign: "center" }}>
+            <CircularProgress size={22} />
+          </Box>
+        ) : structure ? (
+          <Box>
+            <Box
+              sx={{
+                display: "grid",
+                gridTemplateColumns: { xs: "1fr 1fr", md: "repeat(4, 1fr)" },
+              }}
+            >
+              {[
+                { label: "Basic salary", value: structure.basicSalary },
+                { label: "Allowances", value: structure.allowances ?? 0 },
+                { label: "Deductions", value: structure.deductions ?? 0 },
+              ].map((item) => (
+                <Box
+                  key={item.label}
+                  sx={{
+                    p: 3,
+                    borderRight: { md: "1px solid" },
+                    borderBottom: { xs: "1px solid", md: "none" },
+                    borderColor: { xs: "divider", md: "divider" },
+                  }}
+                >
+                  <Typography variant="caption" color="text.secondary">
+                    {item.label}
+                  </Typography>
+                  <Typography variant="h6" fontWeight={700} sx={{ mt: 0.5 }}>
+                    {formatTk(item.value)}
+                  </Typography>
+                </Box>
+              ))}
+              <Box
+                sx={{
+                  p: 3,
+                  bgcolor: alpha("#14b8a6", 0.08),
+                }}
+              >
+                <Typography variant="caption" color="text.secondary">
+                  Net salary
+                </Typography>
+                <Typography
+                  variant="h6"
+                  fontWeight={800}
+                  color="success.main"
+                  sx={{ mt: 0.5 }}
+                >
+                  {formatTk(structure.netSalary)}
+                </Typography>
+              </Box>
+            </Box>
+            {structure.effectiveFrom ? (
+              <Typography
+                variant="caption"
+                color="text.disabled"
+                sx={{ display: "block", px: 3, py: 1.5 }}
+              >
+                Effective from{" "}
+                {dayjs(structure.effectiveFrom).format("DD MMM YYYY")}
+              </Typography>
+            ) : null}
+          </Box>
+        ) : (
+          <Box sx={{ p: 3 }}>
+            <Alert severity="info">
+              No salary structure has been set for your account yet. Contact HR to
+              get your pay rates configured.
+            </Alert>
+          </Box>
+        )}
       </SectionCard>
 
-      {/* Payment history */}
+      {/* Payslips */}
       <SectionCard
-        icon={<PaidRounded />}
-        title="Payment History"
-        subtitle="Previous payouts you have received"
+        icon={<DescriptionRounded />}
+        title="Payslips"
+        subtitle={`Payroll history for ${year} — tap a row for the full breakdown`}
       >
-        <PayoutTable
-          rows={PAYMENT_HISTORY}
-          dateHeader="Paid on"
-          emptyText="No payments yet."
-        />
+        {payslipLoading && payslips.length === 0 ? (
+          <Box sx={{ p: 4, textAlign: "center" }}>
+            <CircularProgress size={22} />
+          </Box>
+        ) : yearPayslips.length === 0 ? (
+          <Box sx={{ py: 6, textAlign: "center", px: 3 }}>
+            <ReceiptLongRounded
+              sx={{ fontSize: 40, color: "text.disabled", mb: 1 }}
+            />
+            <Typography variant="body2" color="text.secondary">
+              No payslips for {year}. They appear here once HR processes a payroll
+              run you are part of.
+            </Typography>
+          </Box>
+        ) : (
+          <Box sx={{ overflowX: "auto" }}>
+            <Table size="small" sx={{ minWidth: 720 }}>
+              <TableHead>
+                <TableRow sx={{ bgcolor: alpha("#0f172a", 0.02) }}>
+                  {["Period", "Status", "Basic", "Allowances", "Tax", "Net pay", ""].map(
+                    (h, i) => (
+                      <TableCell
+                        key={h || "chevron"}
+                        align={i >= 2 && i <= 5 ? "right" : "left"}
+                        sx={{
+                          fontWeight: 700,
+                          fontSize: 11,
+                          color: "text.secondary",
+                          textTransform: "uppercase",
+                          letterSpacing: 0.6,
+                          py: 1.5,
+                        }}
+                      >
+                        {h}
+                      </TableCell>
+                    ),
+                  )}
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {yearPayslips.map((p) => {
+                  const run = runById.get(p.payrollRunId);
+                  const meta = runStatusMeta(run?.status);
+                  return (
+                    <TableRow
+                      key={p.id}
+                      hover
+                      onClick={() => setSelected(p)}
+                      sx={{ cursor: "pointer" }}
+                    >
+                      <TableCell sx={{ py: 1.5 }}>
+                        <Typography variant="body2" fontWeight={700}>
+                          {runPeriod(run)}
+                        </Typography>
+                      </TableCell>
+                      <TableCell>
+                        <Chip
+                          label={meta.label}
+                          size="small"
+                          color={meta.color}
+                          variant={meta.color === "success" ? "filled" : "outlined"}
+                          icon={
+                            meta.color === "success" ? (
+                              <CheckCircleRounded sx={{ fontSize: 15 }} />
+                            ) : undefined
+                          }
+                        />
+                      </TableCell>
+                      <TableCell align="right">
+                        <Typography variant="body2">
+                          {formatTk(p.basicSalary)}
+                        </Typography>
+                      </TableCell>
+                      <TableCell align="right">
+                        <Typography variant="body2">
+                          {formatTk(p.allowances)}
+                        </Typography>
+                      </TableCell>
+                      <TableCell align="right">
+                        <Typography variant="body2" color="error.main">
+                          − {formatTk(p.taxes)}
+                        </Typography>
+                      </TableCell>
+                      <TableCell align="right">
+                        <Typography variant="body2" fontWeight={800}>
+                          {formatTk(p.netAmount)}
+                        </Typography>
+                      </TableCell>
+                      <TableCell align="right" sx={{ color: "text.disabled" }}>
+                        <ReceiptLongRounded sx={{ fontSize: 18 }} />
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
+          </Box>
+        )}
       </SectionCard>
 
       <Typography variant="caption" color="text.disabled" sx={{ px: 1 }}>
-        Figures shown are sample data for preview. Live payout tracking will
-        appear here once teacher billing is connected.
+        Payslips reflect fixed salary-structure payroll (basic + allowances −
+        taxes − deductions). Per-session or commission pay is not included.
       </Typography>
+
+      <PayslipDialog
+        payslip={selected}
+        run={selected ? runById.get(selected.payrollRunId) : undefined}
+        onClose={() => setSelected(null)}
+      />
     </Stack>
   );
 }

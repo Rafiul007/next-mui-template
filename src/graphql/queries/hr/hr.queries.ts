@@ -107,6 +107,101 @@ export const GET_LEAVE_BALANCE_QUERY = /* GraphQL */ `
   }
 `;
 
+export const GET_MY_LEAVE_APPLICATIONS_QUERY = /* GraphQL */ `
+  query GetMyLeaveApplications {
+    getMyLeaveApplications {
+      id
+      employeeId
+      leaveType
+      startDate
+      endDate
+      status
+      reason
+      tenantId
+    }
+  }
+`;
+
+export const GET_MY_LEAVE_BALANCE_QUERY = /* GraphQL */ `
+  query GetMyLeaveBalance($year: Int!) {
+    getMyLeaveBalance(year: $year) {
+      id
+      employeeId
+      leaveType
+      totalBalance
+      usedDays
+      remainingDays
+      year
+      tenantId
+    }
+  }
+`;
+
+// ── Teacher payroll self-service ──────────────────────────────────────────────
+// Caller-scoped payroll queries (resolved from JWT, no employeeId arg). Return
+// only the signed-in teacher's own data.
+
+export const GET_MY_SALARY_STRUCTURE_QUERY = /* GraphQL */ `
+  query GetMySalaryStructure {
+    getMySalaryStructure {
+      id
+      employeeId
+      basicSalary
+      allowances
+      deductions
+      netSalary
+      effectiveFrom
+      tenantId
+    }
+  }
+`;
+
+export const GET_MY_PAYSLIPS_QUERY = /* GraphQL */ `
+  query GetMyPayslips {
+    getMyPayslips {
+      id
+      payrollRunId
+      employeeId
+      basicSalary
+      allowances
+      deductions
+      taxableIncome
+      taxes
+      netAmount
+      tenantId
+    }
+  }
+`;
+
+export const GET_MY_PAYROLL_RUNS_QUERY = /* GraphQL */ `
+  query GetMyPayrollRuns {
+    getMyPayrollRuns {
+      id
+      month
+      year
+      status
+      totalAmount
+      totalEmployees
+      createdAt
+      tenantId
+    }
+  }
+`;
+
+export const GET_MY_PAYROLL_SUMMARY_QUERY = /* GraphQL */ `
+  query GetMyPayrollSummary($year: Int!) {
+    getMyPayrollSummary(year: $year) {
+      year
+      payslipCount
+      totalBasicSalary
+      totalAllowances
+      totalDeductions
+      totalTaxes
+      totalNetAmount
+    }
+  }
+`;
+
 export const GET_LEAVE_POLICIES_QUERY = /* GraphQL */ `
   query GetLeavePolicies($departmentId: ID) {
     getLeavePolicies(departmentId: $departmentId) {

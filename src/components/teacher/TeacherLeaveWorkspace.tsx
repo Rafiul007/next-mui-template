@@ -34,16 +34,16 @@ import { toast } from "react-hot-toast";
 import {
   ApplyLeaveDocument,
   CancelLeaveDocument,
-  GetLeaveApplicationsDocument,
-  GetLeaveBalanceDocument,
-  type GetLeaveApplicationsQuery,
+  GetMyLeaveApplicationsDocument,
+  GetMyLeaveBalanceDocument,
+  type GetMyLeaveApplicationsQuery,
 } from "@/graphql/generated";
 import { GetMyEmployeeProfileDocument } from "@/graphql/hr-extended";
 import { SummaryCard } from "@/components/ui";
 import { getErrorMessage } from "@/lib/errors";
 import { primaryGradient } from "@/theme/theme";
 
-type LeaveRecord = GetLeaveApplicationsQuery["getLeaveApplications"][number];
+type LeaveRecord = GetMyLeaveApplicationsQuery["getMyLeaveApplications"][number];
 
 const LEAVE_TYPES = [
   { value: "sick", label: "Sick" },
@@ -71,17 +71,14 @@ export function TeacherLeaveWorkspace() {
     data: leaveData,
     loading: leaveLoading,
     refetch: refetchLeave,
-  } = useQuery(GetLeaveApplicationsDocument, {
-    skip: !employeeId,
-    variables: { employeeId },
+  } = useQuery(GetMyLeaveApplicationsDocument, {
     fetchPolicy: "cache-and-network",
   });
 
   const { data: balanceData, refetch: refetchBalance } = useQuery(
-    GetLeaveBalanceDocument,
+    GetMyLeaveBalanceDocument,
     {
-      skip: !employeeId,
-      variables: { employeeId, year: new Date().getFullYear() },
+      variables: { year: new Date().getFullYear() },
       fetchPolicy: "cache-and-network",
     },
   );
@@ -96,10 +93,23 @@ export function TeacherLeaveWorkspace() {
   const [reason, setReason] = useState("");
   const [error, setError] = useState<string | null>(null);
 
-  const records = leaveData?.getLeaveApplications ?? [];
-  const balances = balanceData?.getLeaveBalance ?? [];
+  const records = leaveData?.getMyLeaveApplications ?? [];
+  const balances = balanceData?.getMyLeaveBalance ?? [];
   const pending = records.filter((r) => r.status?.toLowerCase() === "pending").length;
   const approved = records.filter((r) => r.status?.toLowerCase() === "approved").length;
+
+  // Balance for the leave type currently selected in the apply dialog. Unpaid
+  // and types without a policy simply won't have a matching balance, so those
+  // are never blocked.
+  const selectedBalance = balances.find(
+    (b) => b.leaveType.toLowerCase() === leaveType.toLowerCase(),
+  );
+  const requestedDays =
+    startDate && endDate && !dayjs(endDate).isBefore(dayjs(startDate))
+      ? dayjs(endDate).diff(dayjs(startDate), "day") + 1
+      : 0;
+  const exceedsBalance =
+    selectedBalance != null && requestedDays > selectedBalance.remainingDays;
 
   const resetForm = () => {
     setLeaveType("casual");
@@ -116,6 +126,12 @@ export function TeacherLeaveWorkspace() {
     }
     if (dayjs(endDate).isBefore(dayjs(startDate))) {
       setError("End date cannot be before the start date.");
+      return;
+    }
+    if (exceedsBalance) {
+      setError(
+        `Only ${selectedBalance!.remainingDays} ${leaveType} day(s) left, but ${requestedDays} requested.`,
+      );
       return;
     }
     setError(null);
@@ -382,6 +398,16 @@ export function TeacherLeaveWorkspace() {
                 ))}
               </Select>
             </FormControl>
+            {selectedBalance ? (
+              <Typography
+                variant="caption"
+                color={exceedsBalance ? "error" : "text.secondary"}
+              >
+                {selectedBalance.remainingDays} of {selectedBalance.totalBalance}{" "}
+                {leaveType} day(s) remaining
+                {requestedDays > 0 ? ` — requesting ${requestedDays}` : ""}
+              </Typography>
+            ) : null}
             <Box sx={{ display: "grid", gap: 2, gridTemplateColumns: "1fr 1fr" }}>
               <TextField
                 label="Start date"
@@ -418,7 +444,7 @@ export function TeacherLeaveWorkspace() {
           <Button
             variant="contained"
             onClick={handleApply}
-            disabled={applying || !employeeId}
+            disabled={applying || !employeeId || exceedsBalance}
             startIcon={applying ? <CircularProgress size={14} color="inherit" /> : undefined}
           >
             Submit

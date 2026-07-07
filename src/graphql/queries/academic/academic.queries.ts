@@ -168,6 +168,26 @@ export const GET_SCHEDULES_BY_BATCH_QUERY = /* GraphQL */ `
   }
 `;
 
+export const GET_MY_BATCHES_QUERY = /* GraphQL */ `
+  query GetMyBatches {
+    getMyBatches {
+      id
+      name
+      branchId
+      programId
+      headTeacherId
+      coTeacherIds
+      classLevel
+      capacity
+      enrolledCount
+      startDate
+      endDate
+      status
+      tenantId
+    }
+  }
+`;
+
 export const GET_MY_ROUTINE_QUERY = /* GraphQL */ `
   query GetMyRoutine($batchId: ID!) {
     myRoutine(batchId: $batchId) {

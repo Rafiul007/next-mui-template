@@ -1634,6 +1634,17 @@ export type PayrollRun = {
   year: Scalars['Int']['output'];
 };
 
+export type PayrollSummary = {
+  __typename?: 'PayrollSummary';
+  payslipCount: Scalars['Int']['output'];
+  totalAllowances: Scalars['Float']['output'];
+  totalBasicSalary: Scalars['Float']['output'];
+  totalDeductions: Scalars['Float']['output'];
+  totalNetAmount: Scalars['Float']['output'];
+  totalTaxes: Scalars['Float']['output'];
+  year: Scalars['Int']['output'];
+};
+
 export type PerformanceDashboard = {
   __typename?: 'PerformanceDashboard';
   averageScore: Scalars['Float']['output'];
@@ -1728,9 +1739,16 @@ export type Query = {
   getLeavePolicies: Array<LeavePolicy>;
   getMaterialsByBatch: Array<StudyMaterial>;
   getMonthlyAttendanceSheet: Array<EmployeeAttendance>;
+  getMyBatches: Array<Batch>;
   getMyEmployeeProfile: Employee;
   getMyLatestPayslip: PayrollEntry;
+  getMyLeaveApplications: Array<LeaveApplication>;
+  getMyLeaveBalance: Array<LeaveBalance>;
+  getMyPayrollRuns: Array<PayrollRun>;
+  getMyPayrollSummary: PayrollSummary;
+  getMyPayslips: Array<PayrollEntry>;
   getMyPlan: SubscriptionPlan;
+  getMySalaryStructure: SalaryStructure;
   getNoticesForBatch: Array<Notice>;
   getOrgChart: Array<OrgNode>;
   getPIPs: Array<Pip>;
@@ -1909,6 +1927,16 @@ export type QueryGetMaterialsByBatchArgs = {
 export type QueryGetMonthlyAttendanceSheetArgs = {
   employeeId: Scalars['ID']['input'];
   month: Scalars['Int']['input'];
+  year: Scalars['Int']['input'];
+};
+
+
+export type QueryGetMyLeaveBalanceArgs = {
+  year: Scalars['Int']['input'];
+};
+
+
+export type QueryGetMyPayrollSummaryArgs = {
   year: Scalars['Int']['input'];
 };
 
