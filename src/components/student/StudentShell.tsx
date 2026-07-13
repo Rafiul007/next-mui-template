@@ -30,6 +30,7 @@ import { GetMyUnreadCountDocument } from "@/graphql/generated";
 import { useQuery } from "@apollo/client/react";
 import { Badge } from "@mui/material";
 import { logoutSession } from "@/lib/auth/client";
+import { DashboardSwitcherMenuItems } from "@/components/auth/DashboardSwitcherMenuItems";
 
 const SIDEBAR_SURFACE = {
   bgcolor: "#09111c",
@@ -319,6 +320,8 @@ function StudentTopbar({ onMenuClick }: { onMenuClick: () => void }) {
             anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
             transformOrigin={{ vertical: "top", horizontal: "right" }}
           >
+            <DashboardSwitcherMenuItems onNavigate={handleCloseMenu} />
+
             <MenuItem onClick={handleLogout} disabled={isLoggingOut} sx={{ gap: 1.25 }}>
               <LogoutRounded fontSize="small" />
               <Typography variant="body2">

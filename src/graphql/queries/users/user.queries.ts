@@ -17,6 +17,12 @@ export const ME_QUERY = /* GraphQL */ `
         actions
       }
       userType
+      tenantId
+      tenantName
+      subscription {
+        plan
+        features
+      }
     }
   }
 `;

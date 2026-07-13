@@ -1,9 +1,18 @@
 "use client";
 
 import { MenuRounded, NotificationsNoneRounded } from "@mui/icons-material";
-import { Box, IconButton, Skeleton, Stack, Typography, alpha } from "@mui/material";
+import {
+  Box,
+  Chip,
+  IconButton,
+  Skeleton,
+  Stack,
+  Tooltip,
+  Typography,
+  alpha,
+} from "@mui/material";
 import { useQuery } from "@apollo/client/react";
-import { GetCenterDocument } from "@/graphql/generated";
+import { GetCenterDocument, MeDocument } from "@/graphql/generated";
 import { UserProfile } from "@/components/dashboard/UserProfile";
 
 type TopbarProps = {
@@ -12,7 +21,12 @@ type TopbarProps = {
 
 export function Topbar({ onMenuClick }: TopbarProps) {
   const { data } = useQuery(GetCenterDocument);
-  const centerName = data?.getCenter?.name;
+  const { data: meData } = useQuery(MeDocument, { errorPolicy: "all" });
+
+  // The institute (tenant) name is the org identity. Fall back to the center
+  // name for accounts without a tenant (e.g. platform admins).
+  const instituteName = meData?.me?.tenantName ?? data?.getCenter?.name;
+  const subscription = meData?.me?.subscription ?? null;
 
   return (
     <Box
@@ -45,14 +59,41 @@ export function Topbar({ onMenuClick }: TopbarProps) {
             <MenuRounded />
           </IconButton>
 
-          {centerName ? (
-            <Typography
-              variant="h5"
-              noWrap
-              sx={{ color: "#f8fafc", fontSize: { xs: "1.1rem", md: "1.5rem" } }}
-            >
-              {centerName}
-            </Typography>
+          {instituteName ? (
+            <Stack direction="row" spacing={1.25} alignItems="center" sx={{ minWidth: 0 }}>
+              <Typography
+                variant="h5"
+                noWrap
+                sx={{ color: "#f8fafc", fontSize: { xs: "1.1rem", md: "1.5rem" } }}
+              >
+                {instituteName}
+              </Typography>
+
+              {subscription ? (
+                <Tooltip
+                  title={
+                    subscription.features.length
+                      ? `Features: ${subscription.features.join(", ")}`
+                      : ""
+                  }
+                  arrow
+                >
+                  <Chip
+                    label={subscription.plan}
+                    size="small"
+                    sx={{
+                      display: { xs: "none", sm: "inline-flex" },
+                      textTransform: "capitalize",
+                      fontWeight: 700,
+                      color: "#e0f2fe",
+                      bgcolor: alpha("#38bdf8", 0.16),
+                      border: "1px solid",
+                      borderColor: alpha("#38bdf8", 0.32),
+                    }}
+                  />
+                </Tooltip>
+              ) : null}
+            </Stack>
           ) : (
             <Skeleton
               variant="text"

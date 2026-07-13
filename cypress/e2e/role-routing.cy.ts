@@ -5,11 +5,13 @@
 // directly, so they stay green even when cypress.env.json has no live accounts.
 // Relative import (not "@/") because the Cypress bundler doesn't read tsconfig paths.
 import {
+  accessibleDashboardKeys,
   effectiveRoles,
   isCenterAdmin,
   isStudent,
   isStudentRole,
   isTeacher,
+  isTeacherRole,
   primaryRole,
   resolveHomePath,
 } from "../../src/lib/auth/roles";
@@ -28,6 +30,18 @@ describe("auth role routing", () => {
 
     it("sends TEACHER role to the teacher console", () => {
       expect(resolveHomePath({ roles: ["TEACHER"] })).to.eq("/teacher/dashboard");
+    });
+
+    it("sends HEAD_TEACHER role to the teacher console", () => {
+      expect(resolveHomePath({ roles: ["HEAD_TEACHER"] })).to.eq(
+        "/teacher/dashboard",
+      );
+    });
+
+    it("sends a multi-dashboard user to the picker", () => {
+      expect(
+        resolveHomePath({ roles: ["TEACHER", "CENTER_ADMIN"] }),
+      ).to.eq("/select-dashboard");
     });
 
     it("sends center admins / everyone else to /dashboard", () => {
@@ -49,6 +63,46 @@ describe("auth role routing", () => {
     // longer a student and must fall through to the center-admin dashboard.
     it("no longer treats the legacy USER role as a student", () => {
       expect(resolveHomePath({ roles: ["USER"] })).to.eq("/dashboard");
+    });
+  });
+
+  describe("isTeacherRole", () => {
+    it("matches TEACHER and HEAD_TEACHER case-insensitively", () => {
+      expect(isTeacherRole(["TEACHER"])).to.be.true;
+      expect(isTeacherRole(["head_teacher"])).to.be.true;
+      expect(isTeacherRole(["USER", "HEAD_TEACHER"])).to.be.true;
+    });
+
+    it("rejects non-teacher roles and empty/absent sets", () => {
+      expect(isTeacherRole(["STUDENT"])).to.be.false;
+      expect(isTeacherRole([])).to.be.false;
+      expect(isTeacherRole(null)).to.be.false;
+    });
+  });
+
+  describe("accessibleDashboardKeys", () => {
+    it("returns a single home for a single-role user", () => {
+      expect(accessibleDashboardKeys({ roles: ["TEACHER"] })).to.deep.eq([
+        "teacher",
+      ]);
+    });
+
+    it("lists genuine memberships for a multi-role user", () => {
+      expect(
+        accessibleDashboardKeys({ roles: ["TEACHER", "CENTER_ADMIN"] }),
+      ).to.deep.eq(["teacher", "centerAdmin"]);
+    });
+
+    it("gives a BONGO admin only the bongo console, ignoring tenant roles", () => {
+      expect(
+        accessibleDashboardKeys({ userType: "BONGO", roles: ["TEACHER"] }),
+      ).to.deep.eq(["bongo"]);
+    });
+
+    it("keeps HR out of a center admin's memberships (supervisory access only)", () => {
+      expect(accessibleDashboardKeys({ roles: ["CENTER_ADMIN"] })).to.deep.eq([
+        "centerAdmin",
+      ]);
     });
   });
 
