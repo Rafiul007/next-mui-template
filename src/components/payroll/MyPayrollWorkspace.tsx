@@ -45,6 +45,7 @@ import {
   type GetMyPayslipsQuery,
 } from "@/graphql/generated";
 import { SummaryCard } from "@/components/ui";
+import { payrollStatusMeta } from "@/lib/payroll/status";
 
 type Payslip = GetMyPayslipsQuery["getMyPayslips"][number];
 type PayrollRun = GetMyPayrollRunsQuery["getMyPayrollRuns"][number];
@@ -61,22 +62,6 @@ const runPeriod = (run?: PayrollRun) =>
         "MMMM YYYY",
       )
     : "—";
-
-// Payroll run lifecycle → chip presentation. DISBURSED means money is out.
-const RUN_STATUS_META: Record<
-  string,
-  { label: string; color: "success" | "info" | "warning" | "default" }
-> = {
-  disbursed: { label: "Paid", color: "success" },
-  approved: { label: "Approved", color: "info" },
-  draft: { label: "Processing", color: "warning" },
-};
-
-const runStatusMeta = (status?: string) =>
-  RUN_STATUS_META[(status ?? "").toLowerCase()] ?? {
-    label: status ?? "—",
-    color: "default" as const,
-  };
 
 // ── Reusable section shell ───────────────────────────────────────────────────
 
@@ -170,7 +155,7 @@ function PayslipDialog({
   onClose: () => void;
 }) {
   const open = payslip != null;
-  const meta = runStatusMeta(run?.status);
+  const meta = payrollStatusMeta(run?.status);
   const gross = payslip ? payslip.basicSalary + payslip.allowances : 0;
 
   return (
@@ -201,7 +186,7 @@ function PayslipDialog({
             </Stack>
             <Stack direction="row" spacing={1} alignItems="center" sx={{ mt: 1 }}>
               <Chip
-                label={meta.label}
+                label={meta.employeeLabel}
                 size="small"
                 sx={{
                   bgcolor: alpha("#fff", 0.2),
@@ -274,7 +259,10 @@ function PayslipDialog({
 
 // ── Workspace ────────────────────────────────────────────────────────────────
 
-export function TeacherPaymentsWorkspace() {
+// Employee self-service payroll. Reads the caller-scoped getMy* queries, so it
+// works for any signed-in employee (teacher, HR staff, admin) without knowing
+// their employee id. Mounted from the teacher, HR, and admin self-service pages.
+export function MyPayrollWorkspace() {
   const currentYear = dayjs().year();
   const [year, setYear] = useState(currentYear);
   const [selected, setSelected] = useState<Payslip | null>(null);
@@ -311,7 +299,7 @@ export function TeacherPaymentsWorkspace() {
     return map;
   }, [runs]);
 
-  // Years the teacher actually has runs in, plus the current year, newest first.
+  // Years the employee actually has runs in, plus the current year, newest first.
   const availableYears = useMemo(() => {
     const set = new Set<number>([currentYear]);
     runs.forEach((r) => set.add(r.year));
@@ -544,7 +532,7 @@ export function TeacherPaymentsWorkspace() {
               <TableBody>
                 {yearPayslips.map((p) => {
                   const run = runById.get(p.payrollRunId);
-                  const meta = runStatusMeta(run?.status);
+                  const meta = payrollStatusMeta(run?.status);
                   return (
                     <TableRow
                       key={p.id}
@@ -559,10 +547,10 @@ export function TeacherPaymentsWorkspace() {
                       </TableCell>
                       <TableCell>
                         <Chip
-                          label={meta.label}
+                          label={meta.employeeLabel}
                           size="small"
                           color={meta.color}
-                          variant={meta.color === "success" ? "filled" : "outlined"}
+                          variant={meta.variant}
                           icon={
                             meta.color === "success" ? (
                               <CheckCircleRounded sx={{ fontSize: 15 }} />
