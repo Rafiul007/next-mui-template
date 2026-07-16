@@ -5,25 +5,37 @@ import dayjs from "dayjs";
 import {
   AccountBalanceWalletRounded,
   AddRounded,
+  CancelRounded,
   CheckCircleRounded,
   GroupsRounded,
+  ManageAccountsRounded,
   MoneyRounded,
   PaymentsRounded,
+  PersonAddRounded,
+  PersonRemoveRounded,
   PrintRounded,
   ReceiptLongRounded,
+  ThumbUpAltRounded,
 } from "@mui/icons-material";
 import { useMutation, useQuery } from "@apollo/client/react";
 import {
   Alert,
+  Autocomplete,
   Box,
   Button,
+  Checkbox,
   Chip,
   Dialog,
   DialogActions,
   DialogContent,
   DialogTitle,
+  Divider,
   FormControl,
+  IconButton,
   InputLabel,
+  List,
+  ListItem,
+  ListItemText,
   MenuItem,
   Paper,
   Select,
@@ -31,8 +43,10 @@ import {
   Tab,
   Tabs,
   TextField,
+  Tooltip,
   Typography,
   alpha,
+  createFilterOptions,
 } from "@mui/material";
 import { MaterialReactTable, type MRT_ColumnDef } from "material-react-table";
 import { toast } from "react-hot-toast";
@@ -40,20 +54,27 @@ import { SummaryCard } from "@/components/ui";
 import {
   GetCenterDocument,
   GetEmployeesDocument,
+  MeDocument,
   type GetEmployeesQuery,
 } from "@/graphql/generated";
 import {
+  AddEmployeeToPayrollRunDocument,
   ApprovePayrollDocument,
+  CancelPayrollDocument,
   DisbursePayrollDocument,
+  GetPayrollRunEligibleEmployeesDocument,
+  GetPayrollRunEntriesDocument,
   GetPayrollRunsDocument,
   GetPayslipDocument,
   GetSalaryStructureDocument,
+  RemoveEmployeeFromPayrollRunDocument,
   RunPayrollDocument,
   SetSalaryStructureDocument,
   type GetPayrollRunsQuery,
 } from "@/graphql/hr-extended";
 import { SearchSelect, type SearchSelectOption } from "@/components/form";
 import { getErrorMessage } from "@/lib/errors";
+import { hasPermission } from "@/lib/auth/roles";
 import { primaryGradient } from "@/theme/theme";
 import { printPayslip } from "./payslip-print";
 
@@ -66,15 +87,31 @@ const MONTH_NAMES = [
 ];
 
 const STATUS_COLOR: Record<string, "default" | "warning" | "success" | "info"> = {
-  pending: "warning",
+  draft: "warning",
+  reviewed: "warning",
   approved: "info",
   disbursed: "success",
+  cancelled: "default",
+};
+
+const employeeFilterOptions = createFilterOptions<SearchSelectOption>({
+  trim: true,
+  stringify: (o) => `${o.label} ${o.keywords ?? ""}`,
+});
+
+type PayrollPermissions = {
+  canApprove: boolean;
+  canDisburse: boolean;
+  canCancel: boolean;
 };
 
 const buildPayrollColumns = (
   onApprove: (id: string) => void,
   onDisburse: (id: string) => void,
+  onCancel: (id: string) => void,
+  onManageEmployees: (id: string) => void,
   isActioning: boolean,
+  perms: PayrollPermissions,
 ): MRT_ColumnDef<PayrollRun>[] => [
   {
     id: "period",
@@ -134,39 +171,78 @@ const buildPayrollColumns = (
   {
     id: "actions",
     header: "Actions",
-    size: 200,
+    size: 240,
     enableSorting: false,
     enableColumnFilter: false,
     Cell: ({ row }) => {
       const status = row.original.status?.toLowerCase();
+      const isCancellable = status === "draft" || status === "reviewed";
       return (
-        <Stack direction="row" spacing={1}>
-          {status === "pending" ? (
-            <Button
-              size="small"
-              variant="outlined"
-              color="info"
-              disabled={isActioning}
-              onClick={() => onApprove(row.original.id)}
-            >
-              Approve
-            </Button>
+        <Stack direction="row" spacing={0.5}>
+          {isCancellable && perms.canApprove ? (
+            <Tooltip title="Approve payroll">
+              <span>
+                <IconButton
+                  size="small"
+                  color="info"
+                  disabled={isActioning}
+                  onClick={() => onApprove(row.original.id)}
+                >
+                  <CheckCircleRounded fontSize="small" />
+                </IconButton>
+              </span>
+            </Tooltip>
           ) : null}
-          {status === "approved" ? (
-            <Button
-              size="small"
-              variant="contained"
-              color="success"
-              disabled={isActioning}
-              onClick={() => onDisburse(row.original.id)}
-            >
-              Disburse
-            </Button>
+          {isCancellable && (perms.canApprove || perms.canCancel) ? (
+            <Tooltip title="Manage employees">
+              <span>
+                <IconButton
+                  size="small"
+                  disabled={isActioning}
+                  onClick={() => onManageEmployees(row.original.id)}
+                >
+                  <ManageAccountsRounded fontSize="small" />
+                </IconButton>
+              </span>
+            </Tooltip>
+          ) : null}
+          {isCancellable && perms.canCancel ? (
+            <Tooltip title="Cancel payroll">
+              <span>
+                <IconButton
+                  size="small"
+                  color="error"
+                  disabled={isActioning}
+                  onClick={() => onCancel(row.original.id)}
+                >
+                  <CancelRounded fontSize="small" />
+                </IconButton>
+              </span>
+            </Tooltip>
+          ) : null}
+          {status === "approved" && perms.canDisburse ? (
+            <Tooltip title="Disburse payroll">
+              <span>
+                <IconButton
+                  size="small"
+                  color="success"
+                  disabled={isActioning}
+                  onClick={() => onDisburse(row.original.id)}
+                >
+                  <ThumbUpAltRounded fontSize="small" />
+                </IconButton>
+              </span>
+            </Tooltip>
           ) : null}
           {status === "disbursed" ? (
-            <Typography variant="body2" color="success.main">
-              ✓ Disbursed
-            </Typography>
+            <Tooltip title="Disbursed">
+              <CheckCircleRounded fontSize="small" color="success" />
+            </Tooltip>
+          ) : null}
+          {status === "cancelled" ? (
+            <Tooltip title="Cancelled">
+              <CancelRounded fontSize="small" color="disabled" />
+            </Tooltip>
           ) : null}
         </Stack>
       );
@@ -183,11 +259,15 @@ export function PayrollWorkspace() {
   const [payrollYear, setPayrollYear] = useState(new Date().getFullYear());
   const [salaryForm, setSalaryForm] = useState({
     basicSalary: "",
-    allowances: "",
+    houseRent: "",
+    medical: "",
+    transport: "",
     deductions: "",
     effectiveFrom: dayjs().format("YYYY-MM-DD"),
   });
   const [pageError, setPageError] = useState<string | null>(null);
+  const [excludedEmployeeIds, setExcludedEmployeeIds] = useState<string[]>([]);
+  const [manageRunId, setManageRunId] = useState<string | null>(null);
 
   // Payslips tab
   const [payslipEmployeeId, setPayslipEmployeeId] = useState("");
@@ -195,6 +275,7 @@ export function PayrollWorkspace() {
 
   const { data: employeesData } = useQuery(GetEmployeesDocument);
   const { data: centerData } = useQuery(GetCenterDocument);
+  const { data: meData } = useQuery(MeDocument);
   const {
     data: payrollRunsData,
     loading: isRunsLoading,
@@ -218,10 +299,41 @@ export function PayrollWorkspace() {
     },
   );
 
+  const { data: eligibleData, refetch: refetchEligible } = useQuery(
+    GetPayrollRunEligibleEmployeesDocument,
+    {
+      skip: !manageRunId,
+      variables: { payrollRunId: manageRunId ?? "" },
+      fetchPolicy: "cache-and-network",
+    },
+  );
+  const { data: runEntriesData, refetch: refetchRunEntries } = useQuery(
+    GetPayrollRunEntriesDocument,
+    {
+      skip: !manageRunId,
+      variables: { payrollRunId: manageRunId ?? "" },
+      fetchPolicy: "cache-and-network",
+    },
+  );
+
   const [setSalaryStructure, salaryState] = useMutation(SetSalaryStructureDocument);
   const [runPayroll, runState] = useMutation(RunPayrollDocument);
   const [approvePayroll, approveState] = useMutation(ApprovePayrollDocument);
   const [disbursePayroll, disburseState] = useMutation(DisbursePayrollDocument);
+  const [cancelPayroll, cancelState] = useMutation(CancelPayrollDocument);
+  const [addEmployeeToPayrollRun, addEmployeeState] = useMutation(AddEmployeeToPayrollRunDocument);
+  const [removeEmployeeFromPayrollRun, removeEmployeeState] = useMutation(
+    RemoveEmployeeFromPayrollRunDocument,
+  );
+
+  const permissions = meData?.me?.permissions ?? [];
+  const canRunPayroll = hasPermission(permissions, "HR_PAYROLL_RUN");
+  const canApprovePayroll = hasPermission(permissions, "HR_PAYROLL_APPROVE");
+  const payrollPerms: PayrollPermissions = {
+    canApprove: canApprovePayroll,
+    canDisburse: canApprovePayroll,
+    canCancel: canRunPayroll || canApprovePayroll,
+  };
 
   const employees = employeesData?.getEmployees ?? [];
   const payrollRuns = payrollRunsData?.getPayrollRuns ?? [];
@@ -250,8 +362,12 @@ export function PayrollWorkspace() {
   const totalDisbursed = payrollRuns
     .filter((r) => r.status?.toLowerCase() === "disbursed")
     .reduce((sum, r) => sum + r.totalAmount, 0);
-  const pendingRuns = payrollRuns.filter((r) => r.status?.toLowerCase() === "pending").length;
-  const isActioning = approveState.loading || disburseState.loading;
+  const pendingRuns = payrollRuns.filter((r) => {
+    const s = r.status?.toLowerCase();
+    return s === "draft" || s === "reviewed";
+  }).length;
+  const isActioning =
+    approveState.loading || disburseState.loading || cancelState.loading;
 
   const handleSetSalary = async () => {
     if (!selectedEmployeeId || !salaryForm.basicSalary) return;
@@ -261,7 +377,9 @@ export function PayrollWorkspace() {
           input: {
             employeeId: selectedEmployeeId,
             basicSalary: parseFloat(salaryForm.basicSalary),
-            allowances: salaryForm.allowances ? parseFloat(salaryForm.allowances) : undefined,
+            houseRent: salaryForm.houseRent ? parseFloat(salaryForm.houseRent) : undefined,
+            medical: salaryForm.medical ? parseFloat(salaryForm.medical) : undefined,
+            transport: salaryForm.transport ? parseFloat(salaryForm.transport) : undefined,
             deductions: salaryForm.deductions ? parseFloat(salaryForm.deductions) : undefined,
             effectiveFrom: salaryForm.effectiveFrom,
           },
@@ -278,10 +396,19 @@ export function PayrollWorkspace() {
   const handleRunPayroll = async () => {
     setPageError(null);
     try {
-      await runPayroll({ variables: { input: { month: payrollMonth, year: payrollYear } } });
+      await runPayroll({
+        variables: {
+          input: {
+            month: payrollMonth,
+            year: payrollYear,
+            excludedEmployeeIds: excludedEmployeeIds.length ? excludedEmployeeIds : undefined,
+          },
+        },
+      });
       await refetchRuns();
       toast.success(`Payroll run created for ${MONTH_NAMES[payrollMonth - 1]} ${payrollYear}.`);
       setIsRunPayrollOpen(false);
+      setExcludedEmployeeIds([]);
     } catch (error) {
       const message = getErrorMessage(error, "Unable to run payroll.");
       setPageError(message);
@@ -309,13 +436,51 @@ export function PayrollWorkspace() {
     }
   };
 
+  const handleCancel = async (payrollRunId: string) => {
+    try {
+      await cancelPayroll({ variables: { payrollRunId } });
+      await refetchRuns();
+      toast.success("Payroll run cancelled.");
+    } catch (error) {
+      toast.error(getErrorMessage(error, "Unable to cancel payroll."));
+    }
+  };
+
+  const handleAddEmployeeToRun = async (employeeId: string) => {
+    if (!manageRunId) return;
+    try {
+      await addEmployeeToPayrollRun({ variables: { payrollRunId: manageRunId, employeeId } });
+      await Promise.all([refetchEligible(), refetchRunEntries(), refetchRuns()]);
+      toast.success("Employee added to payroll run.");
+    } catch (error) {
+      toast.error(getErrorMessage(error, "Unable to add employee."));
+    }
+  };
+
+  const handleRemoveEmployeeFromRun = async (employeeId: string) => {
+    if (!manageRunId) return;
+    try {
+      await removeEmployeeFromPayrollRun({ variables: { payrollRunId: manageRunId, employeeId } });
+      await Promise.all([refetchEligible(), refetchRunEntries(), refetchRuns()]);
+      toast.success("Employee removed from payroll run.");
+    } catch (error) {
+      toast.error(getErrorMessage(error, "Unable to remove employee."));
+    }
+  };
+
   const employeeOptions: SearchSelectOption[] = employees.map(
-    (e: EmployeeRecord) => ({
-      value: e.id,
-      label: e.employeeCode || e.id,
-      keywords: e.employeeCode,
-    }),
+    (e: EmployeeRecord) => {
+      const name = e.userInfo
+        ? `${e.userInfo.firstName ?? ""} ${e.userInfo.lastName ?? ""}`.trim()
+        : "";
+      return {
+        value: e.id,
+        label: name ? `${name} (${e.employeeCode})` : e.employeeCode || e.id,
+        keywords: `${e.employeeCode} ${name}`,
+      };
+    },
   );
+  const employeeOptionById = new Map(employeeOptions.map((o) => [o.value, o]));
 
   return (
     <>
@@ -343,14 +508,16 @@ export function PayrollWorkspace() {
                 Manage salary structures, run payroll, and disburse salaries to employees.
               </Typography>
             </Box>
-            <Button
-              variant="contained"
-              startIcon={<AddRounded />}
-              onClick={() => setIsRunPayrollOpen(true)}
-              sx={{ alignSelf: "flex-start", backgroundColor: primaryGradient }}
-            >
-              Run payroll
-            </Button>
+            {canRunPayroll ? (
+              <Button
+                variant="contained"
+                startIcon={<AddRounded />}
+                onClick={() => setIsRunPayrollOpen(true)}
+                sx={{ alignSelf: "flex-start", backgroundColor: primaryGradient }}
+              >
+                Run payroll
+              </Button>
+            ) : null}
           </Stack>
         </Paper>
 
@@ -411,7 +578,14 @@ export function PayrollWorkspace() {
           <Box sx={{ p: { xs: 2, md: 3 }, bgcolor: "#f8fafc" }}>
             {activeTab === 0 ? (
               <MaterialReactTable
-                columns={buildPayrollColumns(handleApprove, handleDisburse, isActioning)}
+                columns={buildPayrollColumns(
+                  handleApprove,
+                  handleDisburse,
+                  handleCancel,
+                  (id) => setManageRunId(id),
+                  isActioning,
+                  payrollPerms,
+                )}
                 data={payrollRuns}
                 getRowId={(row) => row.id}
                 enableColumnFilters={false}
@@ -453,7 +627,9 @@ export function PayrollWorkspace() {
                       onClick={() => {
                         setSalaryForm({
                           basicSalary: salary?.basicSalary?.toString() ?? "",
-                          allowances: salary?.allowances?.toString() ?? "",
+                          houseRent: salary?.houseRent?.toString() ?? "",
+                          medical: salary?.medical?.toString() ?? "",
+                          transport: salary?.transport?.toString() ?? "",
                           deductions: salary?.deductions?.toString() ?? "",
                           effectiveFrom: salary?.effectiveFrom ?? dayjs().format("YYYY-MM-DD"),
                         });
@@ -480,12 +656,14 @@ export function PayrollWorkspace() {
                       sx={{
                         display: "grid",
                         gap: 2,
-                        gridTemplateColumns: { xs: "1fr 1fr", md: "repeat(4, 1fr)" },
+                        gridTemplateColumns: { xs: "1fr 1fr", md: "repeat(3, 1fr)" },
                       }}
                     >
                       {[
                         { label: "Basic salary", value: salary.basicSalary },
-                        { label: "Allowances", value: salary.allowances ?? 0 },
+                        { label: "House rent", value: salary.houseRent ?? 0 },
+                        { label: "Medical", value: salary.medical ?? 0 },
+                        { label: "Transport", value: salary.transport ?? 0 },
                         { label: "Deductions", value: salary.deductions ?? 0 },
                         { label: "Net salary", value: salary.netSalary },
                       ].map(({ label, value }) => (
@@ -508,7 +686,7 @@ export function PayrollWorkspace() {
                     </Typography>
                     <Button
                       variant="contained"
-                      onClick={() => { setSalaryForm({ basicSalary: "", allowances: "", deductions: "", effectiveFrom: dayjs().format("YYYY-MM-DD") }); setIsSalaryOpen(true); }}
+                      onClick={() => { setSalaryForm({ basicSalary: "", houseRent: "", medical: "", transport: "", deductions: "", effectiveFrom: dayjs().format("YYYY-MM-DD") }); setIsSalaryOpen(true); }}
                     >
                       Set salary structure
                     </Button>
@@ -683,7 +861,7 @@ export function PayrollWorkspace() {
         open={isRunPayrollOpen}
         onClose={() => !runState.loading && setIsRunPayrollOpen(false)}
         fullWidth
-        maxWidth="xs"
+        maxWidth="sm"
       >
         <DialogTitle>Run payroll</DialogTitle>
         <DialogContent>
@@ -708,8 +886,33 @@ export function PayrollWorkspace() {
               size="small"
               fullWidth
             />
+            <Autocomplete
+              multiple
+              size="small"
+              options={employeeOptions}
+              value={employeeOptions.filter((o) => excludedEmployeeIds.includes(o.value))}
+              onChange={(_, value) => setExcludedEmployeeIds(value.map((o) => o.value))}
+              getOptionLabel={(o) => o.label}
+              isOptionEqualToValue={(a, b) => a.value === b.value}
+              filterOptions={employeeFilterOptions}
+              autoHighlight
+              disableCloseOnSelect
+              renderOption={(props, option, { selected }) => {
+                const { key, ...optionProps } = props;
+                return (
+                  <li key={key} {...optionProps}>
+                    <Checkbox size="small" checked={selected} sx={{ mr: 1 }} />
+                    {option.label}
+                  </li>
+                );
+              }}
+              renderInput={(params) => (
+                <TextField {...params} label="Exclude employees from this run" placeholder="Search by name or code…" />
+              )}
+            />
             <Alert severity="info">
-              This will generate payroll entries for all employees with a salary structure for {MONTH_NAMES[payrollMonth - 1]} {payrollYear}.
+              This will generate payroll entries for all employees with a salary structure for {MONTH_NAMES[payrollMonth - 1]} {payrollYear}
+              {excludedEmployeeIds.length ? `, excluding ${excludedEmployeeIds.length} selected` : ""}. Excluded employees can be added back later.
             </Alert>
           </Stack>
         </DialogContent>
@@ -743,10 +946,26 @@ export function PayrollWorkspace() {
                 fullWidth
               />
               <TextField
-                label="Allowances (৳)"
+                label="House rent (৳)"
                 type="number"
-                value={salaryForm.allowances}
-                onChange={(e) => setSalaryForm((f) => ({ ...f, allowances: e.target.value }))}
+                value={salaryForm.houseRent}
+                onChange={(e) => setSalaryForm((f) => ({ ...f, houseRent: e.target.value }))}
+                size="small"
+                fullWidth
+              />
+              <TextField
+                label="Medical (৳)"
+                type="number"
+                value={salaryForm.medical}
+                onChange={(e) => setSalaryForm((f) => ({ ...f, medical: e.target.value }))}
+                size="small"
+                fullWidth
+              />
+              <TextField
+                label="Transport (৳)"
+                type="number"
+                value={salaryForm.transport}
+                onChange={(e) => setSalaryForm((f) => ({ ...f, transport: e.target.value }))}
                 size="small"
                 fullWidth
               />
@@ -772,7 +991,9 @@ export function PayrollWorkspace() {
               <Alert severity="success">
                 Net salary: ৳ {(
                   parseFloat(salaryForm.basicSalary || "0") +
-                  parseFloat(salaryForm.allowances || "0") -
+                  parseFloat(salaryForm.houseRent || "0") +
+                  parseFloat(salaryForm.medical || "0") +
+                  parseFloat(salaryForm.transport || "0") -
                   parseFloat(salaryForm.deductions || "0")
                 ).toLocaleString()}
               </Alert>
@@ -790,6 +1011,106 @@ export function PayrollWorkspace() {
           >
             Save
           </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Manage Employees Dialog */}
+      <Dialog
+        open={!!manageRunId}
+        onClose={() => setManageRunId(null)}
+        fullWidth
+        maxWidth="sm"
+      >
+        <DialogTitle>Manage payroll employees</DialogTitle>
+        <DialogContent dividers>
+          <Stack spacing={2}>
+            <Box>
+              <Typography variant="subtitle2" sx={{ mb: 1 }}>
+                Included ({runEntriesData?.getPayrollRunEntries.length ?? 0})
+              </Typography>
+              {runEntriesData?.getPayrollRunEntries.length ? (
+                <List dense disablePadding>
+                  {runEntriesData.getPayrollRunEntries.map((entry) => {
+                    return (
+                      <ListItem
+                        key={entry.id}
+                        secondaryAction={
+                          <Tooltip title="Remove from this run">
+                            <span>
+                              <IconButton
+                                edge="end"
+                                size="small"
+                                color="error"
+                                disabled={removeEmployeeState.loading}
+                                onClick={() => handleRemoveEmployeeFromRun(entry.employeeId)}
+                              >
+                                <PersonRemoveRounded fontSize="small" />
+                              </IconButton>
+                            </span>
+                          </Tooltip>
+                        }
+                      >
+                        <ListItemText
+                          primary={
+                            employeeOptionById.get(entry.employeeId)?.label ?? entry.employeeId
+                          }
+                          secondary={`Net ৳ ${entry.netAmount.toLocaleString()}`}
+                        />
+                      </ListItem>
+                    );
+                  })}
+                </List>
+              ) : (
+                <Typography variant="body2" color="text.secondary">
+                  No employees included yet.
+                </Typography>
+              )}
+            </Box>
+
+            <Divider />
+
+            <Box>
+              <Typography variant="subtitle2" sx={{ mb: 1 }}>
+                Eligible to add ({eligibleData?.getPayrollRunEligibleEmployees.length ?? 0})
+              </Typography>
+              {eligibleData?.getPayrollRunEligibleEmployees.length ? (
+                <List dense disablePadding>
+                  {eligibleData.getPayrollRunEligibleEmployees.map((emp) => (
+                    <ListItem
+                      key={emp.id}
+                      secondaryAction={
+                        <Tooltip title="Add to this run">
+                          <span>
+                            <IconButton
+                              edge="end"
+                              size="small"
+                              color="success"
+                              disabled={addEmployeeState.loading}
+                              onClick={() => handleAddEmployeeToRun(emp.id)}
+                            >
+                              <PersonAddRounded fontSize="small" />
+                            </IconButton>
+                          </span>
+                        </Tooltip>
+                      }
+                    >
+                      <ListItemText
+                        primary={employeeOptionById.get(emp.id)?.label ?? emp.employeeCode}
+                        secondary={emp.designation ?? undefined}
+                      />
+                    </ListItem>
+                  ))}
+                </List>
+              ) : (
+                <Typography variant="body2" color="text.secondary">
+                  No other eligible employees with a salary structure.
+                </Typography>
+              )}
+            </Box>
+          </Stack>
+        </DialogContent>
+        <DialogActions sx={{ px: 3, py: 2 }}>
+          <Button onClick={() => setManageRunId(null)}>Close</Button>
         </DialogActions>
       </Dialog>
     </>

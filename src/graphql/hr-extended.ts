@@ -73,6 +73,9 @@ export type GetSalaryStructureQuery = {
     id: string;
     employeeId: string;
     basicSalary: number;
+    houseRent: number | null;
+    medical: number | null;
+    transport: number | null;
     allowances: number | null;
     deductions: number | null;
     netSalary: number;
@@ -87,6 +90,9 @@ export const GetSalaryStructureDocument = gql`
       id
       employeeId
       basicSalary
+      houseRent
+      medical
+      transport
       allowances
       deductions
       netSalary
@@ -100,13 +106,24 @@ export const GetSalaryStructureDocument = gql`
 >;
 
 export type SetSalaryStructureMutationVariables = {
-  input: SchemaTypes.SetSalaryStructureInput;
+  input: {
+    employeeId: string;
+    basicSalary: number;
+    houseRent?: number;
+    medical?: number;
+    transport?: number;
+    deductions?: number;
+    effectiveFrom: string;
+  };
 };
 export type SetSalaryStructureMutation = {
   setSalaryStructure: {
     id: string;
     employeeId: string;
     basicSalary: number;
+    houseRent: number | null;
+    medical: number | null;
+    transport: number | null;
     allowances: number | null;
     deductions: number | null;
     netSalary: number;
@@ -121,6 +138,9 @@ export const SetSalaryStructureDocument = gql`
       id
       employeeId
       basicSalary
+      houseRent
+      medical
+      transport
       allowances
       deductions
       netSalary
@@ -134,7 +154,11 @@ export const SetSalaryStructureDocument = gql`
 >;
 
 export type RunPayrollMutationVariables = {
-  input: SchemaTypes.RunPayrollInput;
+  input: {
+    month: number;
+    year: number;
+    excludedEmployeeIds?: string[];
+  };
 };
 export type RunPayrollMutation = {
   runPayroll: {
@@ -163,6 +187,134 @@ export const RunPayrollDocument = gql`
     }
   }
 ` as unknown as TypedDocumentNode<RunPayrollMutation, RunPayrollMutationVariables>;
+
+export type GetPayrollRunEligibleEmployeesQueryVariables = {
+  payrollRunId: string;
+};
+export type GetPayrollRunEligibleEmployeesQuery = {
+  getPayrollRunEligibleEmployees: Array<{
+    id: string;
+    employeeCode: string;
+    designation: string | null;
+  }>;
+};
+
+export const GetPayrollRunEligibleEmployeesDocument = gql`
+  query GetPayrollRunEligibleEmployees($payrollRunId: ID!) {
+    getPayrollRunEligibleEmployees(payrollRunId: $payrollRunId) {
+      id
+      employeeCode
+      designation
+    }
+  }
+` as unknown as TypedDocumentNode<
+  GetPayrollRunEligibleEmployeesQuery,
+  GetPayrollRunEligibleEmployeesQueryVariables
+>;
+
+export type AddEmployeeToPayrollRunMutationVariables = {
+  payrollRunId: string;
+  employeeId: string;
+};
+export type AddEmployeeToPayrollRunMutation = {
+  addEmployeeToPayrollRun: {
+    id: string;
+    month: number;
+    year: number;
+    status: string;
+    totalAmount: number;
+    totalEmployees: number;
+    createdAt: string;
+    tenantId: string;
+  };
+};
+
+export const AddEmployeeToPayrollRunDocument = gql`
+  mutation AddEmployeeToPayrollRun($payrollRunId: ID!, $employeeId: ID!) {
+    addEmployeeToPayrollRun(payrollRunId: $payrollRunId, employeeId: $employeeId) {
+      id
+      month
+      year
+      status
+      totalAmount
+      totalEmployees
+      createdAt
+      tenantId
+    }
+  }
+` as unknown as TypedDocumentNode<
+  AddEmployeeToPayrollRunMutation,
+  AddEmployeeToPayrollRunMutationVariables
+>;
+
+export type RemoveEmployeeFromPayrollRunMutationVariables = {
+  payrollRunId: string;
+  employeeId: string;
+};
+export type RemoveEmployeeFromPayrollRunMutation = {
+  removeEmployeeFromPayrollRun: {
+    id: string;
+    month: number;
+    year: number;
+    status: string;
+    totalAmount: number;
+    totalEmployees: number;
+    createdAt: string;
+    tenantId: string;
+  };
+};
+
+export const RemoveEmployeeFromPayrollRunDocument = gql`
+  mutation RemoveEmployeeFromPayrollRun($payrollRunId: ID!, $employeeId: ID!) {
+    removeEmployeeFromPayrollRun(payrollRunId: $payrollRunId, employeeId: $employeeId) {
+      id
+      month
+      year
+      status
+      totalAmount
+      totalEmployees
+      createdAt
+      tenantId
+    }
+  }
+` as unknown as TypedDocumentNode<
+  RemoveEmployeeFromPayrollRunMutation,
+  RemoveEmployeeFromPayrollRunMutationVariables
+>;
+
+export type GetPayrollRunEntriesQueryVariables = {
+  payrollRunId: string;
+};
+export type GetPayrollRunEntriesQuery = {
+  getPayrollRunEntries: Array<{
+    id: string;
+    employeeId: string;
+    basicSalary: number;
+    allowances: number;
+    deductions: number;
+    taxableIncome: number;
+    taxes: number;
+    netAmount: number;
+  }>;
+};
+
+export const GetPayrollRunEntriesDocument = gql`
+  query GetPayrollRunEntries($payrollRunId: ID!) {
+    getPayrollRunEntries(payrollRunId: $payrollRunId) {
+      id
+      employeeId
+      basicSalary
+      allowances
+      deductions
+      taxableIncome
+      taxes
+      netAmount
+    }
+  }
+` as unknown as TypedDocumentNode<
+  GetPayrollRunEntriesQuery,
+  GetPayrollRunEntriesQueryVariables
+>;
 
 export type ApprovePayrollMutationVariables = {
   payrollRunId: string;
@@ -230,6 +382,40 @@ export const DisbursePayrollDocument = gql`
 ` as unknown as TypedDocumentNode<
   DisbursePayrollMutation,
   DisbursePayrollMutationVariables
+>;
+
+export type CancelPayrollMutationVariables = {
+  payrollRunId: string;
+};
+export type CancelPayrollMutation = {
+  cancelPayroll: {
+    id: string;
+    month: number;
+    year: number;
+    status: string;
+    totalAmount: number;
+    totalEmployees: number;
+    createdAt: string;
+    tenantId: string;
+  };
+};
+
+export const CancelPayrollDocument = gql`
+  mutation CancelPayroll($payrollRunId: ID!) {
+    cancelPayroll(payrollRunId: $payrollRunId) {
+      id
+      month
+      year
+      status
+      totalAmount
+      totalEmployees
+      createdAt
+      tenantId
+    }
+  }
+` as unknown as TypedDocumentNode<
+  CancelPayrollMutation,
+  CancelPayrollMutationVariables
 >;
 
 // ─── Recruitment ──────────────────────────────────────────────────────────────

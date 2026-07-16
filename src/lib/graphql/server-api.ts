@@ -202,9 +202,16 @@ export const loginWithCredentials = async (email: string, password: string) => {
   };
 };
 
-// Refresh requests intentionally run server-side so the browser never receives
-// the token pair in JSON.
-export const refreshAccessToken = async (refreshToken: string) => {
+// Backend refresh tokens are single-use (deleted on rotation). When an access
+// token has expired, several parallel proxy requests can carry the same stale
+// refresh cookie and race to redeem it — only the first succeeds, and the
+// losers would otherwise see "invalid refresh token" and wipe the session.
+// Dedupe by token so concurrent callers share one in-flight backend call.
+const inFlightRefreshes = new Map<string, Promise<AuthTokens | null>>();
+
+const requestTokenRefresh = async (
+  refreshToken: string,
+): Promise<AuthTokens | null> => {
   const result = await executeExternalGraphql(
     {
       operationName: "Refresh",
@@ -215,4 +222,18 @@ export const refreshAccessToken = async (refreshToken: string) => {
   );
 
   return extractAuthTokens(result.payload, "Refresh");
+};
+
+// Refresh requests intentionally run server-side so the browser never receives
+// the token pair in JSON.
+export const refreshAccessToken = (refreshToken: string) => {
+  const inFlight = inFlightRefreshes.get(refreshToken);
+  if (inFlight) return inFlight;
+
+  const promise = requestTokenRefresh(refreshToken).finally(() => {
+    inFlightRefreshes.delete(refreshToken);
+  });
+
+  inFlightRefreshes.set(refreshToken, promise);
+  return promise;
 };

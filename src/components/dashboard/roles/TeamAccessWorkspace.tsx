@@ -124,7 +124,7 @@ const buildEmployeeRow = (
     profilePicture: user?.profilePicture ?? ui?.profilePicture ?? null,
     isActivated: user?.isActivated ?? false,
     isVerified: user?.isVerified ?? false,
-    roles: user?.roles ?? [],
+    roles: user?.roles ?? (ui?.roles?.filter((r): r is string => !!r) ?? []),
     user,
   };
 };

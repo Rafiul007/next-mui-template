@@ -110,6 +110,15 @@ type MeLike =
   | null
   | undefined;
 
+// The `me.permissions[].resource` list carries the exact backend Permission
+// enum strings (e.g. "HR_PAYROLL_APPROVE") — this checks membership directly,
+// no keyword or role-name guessing needed. Use this to gate actions/buttons
+// that a backend @RequiresPermission also checks, so the UI and API agree.
+export const hasPermission = (
+  permissions: readonly { resource: string }[] | null | undefined,
+  resource: string,
+): boolean => (permissions ?? []).some((p) => p.resource === resource);
+
 export const isStudent = (me: MeLike): boolean =>
   !!me && isStudentRole(me.roles);
 
