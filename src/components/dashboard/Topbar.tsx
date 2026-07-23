@@ -1,8 +1,10 @@
 "use client";
 
-import { MenuRounded, NotificationsNoneRounded } from "@mui/icons-material";
+import { useState } from "react";
+import { MenuRounded, NotificationsNoneRounded, LogoutRounded } from "@mui/icons-material";
 import {
   Box,
+  Button,
   Chip,
   IconButton,
   Skeleton,
@@ -12,7 +14,7 @@ import {
   alpha,
 } from "@mui/material";
 import { useQuery } from "@apollo/client/react";
-import { GetCenterDocument, MeDocument } from "@/graphql/generated";
+import { GetCenterDocument, GetMyImpersonationStatusDocument, MeDocument } from "@/graphql/generated";
 import { UserProfile } from "@/components/dashboard/UserProfile";
 
 type TopbarProps = {
@@ -22,11 +24,28 @@ type TopbarProps = {
 export function Topbar({ onMenuClick }: TopbarProps) {
   const { data } = useQuery(GetCenterDocument);
   const { data: meData } = useQuery(MeDocument, { errorPolicy: "all" });
+  const { data: impersonationData } = useQuery(GetMyImpersonationStatusDocument, {
+    errorPolicy: "all",
+    fetchPolicy: "cache-and-network",
+  });
+  const [stopping, setStopping] = useState(false);
 
   // The institute (tenant) name is the org identity. Fall back to the center
   // name for accounts without a tenant (e.g. platform admins).
   const instituteName = meData?.me?.tenantName ?? data?.getCenter?.name;
   const subscription = meData?.me?.subscription ?? null;
+  const impersonation = impersonationData?.myImpersonationStatus;
+
+  const handleStopImpersonation = async () => {
+    setStopping(true);
+    try {
+      await fetch("/api/auth/impersonate-user/stop", { method: "POST" });
+    } finally {
+      // Full navigation so every cached query re-fetches under the real
+      // (admin) identity instead of the impersonated one.
+      window.location.assign("/");
+    }
+  };
 
   return (
     <Box
@@ -105,6 +124,29 @@ export function Topbar({ onMenuClick }: TopbarProps) {
         </Stack>
 
         <Stack direction="row" spacing={1.5} alignItems="center">
+          {impersonation?.active ? (
+            <Tooltip
+              title={
+                impersonation.asImpersonatedUser
+                  ? `Impersonating ${impersonation.targetUserName ?? "user"} (started by ${impersonation.adminName ?? "admin"})`
+                  : `Active impersonation of ${impersonation.targetUserName ?? "user"} in another tab`
+              }
+              arrow
+            >
+              <Button
+                size="small"
+                color="warning"
+                variant="contained"
+                startIcon={<LogoutRounded />}
+                onClick={handleStopImpersonation}
+                disabled={stopping}
+                sx={{ fontWeight: 700, whiteSpace: "nowrap" }}
+              >
+                Stop impersonation
+              </Button>
+            </Tooltip>
+          ) : null}
+
           <IconButton
             sx={{
               borderRadius: 2,

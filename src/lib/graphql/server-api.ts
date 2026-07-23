@@ -4,11 +4,13 @@ import {
   REFRESH_MUTATION,
 } from "@/graphql/mutations/auth/auth.mutations";
 import { IMPERSONATE_TENANT_MUTATION } from "@/graphql/mutations/platform/platform.mutations";
+import { START_IMPERSONATION_MUTATION, STOP_IMPERSONATION_MUTATION } from "@/graphql/mutations/impersonation/impersonation.mutations";
 import type { AuthTokens } from "@/lib/auth/session";
 
 const LOGIN_FIELD_PATTERN = /\blogin\s*\(/i;
 const REFRESH_FIELD_PATTERN = /\brefresh\s*\(/i;
 const IMPERSONATE_TENANT_FIELD_PATTERN = /\bimpersonateTenant\s*\(/i;
+const START_IMPERSONATION_FIELD_PATTERN = /\bstartImpersonation\s*\(/i;
 
 type GraphqlError = {
   message?: string;
@@ -127,9 +129,11 @@ export const isTokenIssuingOperation = (body: GraphqlRequestBody) =>
   body.operationName === "Login" ||
   body.operationName === "Refresh" ||
   body.operationName === "ImpersonateTenant" ||
+  body.operationName === "StartImpersonation" ||
   LOGIN_FIELD_PATTERN.test(body.query) ||
   REFRESH_FIELD_PATTERN.test(body.query) ||
-  IMPERSONATE_TENANT_FIELD_PATTERN.test(body.query);
+  IMPERSONATE_TENANT_FIELD_PATTERN.test(body.query) ||
+  START_IMPERSONATION_FIELD_PATTERN.test(body.query);
 
 export const shouldAttemptTokenRefresh = (
   status: number,
@@ -185,6 +189,61 @@ export const impersonateAsAdminUser = async (
 
   const data = result.payload?.data?.impersonateTenant;
   return isImpersonateResult(data) ? data : null;
+};
+
+type StartImpersonationResult = {
+  token: string;
+  sessionId: string;
+  targetUserId: string;
+  targetUserName: string;
+  startedAt: string;
+};
+
+const isStartImpersonationResult = (value: unknown): value is StartImpersonationResult => {
+  if (!value || typeof value !== "object") return false;
+  const v = value as Record<string, unknown>;
+  return (
+    typeof v.token === "string" &&
+    typeof v.sessionId === "string" &&
+    typeof v.targetUserId === "string" &&
+    typeof v.targetUserName === "string"
+  );
+};
+
+// Calls startImpersonation using the admin's own access token and returns the
+// impersonation token bundle, or null on failure. Mirrors impersonateAsAdminUser
+// above but for generic user-level (not tenant-level) impersonation.
+export const startImpersonationAsAdmin = async (
+  userId: string,
+  adminAccessToken: string,
+): Promise<StartImpersonationResult | null> => {
+  const result = await executeExternalGraphql(
+    {
+      operationName: "StartImpersonation",
+      query: START_IMPERSONATION_MUTATION,
+      variables: { userId },
+    },
+    adminAccessToken,
+  );
+
+  const data = result.payload?.data?.startImpersonation;
+  return isStartImpersonationResult(data) ? data : null;
+};
+
+// Ends the current impersonation session server-side. Callable with either the
+// impersonation token (stop button, called as the impersonated user) or the
+// admin's own access token (resuming a dangling session from another tab) —
+// the backend resolves which session to end from the caller's own principal.
+export const stopImpersonationCall = async (accessToken: string): Promise<boolean> => {
+  const result = await executeExternalGraphql(
+    {
+      operationName: "StopImpersonation",
+      query: STOP_IMPERSONATION_MUTATION,
+    },
+    accessToken,
+  );
+
+  return result.payload?.data?.stopImpersonation === true;
 };
 
 export const loginWithCredentials = async (email: string, password: string) => {

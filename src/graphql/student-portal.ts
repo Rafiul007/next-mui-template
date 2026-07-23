@@ -2,8 +2,9 @@
  * Student portal GraphQL operations.
  * New backend endpoints (myEnrollments, myStudentProfile, myInvoices, submitMyAssignment)
  * are not yet in the generated schema — defined manually here like billing-new.ts.
- * Existing JWT-resolved queries (myAttendanceSummary, myResults, myAttendanceBySession)
- * are also defined here since no query document existed for them.
+ * Existing JWT-resolved queries (myAttendanceSummary, myAttendanceBySession) are also
+ * defined here since no query document existed for them.
+ * (myResults now lives in the generated codegen documents — see exam.queries.ts.)
  */
 
 import { gql, type TypedDocumentNode } from "@apollo/client";
@@ -70,17 +71,6 @@ export type MyAttendanceSummary = {
   lateCount: number;
   latePercent: number;
   shortageAlert: boolean;
-};
-
-export type MyResult = {
-  id: string;
-  examId: string;
-  studentId: string;
-  marksObtained: number;
-  grade: string | null;
-  remarks: string | null;
-  publishedAt: string | null;
-  tenantId: string;
 };
 
 export type MyAttendanceRecord = {
@@ -214,28 +204,6 @@ export const MyAttendanceSummaryDocument: TypedDocumentNode<
       lateCount
       latePercent
       shortageAlert
-    }
-  }
-`;
-
-// ── myResults ─────────────────────────────────────────────────────────────────
-
-export type MyResultsResult = { myResults: MyResult[] };
-
-export const MyResultsDocument: TypedDocumentNode<
-  MyResultsResult,
-  Record<string, never>
-> = gql`
-  query MyResults {
-    myResults {
-      id
-      examId
-      studentId
-      marksObtained
-      grade
-      remarks
-      publishedAt
-      tenantId
     }
   }
 `;

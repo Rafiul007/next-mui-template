@@ -1,12 +1,16 @@
 "use client";
 
+import { useState } from "react";
 import dayjs from "dayjs";
-import {
-  LeaderboardRounded,
-} from "@mui/icons-material";
+import { CheckCircleRounded, LeaderboardRounded, VisibilityRounded } from "@mui/icons-material";
 import {
   Box,
+  Button,
   Chip,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
   Paper,
   Stack,
   Typography,
@@ -14,7 +18,13 @@ import {
 } from "@mui/material";
 import { useQuery } from "@apollo/client/react";
 import { MaterialReactTable, type MRT_ColumnDef } from "material-react-table";
-import { MyResultsDocument, type MyResult } from "@/graphql/student-portal";
+import {
+  GetMyResultBreakdownDocument,
+  GetMyResultsDocument,
+  type GetMyResultsQuery,
+} from "@/graphql/generated";
+
+type MyResult = GetMyResultsQuery["myResults"][number];
 
 const gradeColor = (
   grade: string | null,
@@ -26,74 +36,96 @@ const gradeColor = (
   return "error";
 };
 
-const columns: MRT_ColumnDef<MyResult>[] = [
-  {
-    accessorKey: "examId",
-    header: "Exam",
-    size: 200,
-    Cell: ({ cell }) => (
-      <Typography variant="body2" noWrap>
-        {String(cell.getValue()).slice(0, 8)}…
-      </Typography>
-    ),
-  },
-  {
-    accessorKey: "marksObtained",
-    header: "Marks",
-    size: 90,
-    Cell: ({ cell }) => (
-      <Typography variant="body2" fontWeight={600}>
-        {String(cell.getValue())}
-      </Typography>
-    ),
-  },
-  {
-    accessorKey: "grade",
-    header: "Grade",
-    size: 90,
-    Cell: ({ cell }) => {
-      const grade = cell.getValue() as string | null;
-      return grade ? (
-        <Chip
-          label={grade}
-          size="small"
-          color={gradeColor(grade)}
-          variant="outlined"
-        />
-      ) : (
-        <Typography variant="body2" color="text.disabled">
-          —
-        </Typography>
-      );
-    },
-  },
-  {
-    accessorKey: "remarks",
-    header: "Remarks",
-    size: 200,
-    Cell: ({ cell }) => (
-      <Typography variant="body2" color="text.secondary" noWrap>
-        {(cell.getValue() as string | null) ?? "—"}
-      </Typography>
-    ),
-  },
-  {
-    accessorKey: "publishedAt",
-    header: "Published",
-    size: 130,
-    Cell: ({ cell }) => {
-      const val = cell.getValue() as string | null;
-      return (
-        <Typography variant="body2" color="text.secondary">
-          {val ? dayjs(val).format("D MMM YYYY") : "—"}
-        </Typography>
-      );
-    },
-  },
-];
+function ResultBreakdownDialog({
+  examId,
+  onClose,
+}: {
+  examId: string;
+  onClose: () => void;
+}) {
+  const { data, loading } = useQuery(GetMyResultBreakdownDocument, {
+    variables: { examId },
+  });
+  const breakdown = data?.getMyResultBreakdown;
+
+  return (
+    <Dialog open onClose={onClose} fullWidth maxWidth="md">
+      <DialogTitle>
+        Result breakdown
+        {breakdown ? (
+          <Typography variant="body2" color="text.secondary" component="div">
+            {breakdown.marksObtained} marks · {breakdown.grade ?? "—"} ·{" "}
+            {dayjs(breakdown.publishedAt).format("D MMM YYYY")}
+          </Typography>
+        ) : null}
+      </DialogTitle>
+      <DialogContent dividers>
+        {loading ? (
+          <Typography color="text.secondary">Loading…</Typography>
+        ) : !breakdown ? (
+          <Typography color="text.secondary">Unable to load breakdown.</Typography>
+        ) : (
+          <Stack spacing={2}>
+            {breakdown.remarks ? <Typography variant="body2">{breakdown.remarks}</Typography> : null}
+            {breakdown.questions.map((q, index) => (
+              <Paper
+                key={q.examQuestionId}
+                elevation={0}
+                sx={{
+                  p: 2,
+                  border: "1px solid",
+                  borderColor: q.correct ? "success.light" : "divider",
+                  bgcolor: q.correct ? alpha("#22c55e", 0.05) : "transparent",
+                }}
+              >
+                <Stack direction="row" justifyContent="space-between" alignItems="flex-start">
+                  <Typography variant="body1" sx={{ fontWeight: 600, flex: 1 }}>
+                    {index + 1}. {q.questionTextSnapshot}
+                  </Typography>
+                  <Stack direction="row" spacing={0.75} alignItems="center">
+                    {q.correct ? <CheckCircleRounded color="success" fontSize="small" /> : null}
+                    <Chip size="small" variant="outlined" label={`${q.marksAwarded} marks`} />
+                  </Stack>
+                </Stack>
+                <Stack sx={{ mt: 1 }}>
+                  {q.options.map((opt) => {
+                    const wasSelected = q.selectedOrders.includes(opt.order);
+                    return (
+                      <Typography
+                        key={opt.order}
+                        variant="body2"
+                        sx={{
+                          py: 0.25,
+                          fontWeight: wasSelected ? 700 : 400,
+                          color: opt.correct
+                            ? "success.main"
+                            : wasSelected
+                              ? "error.main"
+                              : "text.secondary",
+                        }}
+                      >
+                        {wasSelected ? "▶ " : "　"}
+                        {opt.text}
+                        {opt.correct ? " (correct)" : ""}
+                      </Typography>
+                    );
+                  })}
+                </Stack>
+              </Paper>
+            ))}
+          </Stack>
+        )}
+      </DialogContent>
+      <DialogActions sx={{ px: 3, py: 2 }}>
+        <Button onClick={onClose}>Close</Button>
+      </DialogActions>
+    </Dialog>
+  );
+}
 
 export function ResultsWorkspace() {
-  const { data, loading } = useQuery(MyResultsDocument);
+  const { data, loading } = useQuery(GetMyResultsDocument);
+  const [breakdownExamId, setBreakdownExamId] = useState<string | null>(null);
 
   const results = [...(data?.myResults ?? [])].sort((a, b) =>
     (b.publishedAt ?? "").localeCompare(a.publishedAt ?? ""),
@@ -104,6 +136,83 @@ export function ResultsWorkspace() {
     results.length > 0
       ? results.reduce((s, r) => s + r.marksObtained, 0) / results.length
       : 0;
+
+  const columns: MRT_ColumnDef<MyResult>[] = [
+    {
+      accessorKey: "examId",
+      header: "Exam",
+      size: 200,
+      Cell: ({ cell }) => (
+        <Typography variant="body2" noWrap>
+          {String(cell.getValue()).slice(0, 8)}…
+        </Typography>
+      ),
+    },
+    {
+      accessorKey: "marksObtained",
+      header: "Marks",
+      size: 90,
+      Cell: ({ cell }) => (
+        <Typography variant="body2" fontWeight={600}>
+          {String(cell.getValue())}
+        </Typography>
+      ),
+    },
+    {
+      accessorKey: "grade",
+      header: "Grade",
+      size: 90,
+      Cell: ({ cell }) => {
+        const grade = cell.getValue() as string | null;
+        return grade ? (
+          <Chip label={grade} size="small" color={gradeColor(grade)} variant="outlined" />
+        ) : (
+          <Typography variant="body2" color="text.disabled">
+            —
+          </Typography>
+        );
+      },
+    },
+    {
+      accessorKey: "remarks",
+      header: "Remarks",
+      size: 200,
+      Cell: ({ cell }) => (
+        <Typography variant="body2" color="text.secondary" noWrap>
+          {(cell.getValue() as string | null) ?? "—"}
+        </Typography>
+      ),
+    },
+    {
+      accessorKey: "publishedAt",
+      header: "Published",
+      size: 130,
+      Cell: ({ cell }) => {
+        const val = cell.getValue() as string | null;
+        return (
+          <Typography variant="body2" color="text.secondary">
+            {val ? dayjs(val).format("D MMM YYYY") : "—"}
+          </Typography>
+        );
+      },
+    },
+    {
+      id: "actions",
+      header: "",
+      size: 100,
+      enableSorting: false,
+      Cell: ({ row }) => (
+        <Button
+          size="small"
+          variant="outlined"
+          startIcon={<VisibilityRounded />}
+          onClick={() => setBreakdownExamId(row.original.examId)}
+        >
+          Details
+        </Button>
+      ),
+    },
+  ];
 
   return (
     <Stack spacing={3}>
@@ -204,6 +313,10 @@ export function ResultsWorkspace() {
           </Box>
         )}
       />
+
+      {breakdownExamId ? (
+        <ResultBreakdownDialog examId={breakdownExamId} onClose={() => setBreakdownExamId(null)} />
+      ) : null}
     </Stack>
   );
 }

@@ -58,7 +58,7 @@ export const bongoSidebarMenuItems: BongoSidebarMenuItem[] = [
     label: "Platform Users",
     icon: PeopleAltRounded,
     href: buildBongoHref(["users"]),
-    status: "planned",
+    status: "active",
   },
   {
     key: "settings",

@@ -77,6 +77,39 @@ export const GET_MONTHLY_ATTENDANCE_SHEET_QUERY = /* GraphQL */ `
   }
 `;
 
+export const GET_MY_ATTENDANCE_SHEET_QUERY = /* GraphQL */ `
+  query GetMyAttendanceSheet($month: Int!, $year: Int!) {
+    getMyAttendanceSheet(month: $month, year: $year) {
+      id
+      employeeId
+      attendanceDate
+      checkInTime
+      checkOutTime
+      status
+      source
+      correctionReason
+      tenantId
+    }
+  }
+`;
+
+export const GET_SALARY_POLICIES_QUERY = /* GraphQL */ `
+  query GetSalaryPolicies {
+    getSalaryPolicies {
+      id
+      tenantId
+      name
+      designation
+      isDefault
+      basic
+      houseRent
+      medical
+      transport
+      deductions
+    }
+  }
+`;
+
 export const GET_LEAVE_APPLICATIONS_QUERY = /* GraphQL */ `
   query GetLeaveApplications($employeeId: ID!) {
     getLeaveApplications(employeeId: $employeeId) {

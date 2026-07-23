@@ -226,33 +226,4 @@ export const GET_SESSIONS_BY_BATCH_QUERY = /* GraphQL */ `
   }
 `;
 
-export const GET_EXAMS_BY_BATCH_QUERY = /* GraphQL */ `
-  query GetExamsByBatch($batchId: ID!) {
-    getExamsByBatch(batchId: $batchId) {
-      id
-      title
-      batchId
-      subjectId
-      examDate
-      totalMarks
-      passMark
-      published
-      tenantId
-    }
-  }
-`;
-
-export const GET_RESULTS_BY_EXAM_QUERY = /* GraphQL */ `
-  query GetResultsByExam($examId: ID!) {
-    getResultsByExam(examId: $examId) {
-      id
-      examId
-      studentId
-      marksObtained
-      grade
-      remarks
-      publishedAt
-      tenantId
-    }
-  }
-`;
+// Exam queries moved to ./exam.queries.ts (draft/approval/schedule/attempt workflow).

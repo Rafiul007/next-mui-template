@@ -80,6 +80,13 @@ export const hrSidebarMenuItems: HrSidebarMenuItem[] = [
     status: "active",
   },
   {
+    key: "salary-policy",
+    label: "Salary Policies",
+    icon: PolicyRounded,
+    href: buildHrHref(["salary-policy"]),
+    status: "active",
+  },
+  {
     key: "performance",
     label: "Performance",
     icon: AssessmentRounded,

@@ -38,6 +38,20 @@ export type AddGuardianInput = {
   studentId: Scalars['ID']['input'];
 };
 
+export type AddInlineQuestionInput = {
+  examId: Scalars['ID']['input'];
+  marks: Scalars['Int']['input'];
+  options: Array<QuestionOptionInput>;
+  scoringMode: ScoringMode;
+  text: Scalars['String']['input'];
+  type: QuestionType;
+};
+
+export type AddQuestionsFromBankInput = {
+  examId: Scalars['ID']['input'];
+  selections: Array<BankQuestionSelectionInput>;
+};
+
 export type AddSkillTagInput = {
   employeeId: Scalars['ID']['input'];
   proficiencyLevel: Scalars['String']['input'];
@@ -100,6 +114,12 @@ export type Assignment = {
   title: Scalars['String']['output'];
 };
 
+export type AttemptOption = {
+  __typename?: 'AttemptOption';
+  order: Scalars['Int']['output'];
+  text: Scalars['String']['output'];
+};
+
 export type Attendance = {
   __typename?: 'Attendance';
   correctionReason?: Maybe<Scalars['String']['output']>;
@@ -130,6 +150,11 @@ export type AuthResponse = {
   expiresInSeconds: Scalars['Int']['output'];
   refreshToken: Scalars['String']['output'];
   tokenType: Scalars['String']['output'];
+};
+
+export type BankQuestionSelectionInput = {
+  marksOverride?: InputMaybe<Scalars['Int']['input']>;
+  questionId: Scalars['ID']['input'];
 };
 
 export type Batch = {
@@ -194,6 +219,13 @@ export type Branch = {
   status: Scalars['String']['output'];
   tenantId: Scalars['ID']['output'];
   workingDays?: Maybe<Array<Scalars['String']['output']>>;
+};
+
+export type BreakdownOption = {
+  __typename?: 'BreakdownOption';
+  correct: Scalars['Boolean']['output'];
+  order: Scalars['Int']['output'];
+  text: Scalars['String']['output'];
 };
 
 /** # Phase 2 — Center Profile, Branches, Calendar, Org Hierarchy, Tenant Roles */
@@ -290,13 +322,13 @@ export type CreateDiscountInput = {
   value: Scalars['Float']['input'];
 };
 
-export type CreateExamInput = {
+export type CreateDraftExamInput = {
   batchId: Scalars['ID']['input'];
   examDate?: InputMaybe<Scalars['String']['input']>;
+  instructions?: InputMaybe<Scalars['String']['input']>;
   passMark: Scalars['Int']['input'];
   subjectId?: InputMaybe<Scalars['ID']['input']>;
   title: Scalars['String']['input'];
-  totalMarks: Scalars['Int']['input'];
 };
 
 export type CreateFeePlanInput = {
@@ -385,6 +417,17 @@ export type CreateProgramInput = {
   targetLevel?: InputMaybe<Scalars['String']['input']>;
 };
 
+export type CreateQuestionInput = {
+  defaultMarks: Scalars['Int']['input'];
+  difficulty?: InputMaybe<Difficulty>;
+  options: Array<QuestionOptionInput>;
+  scoringMode: ScoringMode;
+  subjectId?: InputMaybe<Scalars['ID']['input']>;
+  text: Scalars['String']['input'];
+  topic?: InputMaybe<Scalars['String']['input']>;
+  type: QuestionType;
+};
+
 export type CreateRecurringScheduleInput = {
   batchId: Scalars['ID']['input'];
   dayOfWeek: Scalars['String']['input'];
@@ -447,6 +490,12 @@ export type DepartmentDto = {
   tenantId: Scalars['ID']['output'];
 };
 
+export enum Difficulty {
+  Easy = 'EASY',
+  Hard = 'HARD',
+  Medium = 'MEDIUM'
+}
+
 export type Discount = {
   __typename?: 'Discount';
   applicableRuleJson?: Maybe<Scalars['String']['output']>;
@@ -493,6 +542,7 @@ export type EmployeeAttendance = {
   attendanceDate: Scalars['String']['output'];
   checkInTime?: Maybe<Scalars['String']['output']>;
   checkOutTime?: Maybe<Scalars['String']['output']>;
+  correctionReason?: Maybe<Scalars['String']['output']>;
   employeeId: Scalars['ID']['output'];
   id: Scalars['ID']['output'];
   source: Scalars['String']['output'];
@@ -547,15 +597,87 @@ export type EnterMarksInput = {
 
 export type Exam = {
   __typename?: 'Exam';
+  approvedAt?: Maybe<Scalars['String']['output']>;
+  approvedBy?: Maybe<Scalars['ID']['output']>;
   batchId: Scalars['ID']['output'];
+  createdBy?: Maybe<Scalars['ID']['output']>;
+  durationMinutes?: Maybe<Scalars['Int']['output']>;
   examDate?: Maybe<Scalars['String']['output']>;
+  examQuestions: Array<ExamQuestion>;
   id: Scalars['ID']['output'];
+  instructions?: Maybe<Scalars['String']['output']>;
   passMark: Scalars['Int']['output'];
   published: Scalars['Boolean']['output'];
+  rejectionReason?: Maybe<Scalars['String']['output']>;
+  startAt?: Maybe<Scalars['String']['output']>;
+  status: ExamStatus;
   subjectId?: Maybe<Scalars['ID']['output']>;
+  submittedAt?: Maybe<Scalars['String']['output']>;
   tenantId: Scalars['ID']['output'];
   title: Scalars['String']['output'];
   totalMarks: Scalars['Int']['output'];
+};
+
+export type ExamAssignment = {
+  __typename?: 'ExamAssignment';
+  assignedAt: Scalars['String']['output'];
+  examId: Scalars['ID']['output'];
+  id: Scalars['ID']['output'];
+  studentId: Scalars['ID']['output'];
+};
+
+export type ExamAttempt = {
+  __typename?: 'ExamAttempt';
+  deadlineAt: Scalars['String']['output'];
+  examId: Scalars['ID']['output'];
+  id: Scalars['ID']['output'];
+  questions: Array<ExamAttemptQuestion>;
+  startedAt: Scalars['String']['output'];
+  status: ExamAttemptStatus;
+  studentId: Scalars['ID']['output'];
+  submittedAt?: Maybe<Scalars['String']['output']>;
+};
+
+export type ExamAttemptAnswer = {
+  __typename?: 'ExamAttemptAnswer';
+  examQuestionId: Scalars['ID']['output'];
+  selectedOrders: Array<Scalars['Int']['output']>;
+};
+
+export type ExamAttemptQuestion = {
+  __typename?: 'ExamAttemptQuestion';
+  id: Scalars['ID']['output'];
+  marks: Scalars['Int']['output'];
+  options: Array<AttemptOption>;
+  questionTextSnapshot: Scalars['String']['output'];
+  scoringModeSnapshot: ScoringMode;
+  typeSnapshot: QuestionType;
+};
+
+export enum ExamAttemptStatus {
+  Expired = 'EXPIRED',
+  InProgress = 'IN_PROGRESS',
+  Submitted = 'SUBMITTED'
+}
+
+export type ExamQuestion = {
+  __typename?: 'ExamQuestion';
+  examId: Scalars['ID']['output'];
+  id: Scalars['ID']['output'];
+  marks: Scalars['Int']['output'];
+  optionsSnapshot: Array<ExamQuestionOptionSnapshot>;
+  order: Scalars['Int']['output'];
+  questionTextSnapshot: Scalars['String']['output'];
+  scoringModeSnapshot: ScoringMode;
+  sourceQuestionId?: Maybe<Scalars['ID']['output']>;
+  typeSnapshot: QuestionType;
+};
+
+export type ExamQuestionOptionSnapshot = {
+  __typename?: 'ExamQuestionOptionSnapshot';
+  correct: Scalars['Boolean']['output'];
+  order: Scalars['Int']['output'];
+  text: Scalars['String']['output'];
 };
 
 export type ExamResult = {
@@ -569,6 +691,26 @@ export type ExamResult = {
   studentId: Scalars['ID']['output'];
   tenantId: Scalars['ID']['output'];
 };
+
+export type ExamResultBreakdown = {
+  __typename?: 'ExamResultBreakdown';
+  examId: Scalars['ID']['output'];
+  grade?: Maybe<Scalars['String']['output']>;
+  marksObtained: Scalars['Float']['output'];
+  publishedAt: Scalars['String']['output'];
+  questions: Array<QuestionBreakdown>;
+  remarks?: Maybe<Scalars['String']['output']>;
+};
+
+export enum ExamStatus {
+  Approved = 'APPROVED',
+  Cancelled = 'CANCELLED',
+  Completed = 'COMPLETED',
+  Draft = 'DRAFT',
+  PendingApproval = 'PENDING_APPROVAL',
+  Rejected = 'REJECTED',
+  Scheduled = 'SCHEDULED'
+}
 
 export type FeatureFlag = {
   __typename?: 'FeatureFlag';
@@ -794,14 +936,18 @@ export type Mutation = {
   __typename?: 'Mutation';
   activateTenant: Tenant;
   addCertification: Certification;
+  addEmployeeToPayrollRun: PayrollRun;
   addGuardian: Guardian;
+  addInlineQuestion: Exam;
   addOneOffSession: Session;
   addOrgNode: OrgNode;
+  addQuestionsFromBank: Exam;
   addRole?: Maybe<User>;
   addSkillTag: SkillTag;
   admitStudent: Student;
   applyForVacancy: JobApplication;
   applyLeave: LeaveApplication;
+  approveExam: Exam;
   approveLeave: LeaveApplication;
   approveManualAttendance: EmployeeAttendance;
   approvePayroll: PayrollRun;
@@ -809,8 +955,10 @@ export type Mutation = {
   archiveNotice: Notice;
   assignEmployeeToDepartment: Employee;
   assignRoleToUser: TenantRole;
+  assignStudentToExam: Array<ExamAssignment>;
   assignSubstitute: Session;
   cancelLeave: LeaveApplication;
+  cancelPayroll: PayrollRun;
   changeBatchStatus: Batch;
   changePassword?: Maybe<Scalars['Boolean']['output']>;
   changeStudentStatus: Student;
@@ -823,7 +971,7 @@ export type Mutation = {
   createCustomRole: TenantRole;
   createDepartment: DepartmentDto;
   createDiscount: Discount;
-  createExam: Exam;
+  createDraftExam: Exam;
   createFeePlan: FeePlan;
   createFeeType: FeeType;
   createHoliday: Holiday;
@@ -831,13 +979,17 @@ export type Mutation = {
   createNotice: Notice;
   createPIP: Pip;
   createProgram: Program;
+  createQuestion: Question;
   createRecurringSchedule: RecurringSchedule;
+  createSalaryPolicy: SalaryPolicy;
   createSubject: Subject;
   createSubscriptionPlan: SubscriptionPlan;
   createTenant: Tenant;
   deactivateBranch: Branch;
+  deactivateQuestion: Question;
   deleteBatch: Scalars['Boolean']['output'];
   deleteRecurringSchedule: Scalars['Boolean']['output'];
+  deleteSalaryPolicy: Scalars['Boolean']['output'];
   deleteUser?: Maybe<Scalars['Boolean']['output']>;
   disbursePayroll: PayrollRun;
   dropEnrollment: Enrollment;
@@ -868,28 +1020,40 @@ export type Mutation = {
   recordPayment: PaymentResult;
   recordStudentPayment: StudentPayment;
   refresh: AuthResponse;
+  rejectExam: Exam;
   rejectLeave: LeaveApplication;
   removeEmployeeFromDepartment: Employee;
+  removeEmployeeFromPayrollRun: PayrollRun;
+  removeExamQuestion: Exam;
   requestManualAttendance: EmployeeAttendance;
   requestWaiver: StudentInvoice;
   resendOtp?: Maybe<OtpResendStatus>;
   reviewApplication: JobApplication;
   runPayroll: PayrollRun;
+  scheduleExam: Exam;
   scheduleInterview: JobApplication;
   sendBatchNotification: Scalars['Boolean']['output'];
   sendNotification: Notification;
   setActiveStatus?: Maybe<User>;
   setFeatureFlag: FeatureFlag;
   setLateFinePolicy: LateFinePolicy;
+  setQuestionMarks: Exam;
   setSalaryStructure: SalaryStructure;
   setupCenter: Center;
+  startExamAttempt: ExamAttempt;
+  startImpersonation: UserImpersonationResult;
   startSession: Session;
+  stopImpersonation: Scalars['Boolean']['output'];
+  submitAnswer: ExamAttemptAnswer;
   submitAssignment: Submission;
+  submitAttempt: ExamAttempt;
+  submitExamForApproval: Exam;
   submitMyAssignment: Submission;
   submitReview: PerformanceReview;
   suspendTenant: Tenant;
   terminateTenant: Tenant;
   unassignScheduleTeacher: RecurringSchedule;
+  unassignStudentFromExam: Array<ExamAssignment>;
   updateBatch: Batch;
   updateBranch: Branch;
   updateCenter: Center;
@@ -898,7 +1062,9 @@ export type Mutation = {
   updatePIPProgress: Pip;
   updateProfile?: Maybe<User>;
   updateProgram: Program;
+  updateQuestion: Question;
   updateRecurringSchedule: RecurringSchedule;
+  updateSalaryPolicy: SalaryPolicy;
   updateStudent: Student;
   updateSubject: Subject;
   updateSubscriptionPlan: SubscriptionPlan;
@@ -920,8 +1086,19 @@ export type MutationAddCertificationArgs = {
 };
 
 
+export type MutationAddEmployeeToPayrollRunArgs = {
+  employeeId: Scalars['ID']['input'];
+  payrollRunId: Scalars['ID']['input'];
+};
+
+
 export type MutationAddGuardianArgs = {
   guardian: AddGuardianInput;
+};
+
+
+export type MutationAddInlineQuestionArgs = {
+  input: AddInlineQuestionInput;
 };
 
 
@@ -932,6 +1109,11 @@ export type MutationAddOneOffSessionArgs = {
 
 export type MutationAddOrgNodeArgs = {
   node: CreateOrgNodeInput;
+};
+
+
+export type MutationAddQuestionsFromBankArgs = {
+  input: AddQuestionsFromBankInput;
 };
 
 
@@ -958,6 +1140,11 @@ export type MutationApplyForVacancyArgs = {
 
 export type MutationApplyLeaveArgs = {
   input: ApplyLeaveInput;
+};
+
+
+export type MutationApproveExamArgs = {
+  examId: Scalars['ID']['input'];
 };
 
 
@@ -998,6 +1185,12 @@ export type MutationAssignRoleToUserArgs = {
 };
 
 
+export type MutationAssignStudentToExamArgs = {
+  examId: Scalars['ID']['input'];
+  studentId: Scalars['ID']['input'];
+};
+
+
 export type MutationAssignSubstituteArgs = {
   sessionId: Scalars['ID']['input'];
   substituteTeacherId: Scalars['ID']['input'];
@@ -1006,6 +1199,11 @@ export type MutationAssignSubstituteArgs = {
 
 export type MutationCancelLeaveArgs = {
   applicationId: Scalars['ID']['input'];
+};
+
+
+export type MutationCancelPayrollArgs = {
+  payrollRunId: Scalars['ID']['input'];
 };
 
 
@@ -1078,8 +1276,8 @@ export type MutationCreateDiscountArgs = {
 };
 
 
-export type MutationCreateExamArgs = {
-  exam: CreateExamInput;
+export type MutationCreateDraftExamArgs = {
+  exam: CreateDraftExamInput;
 };
 
 
@@ -1118,8 +1316,18 @@ export type MutationCreateProgramArgs = {
 };
 
 
+export type MutationCreateQuestionArgs = {
+  question: CreateQuestionInput;
+};
+
+
 export type MutationCreateRecurringScheduleArgs = {
   schedule: CreateRecurringScheduleInput;
+};
+
+
+export type MutationCreateSalaryPolicyArgs = {
+  input: SalaryPolicyInput;
 };
 
 
@@ -1143,6 +1351,11 @@ export type MutationDeactivateBranchArgs = {
 };
 
 
+export type MutationDeactivateQuestionArgs = {
+  questionId: Scalars['ID']['input'];
+};
+
+
 export type MutationDeleteBatchArgs = {
   batchId: Scalars['ID']['input'];
 };
@@ -1150,6 +1363,11 @@ export type MutationDeleteBatchArgs = {
 
 export type MutationDeleteRecurringScheduleArgs = {
   scheduleId: Scalars['ID']['input'];
+};
+
+
+export type MutationDeleteSalaryPolicyArgs = {
+  id: Scalars['ID']['input'];
 };
 
 
@@ -1300,6 +1518,12 @@ export type MutationRefreshArgs = {
 };
 
 
+export type MutationRejectExamArgs = {
+  examId: Scalars['ID']['input'];
+  reason: Scalars['String']['input'];
+};
+
+
 export type MutationRejectLeaveArgs = {
   applicationId: Scalars['ID']['input'];
   reason: Scalars['String']['input'];
@@ -1308,6 +1532,18 @@ export type MutationRejectLeaveArgs = {
 
 export type MutationRemoveEmployeeFromDepartmentArgs = {
   employeeId: Scalars['ID']['input'];
+};
+
+
+export type MutationRemoveEmployeeFromPayrollRunArgs = {
+  employeeId: Scalars['ID']['input'];
+  payrollRunId: Scalars['ID']['input'];
+};
+
+
+export type MutationRemoveExamQuestionArgs = {
+  examId: Scalars['ID']['input'];
+  examQuestionId: Scalars['ID']['input'];
 };
 
 
@@ -1334,6 +1570,11 @@ export type MutationReviewApplicationArgs = {
 
 export type MutationRunPayrollArgs = {
   input: RunPayrollInput;
+};
+
+
+export type MutationScheduleExamArgs = {
+  input: ScheduleExamInput;
 };
 
 
@@ -1370,6 +1611,13 @@ export type MutationSetLateFinePolicyArgs = {
 };
 
 
+export type MutationSetQuestionMarksArgs = {
+  examId: Scalars['ID']['input'];
+  examQuestionId: Scalars['ID']['input'];
+  marks: Scalars['Int']['input'];
+};
+
+
 export type MutationSetSalaryStructureArgs = {
   input: SetSalaryStructureInput;
 };
@@ -1380,9 +1628,24 @@ export type MutationSetupCenterArgs = {
 };
 
 
+export type MutationStartExamAttemptArgs = {
+  examId: Scalars['ID']['input'];
+};
+
+
+export type MutationStartImpersonationArgs = {
+  userId: Scalars['ID']['input'];
+};
+
+
 export type MutationStartSessionArgs = {
   date: Scalars['String']['input'];
   scheduleId: Scalars['ID']['input'];
+};
+
+
+export type MutationSubmitAnswerArgs = {
+  input: SubmitAnswerInput;
 };
 
 
@@ -1390,6 +1653,16 @@ export type MutationSubmitAssignmentArgs = {
   assignmentId: Scalars['ID']['input'];
   linkUrl?: InputMaybe<Scalars['String']['input']>;
   studentId: Scalars['ID']['input'];
+};
+
+
+export type MutationSubmitAttemptArgs = {
+  attemptId: Scalars['ID']['input'];
+};
+
+
+export type MutationSubmitExamForApprovalArgs = {
+  examId: Scalars['ID']['input'];
 };
 
 
@@ -1416,6 +1689,12 @@ export type MutationTerminateTenantArgs = {
 
 export type MutationUnassignScheduleTeacherArgs = {
   scheduleId: Scalars['ID']['input'];
+};
+
+
+export type MutationUnassignStudentFromExamArgs = {
+  examId: Scalars['ID']['input'];
+  studentId: Scalars['ID']['input'];
 };
 
 
@@ -1460,8 +1739,19 @@ export type MutationUpdateProgramArgs = {
 };
 
 
+export type MutationUpdateQuestionArgs = {
+  question: UpdateQuestionInput;
+};
+
+
 export type MutationUpdateRecurringScheduleArgs = {
   schedule: UpdateRecurringScheduleInput;
+};
+
+
+export type MutationUpdateSalaryPolicyArgs = {
+  id: Scalars['ID']['input'];
+  input: SalaryPolicyInput;
 };
 
 
@@ -1724,6 +2014,8 @@ export type Query = {
   getEmployees: Array<Employee>;
   getEnrollmentsByBatch: Array<Enrollment>;
   getEnrollmentsByStudent: Array<Enrollment>;
+  getExamAssignments: Array<ExamAssignment>;
+  getExamById: Exam;
   getExamsByBatch: Array<Exam>;
   getExpiringCertifications: Array<Certification>;
   getFeatureFlags: Array<FeatureFlag>;
@@ -1739,8 +2031,10 @@ export type Query = {
   getLeavePolicies: Array<LeavePolicy>;
   getMaterialsByBatch: Array<StudyMaterial>;
   getMonthlyAttendanceSheet: Array<EmployeeAttendance>;
+  getMyAttendanceSheet: Array<EmployeeAttendance>;
   getMyBatches: Array<Batch>;
   getMyEmployeeProfile: Employee;
+  getMyExamAttempt?: Maybe<ExamAttempt>;
   getMyLatestPayslip: PayrollEntry;
   getMyLeaveApplications: Array<LeaveApplication>;
   getMyLeaveBalance: Array<LeaveBalance>;
@@ -1748,16 +2042,24 @@ export type Query = {
   getMyPayrollSummary: PayrollSummary;
   getMyPayslips: Array<PayrollEntry>;
   getMyPlan: SubscriptionPlan;
+  getMyResultBreakdown: ExamResultBreakdown;
   getMySalaryStructure: SalaryStructure;
+  getMyScheduledExams: Array<Exam>;
   getNoticesForBatch: Array<Notice>;
   getOrgChart: Array<OrgNode>;
   getPIPs: Array<Pip>;
   getPaymentsByInvoice: Array<StudentPayment>;
+  getPayrollRunEligibleEmployees: Array<Employee>;
+  getPayrollRunEntries: Array<PayrollEntry>;
   getPayrollRuns: Array<PayrollRun>;
   getPayslip: PayrollEntry;
   getPerformanceDashboard: Array<PerformanceDashboard>;
   getPrograms: Array<Program>;
+  getQuestionById: Question;
+  getQuestionsBySubject: Array<Question>;
+  getQuestionsByTenant: Array<Question>;
   getResultsByExam: Array<ExamResult>;
+  getSalaryPolicies: Array<SalaryPolicy>;
   getSalaryStructure: SalaryStructure;
   getSchedulesByBatch: Array<RecurringSchedule>;
   getSessionsByBatch: Array<Session>;
@@ -1784,6 +2086,7 @@ export type Query = {
   myAttendanceBySession: Array<Attendance>;
   myAttendanceSummary: AttendanceSummary;
   myEnrollments: Array<Enrollment>;
+  myImpersonationStatus: UserImpersonationStatus;
   myInvoices: Array<StudentInvoice>;
   myNotifications: Array<Notification>;
   myResults: Array<ExamResult>;
@@ -1872,6 +2175,16 @@ export type QueryGetEnrollmentsByStudentArgs = {
 };
 
 
+export type QueryGetExamAssignmentsArgs = {
+  examId: Scalars['ID']['input'];
+};
+
+
+export type QueryGetExamByIdArgs = {
+  examId: Scalars['ID']['input'];
+};
+
+
 export type QueryGetExamsByBatchArgs = {
   batchId: Scalars['ID']['input'];
 };
@@ -1931,6 +2244,17 @@ export type QueryGetMonthlyAttendanceSheetArgs = {
 };
 
 
+export type QueryGetMyAttendanceSheetArgs = {
+  month: Scalars['Int']['input'];
+  year: Scalars['Int']['input'];
+};
+
+
+export type QueryGetMyExamAttemptArgs = {
+  examId: Scalars['ID']['input'];
+};
+
+
 export type QueryGetMyLeaveBalanceArgs = {
   year: Scalars['Int']['input'];
 };
@@ -1938,6 +2262,11 @@ export type QueryGetMyLeaveBalanceArgs = {
 
 export type QueryGetMyPayrollSummaryArgs = {
   year: Scalars['Int']['input'];
+};
+
+
+export type QueryGetMyResultBreakdownArgs = {
+  examId: Scalars['ID']['input'];
 };
 
 
@@ -1956,6 +2285,16 @@ export type QueryGetPaymentsByInvoiceArgs = {
 };
 
 
+export type QueryGetPayrollRunEligibleEmployeesArgs = {
+  payrollRunId: Scalars['ID']['input'];
+};
+
+
+export type QueryGetPayrollRunEntriesArgs = {
+  payrollRunId: Scalars['ID']['input'];
+};
+
+
 export type QueryGetPayslipArgs = {
   employeeId: Scalars['ID']['input'];
   payrollRunId: Scalars['ID']['input'];
@@ -1964,6 +2303,16 @@ export type QueryGetPayslipArgs = {
 
 export type QueryGetPerformanceDashboardArgs = {
   cycleId: Scalars['ID']['input'];
+};
+
+
+export type QueryGetQuestionByIdArgs = {
+  questionId: Scalars['ID']['input'];
+};
+
+
+export type QueryGetQuestionsBySubjectArgs = {
+  subjectId: Scalars['ID']['input'];
 };
 
 
@@ -2076,6 +2425,52 @@ export type QuerySuggestSubstitutesArgs = {
   leaveApplicationId: Scalars['ID']['input'];
 };
 
+export type Question = {
+  __typename?: 'Question';
+  active: Scalars['Boolean']['output'];
+  createdBy?: Maybe<Scalars['ID']['output']>;
+  defaultMarks: Scalars['Int']['output'];
+  difficulty?: Maybe<Difficulty>;
+  id: Scalars['ID']['output'];
+  options: Array<QuestionOption>;
+  scoringMode: ScoringMode;
+  subjectId?: Maybe<Scalars['ID']['output']>;
+  tenantId: Scalars['ID']['output'];
+  text: Scalars['String']['output'];
+  topic?: Maybe<Scalars['String']['output']>;
+  type: QuestionType;
+};
+
+export type QuestionBreakdown = {
+  __typename?: 'QuestionBreakdown';
+  correct: Scalars['Boolean']['output'];
+  examQuestionId: Scalars['ID']['output'];
+  marksAwarded: Scalars['Float']['output'];
+  options: Array<BreakdownOption>;
+  questionTextSnapshot: Scalars['String']['output'];
+  selectedOrders: Array<Scalars['Int']['output']>;
+  typeSnapshot: QuestionType;
+};
+
+export type QuestionOption = {
+  __typename?: 'QuestionOption';
+  correct: Scalars['Boolean']['output'];
+  id?: Maybe<Scalars['ID']['output']>;
+  order: Scalars['Int']['output'];
+  text: Scalars['String']['output'];
+};
+
+export type QuestionOptionInput = {
+  correct: Scalars['Boolean']['input'];
+  order: Scalars['Int']['input'];
+  text: Scalars['String']['input'];
+};
+
+export enum QuestionType {
+  McqMulti = 'MCQ_MULTI',
+  McqSingle = 'MCQ_SINGLE'
+}
+
 export type RecordCheckInInput = {
   checkInTime: Scalars['String']['input'];
   employeeId: Scalars['ID']['input'];
@@ -2136,8 +2531,34 @@ export type ReviewCycle = {
 };
 
 export type RunPayrollInput = {
+  excludedEmployeeIds?: InputMaybe<Array<Scalars['ID']['input']>>;
   month: Scalars['Int']['input'];
   year: Scalars['Int']['input'];
+};
+
+export type SalaryPolicy = {
+  __typename?: 'SalaryPolicy';
+  basic: Scalars['Float']['output'];
+  deductions: Scalars['Float']['output'];
+  designation?: Maybe<Scalars['String']['output']>;
+  houseRent: Scalars['Float']['output'];
+  id: Scalars['ID']['output'];
+  isDefault: Scalars['Boolean']['output'];
+  medical: Scalars['Float']['output'];
+  name: Scalars['String']['output'];
+  tenantId: Scalars['ID']['output'];
+  transport: Scalars['Float']['output'];
+};
+
+export type SalaryPolicyInput = {
+  basic: Scalars['Float']['input'];
+  deductions?: InputMaybe<Scalars['Float']['input']>;
+  designation?: InputMaybe<Scalars['String']['input']>;
+  houseRent: Scalars['Float']['input'];
+  isDefault: Scalars['Boolean']['input'];
+  medical: Scalars['Float']['input'];
+  name: Scalars['String']['input'];
+  transport: Scalars['Float']['input'];
 };
 
 export type SalaryStructure = {
@@ -2147,10 +2568,26 @@ export type SalaryStructure = {
   deductions?: Maybe<Scalars['Float']['output']>;
   effectiveFrom: Scalars['String']['output'];
   employeeId: Scalars['ID']['output'];
+  houseRent?: Maybe<Scalars['Float']['output']>;
   id: Scalars['ID']['output'];
+  medical?: Maybe<Scalars['Float']['output']>;
   netSalary: Scalars['Float']['output'];
   tenantId: Scalars['ID']['output'];
+  transport?: Maybe<Scalars['Float']['output']>;
 };
+
+export type ScheduleExamInput = {
+  assignAllInBatch: Scalars['Boolean']['input'];
+  durationMinutes: Scalars['Int']['input'];
+  examId: Scalars['ID']['input'];
+  manualStudentIds?: InputMaybe<Array<Scalars['ID']['input']>>;
+  startAt: Scalars['String']['input'];
+};
+
+export enum ScoringMode {
+  AllOrNothing = 'ALL_OR_NOTHING',
+  PartialCredit = 'PARTIAL_CREDIT'
+}
 
 export type SendNotificationInput = {
   body: Scalars['String']['input'];
@@ -2183,11 +2620,13 @@ export type SetLateFinePolicyInput = {
 };
 
 export type SetSalaryStructureInput = {
-  allowances?: InputMaybe<Scalars['Float']['input']>;
   basicSalary: Scalars['Float']['input'];
   deductions?: InputMaybe<Scalars['Float']['input']>;
   effectiveFrom: Scalars['String']['input'];
   employeeId: Scalars['ID']['input'];
+  houseRent?: InputMaybe<Scalars['Float']['input']>;
+  medical?: InputMaybe<Scalars['Float']['input']>;
+  transport?: InputMaybe<Scalars['Float']['input']>;
 };
 
 export type SetupCenterInput = {
@@ -2347,6 +2786,12 @@ export type Submission = {
   tenantId: Scalars['ID']['output'];
 };
 
+export type SubmitAnswerInput = {
+  attemptId: Scalars['ID']['input'];
+  examQuestionId: Scalars['ID']['input'];
+  selectedOrders: Array<Scalars['Int']['input']>;
+};
+
 export type SubmitReviewInput = {
   comments?: InputMaybe<Scalars['String']['input']>;
   cycleId: Scalars['ID']['input'];
@@ -2477,6 +2922,18 @@ export type UpdateProgramInput = {
   targetLevel?: InputMaybe<Scalars['String']['input']>;
 };
 
+export type UpdateQuestionInput = {
+  defaultMarks: Scalars['Int']['input'];
+  difficulty?: InputMaybe<Difficulty>;
+  id: Scalars['ID']['input'];
+  options: Array<QuestionOptionInput>;
+  scoringMode: ScoringMode;
+  subjectId?: InputMaybe<Scalars['ID']['input']>;
+  text: Scalars['String']['input'];
+  topic?: InputMaybe<Scalars['String']['input']>;
+  type: QuestionType;
+};
+
 export type UpdateRecurringScheduleInput = {
   dayOfWeek?: InputMaybe<Scalars['String']['input']>;
   endTime?: InputMaybe<Scalars['String']['input']>;
@@ -2550,6 +3007,27 @@ export type User = {
   phone?: Maybe<Scalars['String']['output']>;
   profilePicture?: Maybe<Scalars['String']['output']>;
   roles: Array<Scalars['String']['output']>;
+};
+
+export type UserImpersonationResult = {
+  __typename?: 'UserImpersonationResult';
+  sessionId: Scalars['ID']['output'];
+  startedAt: Scalars['String']['output'];
+  targetUserId: Scalars['ID']['output'];
+  targetUserName: Scalars['String']['output'];
+  token: Scalars['String']['output'];
+};
+
+export type UserImpersonationStatus = {
+  __typename?: 'UserImpersonationStatus';
+  active: Scalars['Boolean']['output'];
+  adminName?: Maybe<Scalars['String']['output']>;
+  adminUserId?: Maybe<Scalars['ID']['output']>;
+  asImpersonatedUser: Scalars['Boolean']['output'];
+  sessionId?: Maybe<Scalars['ID']['output']>;
+  startedAt?: Maybe<Scalars['String']['output']>;
+  targetUserId?: Maybe<Scalars['ID']['output']>;
+  targetUserName?: Maybe<Scalars['String']['output']>;
 };
 
 export type UserInfo = {

@@ -9,6 +9,7 @@ import {
   LeaderboardRounded,
   NotificationsNoneRounded,
   PersonRounded,
+  QuizRounded,
 } from "@mui/icons-material";
 
 export type StudentMenuItem = {
@@ -22,6 +23,7 @@ export const studentMenuItems: StudentMenuItem[] = [
   { key: "dashboard", label: "Dashboard", href: "/student/dashboard", icon: DashboardRounded },
   { key: "schedule", label: "My Schedule", href: "/student/schedule", icon: CalendarMonthRounded },
   { key: "attendance", label: "Attendance", href: "/student/attendance", icon: EventAvailableRounded },
+  { key: "exams", label: "Exams", href: "/student/exams", icon: QuizRounded },
   { key: "results", label: "My Results", href: "/student/results", icon: LeaderboardRounded },
   { key: "fees", label: "My Fees", href: "/student/fees", icon: DescriptionRounded },
   { key: "materials", label: "Materials", href: "/student/materials", icon: FolderOpenRounded },

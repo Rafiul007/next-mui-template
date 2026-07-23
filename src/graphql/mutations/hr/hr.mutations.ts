@@ -156,6 +156,46 @@ export const CREATE_LEAVE_POLICY_MUTATION = /* GraphQL */ `
   }
 `;
 
+export const CREATE_SALARY_POLICY_MUTATION = /* GraphQL */ `
+  mutation CreateSalaryPolicy($input: SalaryPolicyInput!) {
+    createSalaryPolicy(input: $input) {
+      id
+      tenantId
+      name
+      designation
+      isDefault
+      basic
+      houseRent
+      medical
+      transport
+      deductions
+    }
+  }
+`;
+
+export const UPDATE_SALARY_POLICY_MUTATION = /* GraphQL */ `
+  mutation UpdateSalaryPolicy($id: ID!, $input: SalaryPolicyInput!) {
+    updateSalaryPolicy(id: $id, input: $input) {
+      id
+      tenantId
+      name
+      designation
+      isDefault
+      basic
+      houseRent
+      medical
+      transport
+      deductions
+    }
+  }
+`;
+
+export const DELETE_SALARY_POLICY_MUTATION = /* GraphQL */ `
+  mutation DeleteSalaryPolicy($id: ID!) {
+    deleteSalaryPolicy(id: $id)
+  }
+`;
+
 export const LAUNCH_REVIEW_CYCLE_MUTATION = /* GraphQL */ `
   mutation LaunchReviewCycle($input: LaunchReviewCycleInput!) {
     launchReviewCycle(input: $input) {
