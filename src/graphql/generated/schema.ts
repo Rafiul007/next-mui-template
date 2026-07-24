@@ -950,6 +950,7 @@ export type Mutation = {
   approveExam: Exam;
   approveLeave: LeaveApplication;
   approveManualAttendance: EmployeeAttendance;
+  approveOvertimeClaim: OvertimeClaim;
   approvePayroll: PayrollRun;
   approveWaiver: StudentInvoice;
   archiveNotice: Notice;
@@ -1022,6 +1023,7 @@ export type Mutation = {
   refresh: AuthResponse;
   rejectExam: Exam;
   rejectLeave: LeaveApplication;
+  rejectOvertimeClaim: OvertimeClaim;
   removeEmployeeFromDepartment: Employee;
   removeEmployeeFromPayrollRun: PayrollRun;
   removeExamQuestion: Exam;
@@ -1049,6 +1051,7 @@ export type Mutation = {
   submitAttempt: ExamAttempt;
   submitExamForApproval: Exam;
   submitMyAssignment: Submission;
+  submitOvertimeClaim: OvertimeClaim;
   submitReview: PerformanceReview;
   suspendTenant: Tenant;
   terminateTenant: Tenant;
@@ -1155,6 +1158,11 @@ export type MutationApproveLeaveArgs = {
 
 export type MutationApproveManualAttendanceArgs = {
   attendanceId: Scalars['ID']['input'];
+};
+
+
+export type MutationApproveOvertimeClaimArgs = {
+  claimId: Scalars['ID']['input'];
 };
 
 
@@ -1530,6 +1538,12 @@ export type MutationRejectLeaveArgs = {
 };
 
 
+export type MutationRejectOvertimeClaimArgs = {
+  claimId: Scalars['ID']['input'];
+  reason: Scalars['String']['input'];
+};
+
+
 export type MutationRemoveEmployeeFromDepartmentArgs = {
   employeeId: Scalars['ID']['input'];
 };
@@ -1669,6 +1683,11 @@ export type MutationSubmitExamForApprovalArgs = {
 export type MutationSubmitMyAssignmentArgs = {
   assignmentId: Scalars['ID']['input'];
   linkUrl?: InputMaybe<Scalars['String']['input']>;
+};
+
+
+export type MutationSubmitOvertimeClaimArgs = {
+  input: SubmitOvertimeClaimInput;
 };
 
 
@@ -1875,6 +1894,23 @@ export type OtpResendStatus = {
   status?: Maybe<Scalars['Boolean']['output']>;
 };
 
+export type OvertimeClaim = {
+  __typename?: 'OvertimeClaim';
+  amount?: Maybe<Scalars['Float']['output']>;
+  approvedBy?: Maybe<Scalars['ID']['output']>;
+  claimDate: Scalars['String']['output'];
+  employeeId: Scalars['ID']['output'];
+  hourlyRate?: Maybe<Scalars['Float']['output']>;
+  hours: Scalars['Float']['output'];
+  id: Scalars['ID']['output'];
+  payrollRunId?: Maybe<Scalars['ID']['output']>;
+  reason: Scalars['String']['output'];
+  rejectionReason?: Maybe<Scalars['String']['output']>;
+  sessionId?: Maybe<Scalars['ID']['output']>;
+  status: Scalars['String']['output'];
+  tenantId: Scalars['ID']['output'];
+};
+
 export type Pip = {
   __typename?: 'PIP';
   createdBy: Scalars['ID']['output'];
@@ -2038,6 +2074,7 @@ export type Query = {
   getMyLatestPayslip: PayrollEntry;
   getMyLeaveApplications: Array<LeaveApplication>;
   getMyLeaveBalance: Array<LeaveBalance>;
+  getMyOvertimeClaims: Array<OvertimeClaim>;
   getMyPayrollRuns: Array<PayrollRun>;
   getMyPayrollSummary: PayrollSummary;
   getMyPayslips: Array<PayrollEntry>;
@@ -2047,12 +2084,14 @@ export type Query = {
   getMyScheduledExams: Array<Exam>;
   getNoticesForBatch: Array<Notice>;
   getOrgChart: Array<OrgNode>;
+  getOvertimeClaims: Array<OvertimeClaim>;
   getPIPs: Array<Pip>;
   getPaymentsByInvoice: Array<StudentPayment>;
   getPayrollRunEligibleEmployees: Array<Employee>;
   getPayrollRunEntries: Array<PayrollEntry>;
   getPayrollRuns: Array<PayrollRun>;
   getPayslip: PayrollEntry;
+  getPendingOvertimeClaims: Array<OvertimeClaim>;
   getPerformanceDashboard: Array<PerformanceDashboard>;
   getPrograms: Array<Program>;
   getQuestionById: Question;
@@ -2272,6 +2311,11 @@ export type QueryGetMyResultBreakdownArgs = {
 
 export type QueryGetNoticesForBatchArgs = {
   batchId: Scalars['ID']['input'];
+};
+
+
+export type QueryGetOvertimeClaimsArgs = {
+  employeeId: Scalars['ID']['input'];
 };
 
 
@@ -2546,6 +2590,7 @@ export type SalaryPolicy = {
   isDefault: Scalars['Boolean']['output'];
   medical: Scalars['Float']['output'];
   name: Scalars['String']['output'];
+  overtimeHourlyRate?: Maybe<Scalars['Float']['output']>;
   tenantId: Scalars['ID']['output'];
   transport: Scalars['Float']['output'];
 };
@@ -2558,6 +2603,7 @@ export type SalaryPolicyInput = {
   isDefault: Scalars['Boolean']['input'];
   medical: Scalars['Float']['input'];
   name: Scalars['String']['input'];
+  overtimeHourlyRate?: InputMaybe<Scalars['Float']['input']>;
   transport: Scalars['Float']['input'];
 };
 
@@ -2602,6 +2648,7 @@ export type Session = {
   cancelReason?: Maybe<Scalars['String']['output']>;
   date: Scalars['String']['output'];
   endTime: Scalars['String']['output'];
+  examId?: Maybe<Scalars['ID']['output']>;
   id: Scalars['ID']['output'];
   recurringScheduleId?: Maybe<Scalars['ID']['output']>;
   roomName?: Maybe<Scalars['String']['output']>;
@@ -2790,6 +2837,14 @@ export type SubmitAnswerInput = {
   attemptId: Scalars['ID']['input'];
   examQuestionId: Scalars['ID']['input'];
   selectedOrders: Array<Scalars['Int']['input']>;
+};
+
+export type SubmitOvertimeClaimInput = {
+  claimDate: Scalars['String']['input'];
+  employeeId: Scalars['ID']['input'];
+  hours: Scalars['Float']['input'];
+  reason: Scalars['String']['input'];
+  sessionId?: InputMaybe<Scalars['ID']['input']>;
 };
 
 export type SubmitReviewInput = {

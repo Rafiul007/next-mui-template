@@ -57,6 +57,7 @@ const policySchema = yup
     medical: yup.number().typeError("Must be a number").min(0).required("Medical is required"),
     transport: yup.number().typeError("Must be a number").min(0).required("Transport is required"),
     deductions: yup.number().typeError("Must be a number").min(0).default(0),
+    overtimeHourlyRate: yup.number().typeError("Must be a number").min(0).default(0),
   })
   .required();
 
@@ -144,6 +145,12 @@ function PolicyCard({
           <Typography variant="caption" color="text.secondary">Deductions</Typography>
           <Typography variant="body2">৳{Number(policy.deductions).toLocaleString()}</Typography>
         </Box>
+        <Box>
+          <Typography variant="caption" color="text.secondary">Overtime rate</Typography>
+          <Typography variant="body2">
+            {policy.overtimeHourlyRate != null ? `৳${Number(policy.overtimeHourlyRate).toLocaleString()}/hr` : "Not set"}
+          </Typography>
+        </Box>
       </Box>
     </Paper>
   );
@@ -174,6 +181,7 @@ export function SalaryPolicyWorkspace() {
       medical: 0,
       transport: 0,
       deductions: 0,
+      overtimeHourlyRate: 0,
     },
     mode: "onTouched",
   });
@@ -181,7 +189,7 @@ export function SalaryPolicyWorkspace() {
   const saving = createState.loading || updateState.loading;
 
   const openCreateDialog = () => {
-    reset({ name: "", designation: "", basic: 0, houseRent: 0, medical: 0, transport: 0, deductions: 0 });
+    reset({ name: "", designation: "", basic: 0, houseRent: 0, medical: 0, transport: 0, deductions: 0, overtimeHourlyRate: 0 });
     setIsDefault(false);
     setEditingId(null);
     setErrorMessage(null);
@@ -198,6 +206,7 @@ export function SalaryPolicyWorkspace() {
       medical: Number(policy.medical),
       transport: Number(policy.transport),
       deductions: Number(policy.deductions),
+      overtimeHourlyRate: policy.overtimeHourlyRate != null ? Number(policy.overtimeHourlyRate) : 0,
     });
     setIsDefault(policy.isDefault);
     setEditingId(policy.id);
@@ -228,6 +237,7 @@ export function SalaryPolicyWorkspace() {
       medical: values.medical,
       transport: values.transport,
       deductions: values.deductions ?? 0,
+      overtimeHourlyRate: values.overtimeHourlyRate ?? 0,
     };
     try {
       if (editingId) {
@@ -402,6 +412,13 @@ export function SalaryPolicyWorkspace() {
                 <RhfTextField control={control} name="transport" label="Transport *" type="number" />
               </Box>
               <RhfTextField control={control} name="deductions" label="Deductions" type="number" />
+              <RhfTextField
+                control={control}
+                name="overtimeHourlyRate"
+                label="Overtime hourly rate"
+                type="number"
+                helperText="Used to compute teacher overtime/extra-class claim payouts"
+              />
             </Stack>
           </DialogContent>
           <DialogActions sx={{ px: 3, py: 2 }}>

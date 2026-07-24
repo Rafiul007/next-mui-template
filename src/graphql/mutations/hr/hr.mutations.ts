@@ -82,6 +82,48 @@ export const APPROVE_MANUAL_ATTENDANCE_MUTATION = /* GraphQL */ `
   }
 `;
 
+export const SUBMIT_OVERTIME_CLAIM_MUTATION = /* GraphQL */ `
+  mutation SubmitOvertimeClaim($input: SubmitOvertimeClaimInput!) {
+    submitOvertimeClaim(input: $input) {
+      id
+      tenantId
+      employeeId
+      sessionId
+      claimDate
+      hours
+      reason
+      status
+      hourlyRate
+      amount
+      approvedBy
+      rejectionReason
+      payrollRunId
+    }
+  }
+`;
+
+export const APPROVE_OVERTIME_CLAIM_MUTATION = /* GraphQL */ `
+  mutation ApproveOvertimeClaim($claimId: ID!) {
+    approveOvertimeClaim(claimId: $claimId) {
+      id
+      status
+      hourlyRate
+      amount
+      approvedBy
+    }
+  }
+`;
+
+export const REJECT_OVERTIME_CLAIM_MUTATION = /* GraphQL */ `
+  mutation RejectOvertimeClaim($claimId: ID!, $reason: String!) {
+    rejectOvertimeClaim(claimId: $claimId, reason: $reason) {
+      id
+      status
+      rejectionReason
+    }
+  }
+`;
+
 export const APPLY_LEAVE_MUTATION = /* GraphQL */ `
   mutation ApplyLeave($input: ApplyLeaveInput!) {
     applyLeave(input: $input) {
@@ -169,6 +211,7 @@ export const CREATE_SALARY_POLICY_MUTATION = /* GraphQL */ `
       medical
       transport
       deductions
+      overtimeHourlyRate
     }
   }
 `;
@@ -186,6 +229,7 @@ export const UPDATE_SALARY_POLICY_MUTATION = /* GraphQL */ `
       medical
       transport
       deductions
+      overtimeHourlyRate
     }
   }
 `;

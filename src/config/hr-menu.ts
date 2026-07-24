@@ -9,6 +9,7 @@ import {
   PeopleRounded,
   PolicyRounded,
   PsychologyRounded,
+  ScheduleRounded,
   WorkRounded,
 } from "@mui/icons-material";
 
@@ -77,6 +78,13 @@ export const hrSidebarMenuItems: HrSidebarMenuItem[] = [
     label: "Payroll",
     icon: PaymentsRounded,
     href: buildHrHref(["payroll"]),
+    status: "active",
+  },
+  {
+    key: "overtime-claims",
+    label: "Overtime Claims",
+    icon: ScheduleRounded,
+    href: buildHrHref(["overtime-claims"]),
     status: "active",
   },
   {

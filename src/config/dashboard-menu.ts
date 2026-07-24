@@ -117,7 +117,7 @@ const createSection = ({
   icon,
   phase,
   status,
-  href: buildDashboardHref(route),
+  href: children?.length ? undefined : buildDashboardHref(route),
   children: children?.map(createModule),
 });
 

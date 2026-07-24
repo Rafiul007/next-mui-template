@@ -106,6 +106,67 @@ export const GET_SALARY_POLICIES_QUERY = /* GraphQL */ `
       medical
       transport
       deductions
+      overtimeHourlyRate
+    }
+  }
+`;
+
+export const GET_OVERTIME_CLAIMS_QUERY = /* GraphQL */ `
+  query GetOvertimeClaims($employeeId: ID!) {
+    getOvertimeClaims(employeeId: $employeeId) {
+      id
+      tenantId
+      employeeId
+      sessionId
+      claimDate
+      hours
+      reason
+      status
+      hourlyRate
+      amount
+      approvedBy
+      rejectionReason
+      payrollRunId
+    }
+  }
+`;
+
+export const GET_MY_OVERTIME_CLAIMS_QUERY = /* GraphQL */ `
+  query GetMyOvertimeClaims {
+    getMyOvertimeClaims {
+      id
+      tenantId
+      employeeId
+      sessionId
+      claimDate
+      hours
+      reason
+      status
+      hourlyRate
+      amount
+      approvedBy
+      rejectionReason
+      payrollRunId
+    }
+  }
+`;
+
+export const GET_PENDING_OVERTIME_CLAIMS_QUERY = /* GraphQL */ `
+  query GetPendingOvertimeClaims {
+    getPendingOvertimeClaims {
+      id
+      tenantId
+      employeeId
+      sessionId
+      claimDate
+      hours
+      reason
+      status
+      hourlyRate
+      amount
+      approvedBy
+      rejectionReason
+      payrollRunId
     }
   }
 `;

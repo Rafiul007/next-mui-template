@@ -130,7 +130,8 @@ const getSessionStatusColor = (
 
 const getSessionTypeColor = (
   type: string,
-): "default" | "primary" | "secondary" => {
+): "default" | "primary" | "secondary" | "error" => {
+  if (/exam/i.test(type)) return "error";
   if (/extra/i.test(type)) return "primary";
   if (/makeup/i.test(type)) return "secondary";
   return "default";

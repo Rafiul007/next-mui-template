@@ -212,6 +212,7 @@ export const GET_SESSIONS_BY_BATCH_QUERY = /* GraphQL */ `
       id
       batchId
       recurringScheduleId
+      examId
       teacherId
       substituteTeacherId
       date
