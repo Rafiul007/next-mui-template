@@ -1,5 +1,6 @@
 import type { ElementType } from "react";
 import {
+  AccountBalanceWalletRounded,
   AssessmentRounded,
   AssignmentLateRounded,
   BeachAccessRounded,
@@ -92,6 +93,13 @@ export const hrSidebarMenuItems: HrSidebarMenuItem[] = [
     label: "Salary Policies",
     icon: PolicyRounded,
     href: buildHrHref(["salary-policy"]),
+    status: "active",
+  },
+  {
+    key: "my-payroll",
+    label: "My Payroll",
+    icon: AccountBalanceWalletRounded,
+    href: buildHrHref(["my-payroll"]),
     status: "active",
   },
   {

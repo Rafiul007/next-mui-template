@@ -1,5 +1,5 @@
-import { TeacherPaymentsWorkspace } from "@/components/teacher/TeacherPaymentsWorkspace";
+import { MyPayrollWorkspace } from "@/components/payroll/MyPayrollWorkspace";
 
-const TeacherPaymentsPage = () => <TeacherPaymentsWorkspace />;
+const TeacherPaymentsPage = () => <MyPayrollWorkspace />;
 
 export default TeacherPaymentsPage;

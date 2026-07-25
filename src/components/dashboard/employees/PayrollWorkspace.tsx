@@ -75,6 +75,13 @@ import {
 import { SearchSelect, type SearchSelectOption } from "@/components/form";
 import { getErrorMessage } from "@/lib/errors";
 import { hasPermission } from "@/lib/auth/roles";
+import { employeeDisplayName } from "@/lib/hr/employeeName";
+import {
+  canApprovePayroll,
+  canDisbursePayroll,
+  isPayrollDisbursed,
+  payrollStatusMeta,
+} from "@/lib/payroll/status";
 import { primaryGradient } from "@/theme/theme";
 import { printPayslip } from "./payslip-print";
 
@@ -85,14 +92,6 @@ const MONTH_NAMES = [
   "January", "February", "March", "April", "May", "June",
   "July", "August", "September", "October", "November", "December",
 ];
-
-const STATUS_COLOR: Record<string, "default" | "warning" | "success" | "info"> = {
-  draft: "warning",
-  reviewed: "warning",
-  approved: "info",
-  disbursed: "success",
-  cancelled: "default",
-};
 
 const employeeFilterOptions = createFilterOptions<SearchSelectOption>({
   trim: true,
@@ -147,13 +146,13 @@ const buildPayrollColumns = (
     header: "Status",
     size: 120,
     Cell: ({ cell }) => {
-      const status = String(cell.getValue() ?? "").toLowerCase();
+      const meta = payrollStatusMeta(String(cell.getValue() ?? ""));
       return (
         <Chip
-          label={status.charAt(0).toUpperCase() + status.slice(1)}
-          color={STATUS_COLOR[status] ?? "default"}
+          label={meta.adminLabel}
+          color={meta.color}
           size="small"
-          variant={status === "disbursed" ? "filled" : "outlined"}
+          variant={meta.variant}
         />
       );
     },
@@ -220,7 +219,7 @@ const buildPayrollColumns = (
               </span>
             </Tooltip>
           ) : null}
-          {status === "approved" && perms.canDisburse ? (
+          {canDisbursePayroll(status) && perms.canDisburse ? (
             <Tooltip title="Disburse payroll">
               <span>
                 <IconButton
@@ -328,11 +327,11 @@ export function PayrollWorkspace() {
 
   const permissions = meData?.me?.permissions ?? [];
   const canRunPayroll = hasPermission(permissions, "HR_PAYROLL_RUN");
-  const canApprovePayroll = hasPermission(permissions, "HR_PAYROLL_APPROVE");
+  const hasApprovePermission = hasPermission(permissions, "HR_PAYROLL_APPROVE");
   const payrollPerms: PayrollPermissions = {
-    canApprove: canApprovePayroll,
-    canDisburse: canApprovePayroll,
-    canCancel: canRunPayroll || canApprovePayroll,
+    canApprove: hasApprovePermission,
+    canDisburse: hasApprovePermission,
+    canCancel: canRunPayroll || hasApprovePermission,
   };
 
   const employees = employeesData?.getEmployees ?? [];
@@ -351,7 +350,7 @@ export function PayrollWorkspace() {
     if (!payslip) return;
     printPayslip({
       payslip,
-      employeeName: payslipEmployee?.employeeCode ?? "Employee",
+      employeeName: employeeDisplayName(payslipEmployee),
       employeeCode: payslipEmployee?.employeeCode ?? "—",
       designation: payslipEmployee?.designation,
       period: payslipPeriod,
@@ -360,14 +359,17 @@ export function PayrollWorkspace() {
   };
 
   const totalDisbursed = payrollRuns
-    .filter((r) => r.status?.toLowerCase() === "disbursed")
+    .filter((r) => isPayrollDisbursed(r.status))
     .reduce((sum, r) => sum + r.totalAmount, 0);
-  const pendingRuns = payrollRuns.filter((r) => {
-    const s = r.status?.toLowerCase();
-    return s === "draft" || s === "reviewed";
-  }).length;
+  const pendingRuns = payrollRuns.filter((r) => canApprovePayroll(r.status)).length;
   const isActioning =
     approveState.loading || disburseState.loading || cancelState.loading;
+
+  // A month can only be run once — a second run would double-pay everyone. Block
+  // it in the dialog and surface the run that already exists.
+  const existingRun = payrollRuns.find(
+    (r) => r.month === payrollMonth && r.year === payrollYear,
+  );
 
   const handleSetSalary = async () => {
     if (!selectedEmployeeId || !salaryForm.basicSalary) return;
@@ -395,6 +397,12 @@ export function PayrollWorkspace() {
 
   const handleRunPayroll = async () => {
     setPageError(null);
+    if (existingRun) {
+      setPageError(
+        `A payroll run for ${MONTH_NAMES[payrollMonth - 1]} ${payrollYear} already exists.`,
+      );
+      return;
+    }
     try {
       await runPayroll({
         variables: {
@@ -469,16 +477,13 @@ export function PayrollWorkspace() {
   };
 
   const employeeOptions: SearchSelectOption[] = employees.map(
-    (e: EmployeeRecord) => {
-      const name = e.userInfo
-        ? `${e.userInfo.firstName ?? ""} ${e.userInfo.lastName ?? ""}`.trim()
-        : "";
-      return {
-        value: e.id,
-        label: name ? `${name} (${e.employeeCode})` : e.employeeCode || e.id,
-        keywords: `${e.employeeCode} ${name}`,
-      };
-    },
+    (e: EmployeeRecord) => ({
+      value: e.id,
+      label: employeeDisplayName(e),
+      keywords: [employeeDisplayName(e), e.employeeCode]
+        .filter(Boolean)
+        .join(" "),
+    }),
   );
   const employeeOptionById = new Map(employeeOptions.map((o) => [o.value, o]));
 
@@ -802,10 +807,11 @@ export function PayrollWorkspace() {
                     >
                       <Box>
                         <Typography variant="subtitle1" fontWeight={700}>
-                          {payslipEmployee?.employeeCode}
+                          {employeeDisplayName(payslipEmployee)}
                         </Typography>
                         <Typography variant="caption" color="text.secondary">
-                          {payslipPeriod}
+                          {payslipEmployee?.employeeCode}
+                          {payslipPeriod ? ` · ${payslipPeriod}` : ""}
                         </Typography>
                       </Box>
                       <Chip
@@ -910,17 +916,29 @@ export function PayrollWorkspace() {
                 <TextField {...params} label="Exclude employees from this run" placeholder="Search by name or code…" />
               )}
             />
-            <Alert severity="info">
-              This will generate payroll entries for all employees with a salary structure for {MONTH_NAMES[payrollMonth - 1]} {payrollYear}
-              {excludedEmployeeIds.length ? `, excluding ${excludedEmployeeIds.length} selected` : ""}. Excluded employees can be added back later.
-            </Alert>
+            {existingRun ? (
+              <Alert severity="warning">
+                A payroll run for {MONTH_NAMES[payrollMonth - 1]} {payrollYear} already
+                exists ({payrollStatusMeta(existingRun.status).adminLabel.toLowerCase()}).
+                Running it again would double-pay employees.
+              </Alert>
+            ) : (
+              <Alert severity="info">
+                This will generate payroll entries for all employees with a salary structure for {MONTH_NAMES[payrollMonth - 1]} {payrollYear}
+                {excludedEmployeeIds.length ? `, excluding ${excludedEmployeeIds.length} selected` : ""}. Excluded employees can be added back later.
+              </Alert>
+            )}
           </Stack>
         </DialogContent>
         <DialogActions sx={{ px: 3, py: 2 }}>
           <Button color="inherit" onClick={() => setIsRunPayrollOpen(false)} disabled={runState.loading}>
             Cancel
           </Button>
-          <Button variant="contained" onClick={handleRunPayroll} disabled={runState.loading}>
+          <Button
+            variant="contained"
+            onClick={handleRunPayroll}
+            disabled={runState.loading || !!existingRun}
+          >
             Run payroll
           </Button>
         </DialogActions>
