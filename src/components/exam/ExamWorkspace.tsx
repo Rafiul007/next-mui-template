@@ -120,7 +120,7 @@ export function ExamWorkspace({ batches: batchesProp, batchesLoading: batchesLoa
     skip: !batchId,
     fetchPolicy: "cache-and-network",
   });
-  const { data: enrollmentsData } = useQuery(GetEnrollmentsByBatchDocument, {
+  const { data: enrollmentsData, loading: enrollmentsLoading } = useQuery(GetEnrollmentsByBatchDocument, {
     variables: { batchId },
     skip: !batchId,
   });
@@ -521,6 +521,10 @@ export function ExamWorkspace({ batches: batchesProp, batchesLoading: batchesLoa
                               size="small"
                               variant="outlined"
                               startIcon={<GradingRounded />}
+                              // openMarks snapshots `enrollments` into dialog state once, at click
+                              // time — clicking before the batch's enrollments have loaded would
+                              // permanently lock the dialog onto an empty roster.
+                              disabled={enrollmentsLoading}
                               onClick={() => openMarks(exam)}
                             >
                               Enter marks
@@ -537,7 +541,9 @@ export function ExamWorkspace({ batches: batchesProp, batchesLoading: batchesLoa
                               Results
                             </Button>
                           ) : null}
-                          {canPublish && !exam.published && exam.status === "COMPLETED" ? (
+                          {canPublish &&
+                          !exam.published &&
+                          (exam.status === "SCHEDULED" || exam.status === "COMPLETED") ? (
                             <Button
                               size="small"
                               variant="contained"

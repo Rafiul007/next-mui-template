@@ -72,6 +72,8 @@ export const GET_MONTHLY_ATTENDANCE_SHEET_QUERY = /* GraphQL */ `
       checkOutTime
       status
       source
+      correctionReason
+      approvedBy
       tenantId
     }
   }

@@ -22,7 +22,6 @@ import {
   DialogContent,
   DialogTitle,
   FormControl,
-  IconButton,
   InputLabel,
   MenuItem,
   Paper,
@@ -127,7 +126,7 @@ const buildAttendanceColumns = ({
     header: "Status",
     size: 110,
     filterVariant: "select",
-    filterSelectOptions: ["present", "absent", "late", "pending"],
+    filterSelectOptions: ["present", "absent", "late", "half_day"],
     Cell: ({ cell }) => {
       const status = String(cell.getValue() ?? "").toLowerCase();
       return (
@@ -151,14 +150,28 @@ const buildAttendanceColumns = ({
     ),
   },
   {
+    accessorKey: "correctionReason",
+    header: "Reason",
+    size: 220,
+    Cell: ({ cell }) => (
+      <Typography variant="body2" color="text.secondary" noWrap>
+        {String(cell.getValue() ?? "—")}
+      </Typography>
+    ),
+  },
+  {
     id: "approve",
     header: "Action",
     size: 100,
     enableColumnFilter: false,
     enableSorting: false,
     Cell: ({ row }) => {
+      // Manual corrections are self-service — the employee picks the actual
+      // status (present/late/half-day) up front, so "pending" was never a
+      // real state value. Whether it's awaiting approval is tracked by
+      // approvedBy being unset, not by status.
       const isPending =
-        row.original.status?.toLowerCase() === "pending";
+        row.original.source === "MANUAL" && !row.original.approvedBy;
       if (!isPending) return null;
       return (
         <Tooltip title="Approve manual attendance">
@@ -244,7 +257,7 @@ export function AttendanceWorkspace() {
     (r) => r.status?.toLowerCase() === "late",
   ).length;
   const pendingCount = attendanceRecords.filter(
-    (r) => r.status?.toLowerCase() === "pending",
+    (r) => r.source === "MANUAL" && !r.approvedBy,
   ).length;
 
   const employeeOptions: SearchSelectOption[] = employees.map((e) => {

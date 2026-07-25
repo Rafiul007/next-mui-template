@@ -16,21 +16,25 @@ export const formatAmount = (n: number) =>
 
 // ── Invoice status ──────────────────────────────────────────────────────────
 
+// Must match backend InvoiceStatus enum exactly — DRAFT, ISSUED,
+// PARTIALLY_PAID, PAID, OVERDUE, WAIVED, PENDING_WAIVER. The previous values
+// here (UNPAID, PARTIAL, WAIVER_REQUESTED) never matched any real invoice,
+// which silently broke the Pay button and the waiver-approve action for every
+// partially-paid or waiver-requested invoice.
 export type InvoiceStatus =
+  | "DRAFT"
   | "ISSUED"
-  | "UNPAID"
-  | "PARTIAL"
+  | "PARTIALLY_PAID"
   | "OVERDUE"
   | "PAID"
   | "WAIVED"
-  | "WAIVER_REQUESTED";
+  | "PENDING_WAIVER";
 
 export const OUTSTANDING_STATUSES = new Set([
   "ISSUED",
-  "UNPAID",
-  "PARTIAL",
+  "PARTIALLY_PAID",
   "OVERDUE",
-  "WAIVER_REQUESTED",
+  "PENDING_WAIVER",
 ]);
 export const PAID_STATUSES = new Set(["PAID", "WAIVED"]);
 
@@ -38,23 +42,23 @@ export const INVOICE_STATUS_COLOR: Record<
   string,
   "default" | "warning" | "success" | "error" | "info"
 > = {
+  DRAFT: "default",
   ISSUED: "default",
-  UNPAID: "default",
-  PARTIAL: "warning",
+  PARTIALLY_PAID: "warning",
   OVERDUE: "error",
   PAID: "success",
   WAIVED: "info",
-  WAIVER_REQUESTED: "info",
+  PENDING_WAIVER: "info",
 };
 
 export const INVOICE_STATUS_LABEL: Record<string, string> = {
+  DRAFT: "Draft",
   ISSUED: "Unpaid",
-  UNPAID: "Unpaid",
-  PARTIAL: "Partial",
+  PARTIALLY_PAID: "Partial",
   OVERDUE: "Overdue",
   PAID: "Paid",
   WAIVED: "Waived",
-  WAIVER_REQUESTED: "Waiver requested",
+  PENDING_WAIVER: "Waiver requested",
 };
 
 export function InvoiceStatusChip({ status }: { status: string }) {
@@ -99,10 +103,11 @@ export const frequencyLabel = (value: string) =>
 
 // ── Late fine type ──────────────────────────────────────────────────────────
 
+// Must match backend LateFineType enum exactly (FIXED, PERCENTAGE_PER_DAY) —
+// setLateFinePolicy does LateFineType.valueOf(fineType) and throws on anything else.
 export const FINE_TYPE_OPTIONS = [
   { label: "Fixed amount", value: "FIXED" },
-  { label: "Percentage of due", value: "PERCENTAGE" },
-  { label: "Per day", value: "PER_DAY" },
+  { label: "Percentage per day overdue", value: "PERCENTAGE_PER_DAY" },
 ];
 
 export const fineTypeLabel = (value: string) =>

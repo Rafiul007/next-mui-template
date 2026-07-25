@@ -539,6 +539,7 @@ export type Employee = {
 
 export type EmployeeAttendance = {
   __typename?: 'EmployeeAttendance';
+  approvedBy?: Maybe<Scalars['ID']['output']>;
   attendanceDate: Scalars['String']['output'];
   checkInTime?: Maybe<Scalars['String']['output']>;
   checkOutTime?: Maybe<Scalars['String']['output']>;

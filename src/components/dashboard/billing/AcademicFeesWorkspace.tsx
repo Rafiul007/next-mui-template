@@ -681,8 +681,8 @@ function LateFinePolicyTab() {
         <SummaryCard
           caption="Current policy"
           title={
-            policy.fineType === "PERCENTAGE"
-              ? `${policy.value}% after ${policy.graceDays}d`
+            policy.fineType === "PERCENTAGE_PER_DAY"
+              ? `${policy.value}%/day after ${policy.graceDays}d`
               : `${formatAmount(policy.value)} after ${policy.graceDays}d`
           }
           icon={<GavelRounded />}
@@ -724,16 +724,16 @@ function LateFinePolicyTab() {
 
           <Box sx={{ display: "grid", gap: 2, gridTemplateColumns: "1fr 1fr" }}>
             <TextField
-              label={fineType === "PERCENTAGE" ? "Percentage" : "Amount (৳)"}
+              label={fineType === "PERCENTAGE_PER_DAY" ? "Percentage per day" : "Amount (৳)"}
               type="number"
               value={value}
               onChange={(e) => setValue(e.target.value)}
               size="small"
-              inputProps={{ min: 0, step: fineType === "PERCENTAGE" ? "0.5" : "1" }}
+              inputProps={{ min: 0, step: fineType === "PERCENTAGE_PER_DAY" ? "0.5" : "1" }}
               InputProps={{
                 endAdornment: (
                   <InputAdornment position="end">
-                    {fineType === "PERCENTAGE" ? "%" : "৳"}
+                    {fineType === "PERCENTAGE_PER_DAY" ? "%" : "৳"}
                   </InputAdornment>
                 ),
               }}
@@ -753,11 +753,11 @@ function LateFinePolicyTab() {
             <Alert severity="warning" icon={<GavelRounded />}>
               Invoices unpaid {graceDays || 0} day(s) past due will incur a{" "}
               <strong>
-                {fineType === "PERCENTAGE"
-                  ? `${value}% fine`
+                {fineType === "PERCENTAGE_PER_DAY"
+                  ? `${value}% fine per day overdue`
                   : `${formatAmount(Number(value))} fine`}
               </strong>
-              {fineType === "PER_DAY" ? " per day" : ""}.
+              .
             </Alert>
           ) : null}
 

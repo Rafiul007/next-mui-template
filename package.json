@@ -12,7 +12,8 @@
     "codegen": "graphql-codegen --config codegen.ts",
     "codegen:watch": "graphql-codegen --config codegen.ts --watch",
     "cypress:open": "cypress open",
-    "e2e:auth": "cypress run --spec \"cypress/e2e/role-*.cy.ts\""
+    "e2e:auth": "cypress run --spec \"cypress/e2e/role-*.cy.ts\"",
+    "e2e:exam": "cypress run --spec \"cypress/e2e/exam-lifecycle.cy.ts\" --headed --no-exit"
   },
   "dependencies": {
     "@apollo/client": "^4.1.9",

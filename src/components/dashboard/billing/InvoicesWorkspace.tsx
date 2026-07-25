@@ -85,7 +85,7 @@ function InvoiceRowMenu({
 
   const isOutstanding = OUTSTANDING_STATUSES.has(invoice.status);
   const isPaid = PAID_STATUSES.has(invoice.status);
-  const isWaiverRequested = invoice.status === "WAIVER_REQUESTED";
+  const isWaiverRequested = invoice.status === "PENDING_WAIVER";
 
   return (
     <>
@@ -286,11 +286,12 @@ function useInvoiceColumns(opts: {
       size: 130,
       filterVariant: "select",
       filterSelectOptions: [
-        { label: "Unpaid", value: "UNPAID" },
-        { label: "Partial", value: "PARTIAL" },
+        { label: "Unpaid", value: "ISSUED" },
+        { label: "Partial", value: "PARTIALLY_PAID" },
         { label: "Overdue", value: "OVERDUE" },
         { label: "Paid", value: "PAID" },
         { label: "Waived", value: "WAIVED" },
+        { label: "Waiver requested", value: "PENDING_WAIVER" },
       ],
       Cell: ({ cell }) => <InvoiceStatusChip status={String(cell.getValue())} />,
     },
