@@ -30,7 +30,6 @@ import {
   Paper,
   Select,
   Stack,
-  TextField,
   Tooltip,
   Typography,
   alpha,
@@ -80,6 +79,17 @@ const STATUS_COLOR: Record<string, "success" | "warning" | "default"> = {
 };
 
 const toApiEnum = (value: string) => value.toUpperCase().replace(/-/g, "_");
+
+const readFileAsBase64 = (file: File): Promise<string> =>
+  new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const result = String(reader.result ?? "");
+      resolve(result.split(",")[1] ?? "");
+    };
+    reader.onerror = () => reject(new Error("Unable to read the file."));
+    reader.readAsDataURL(file);
+  });
 
 const toOptionalString = (value: string) => {
   const trimmed = value.trim();
@@ -302,7 +312,7 @@ export function EmployeesWorkspace() {
   const [formErrorMessage, setFormErrorMessage] = useState<string | null>(null);
   const [uploadTarget, setUploadTarget] = useState<EmployeeRecord | null>(null);
   const [uploadDocType, setUploadDocType] = useState("certificate");
-  const [uploadFilePath, setUploadFilePath] = useState("");
+  const [uploadFile, setUploadFile] = useState<File | null>(null);
 
   const { data: centerData } = useQuery(GetCenterDocument);
   const { data: usersData, loading: isUsersLoading } = useQuery(
@@ -361,21 +371,23 @@ export function EmployeesWorkspace() {
   const isLoading = isUsersLoading || isBranchesLoading || isEmployeesLoading;
 
   const handleUploadDocument = async () => {
-    if (!uploadTarget || !uploadFilePath.trim()) return;
+    if (!uploadTarget || !uploadFile) return;
     try {
+      const fileDataBase64 = await readFileAsBase64(uploadFile);
       const result = await uploadEmployeeDocument({
         variables: {
           input: {
             employeeId: uploadTarget.id,
             documentType: uploadDocType,
-            filePath: uploadFilePath.trim(),
+            fileDataBase64,
+            fileName: uploadFile.name,
           },
         },
       });
       if (result.error) throw result.error;
       toast.success("Document uploaded successfully.");
       setUploadTarget(null);
-      setUploadFilePath("");
+      setUploadFile(null);
       setUploadDocType("certificate");
     } catch (error) {
       toast.error(getErrorMessage(error, "Unable to upload document."));
@@ -716,7 +728,7 @@ export function EmployeesWorkspace() {
                   size="small"
                   onClick={() => {
                     setUploadTarget(row.original);
-                    setUploadFilePath("");
+                    setUploadFile(null);
                     setUploadDocType("certificate");
                   }}
                   sx={{ bgcolor: alpha("#3b82f6", 0.08), color: "#1d4ed8" }}
@@ -807,15 +819,14 @@ export function EmployeesWorkspace() {
                 <MenuItem value="other">Other</MenuItem>
               </Select>
             </FormControl>
-            <TextField
-              label="File path or URL"
-              placeholder="https://example.com/doc.pdf"
-              value={uploadFilePath}
-              onChange={(e) => setUploadFilePath(e.target.value)}
-              size="small"
-              fullWidth
-              helperText="Enter the URL or server path to the document"
-            />
+            <Button component="label" variant="outlined" fullWidth>
+              {uploadFile ? uploadFile.name : "Choose file"}
+              <input
+                type="file"
+                hidden
+                onChange={(e) => setUploadFile(e.target.files?.[0] ?? null)}
+              />
+            </Button>
           </Stack>
         </DialogContent>
         <DialogActions sx={{ px: 3, py: 2 }}>
@@ -829,7 +840,7 @@ export function EmployeesWorkspace() {
           <Button
             variant="contained"
             onClick={handleUploadDocument}
-            disabled={uploadState.loading || !uploadFilePath.trim()}
+            disabled={uploadState.loading || !uploadFile}
           >
             Upload
           </Button>

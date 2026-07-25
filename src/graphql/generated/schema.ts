@@ -1074,6 +1074,7 @@ export type Mutation = {
   updateTenant: Tenant;
   uploadEmployeeDocument: EmployeeDocument;
   uploadMaterial: StudyMaterial;
+  uploadStudentDocument: StudentDocument;
   userRegistration?: Maybe<User>;
   verifyUser?: Maybe<User>;
 };
@@ -1665,6 +1666,8 @@ export type MutationSubmitAnswerArgs = {
 
 export type MutationSubmitAssignmentArgs = {
   assignmentId: Scalars['ID']['input'];
+  fileDataBase64?: InputMaybe<Scalars['String']['input']>;
+  fileName?: InputMaybe<Scalars['String']['input']>;
   linkUrl?: InputMaybe<Scalars['String']['input']>;
   studentId: Scalars['ID']['input'];
 };
@@ -1801,6 +1804,14 @@ export type MutationUploadEmployeeDocumentArgs = {
 
 export type MutationUploadMaterialArgs = {
   material: UploadMaterialInput;
+};
+
+
+export type MutationUploadStudentDocumentArgs = {
+  documentType: Scalars['String']['input'];
+  fileDataBase64: Scalars['String']['input'];
+  fileName: Scalars['String']['input'];
+  studentId: Scalars['ID']['input'];
 };
 
 
@@ -1943,6 +1954,7 @@ export type PayrollEntry = {
   id: Scalars['ID']['output'];
   netAmount: Scalars['Float']['output'];
   payrollRunId: Scalars['ID']['output'];
+  payslipPdfUrl?: Maybe<Scalars['String']['output']>;
   taxableIncome: Scalars['Float']['output'];
   taxes: Scalars['Float']['output'];
   tenantId: Scalars['ID']['output'];
@@ -2097,7 +2109,9 @@ export type Query = {
   getQuestionById: Question;
   getQuestionsBySubject: Array<Question>;
   getQuestionsByTenant: Array<Question>;
+  getResultSlipUrl: Scalars['String']['output'];
   getResultsByExam: Array<ExamResult>;
+  getRevenueSummary: RevenueSummary;
   getSalaryPolicies: Array<SalaryPolicy>;
   getSalaryStructure: SalaryStructure;
   getSchedulesByBatch: Array<RecurringSchedule>;
@@ -2360,6 +2374,12 @@ export type QueryGetQuestionsBySubjectArgs = {
 };
 
 
+export type QueryGetResultSlipUrlArgs = {
+  examId: Scalars['ID']['input'];
+  studentId: Scalars['ID']['input'];
+};
+
+
 export type QueryGetResultsByExamArgs = {
   examId: Scalars['ID']['input'];
 };
@@ -2562,6 +2582,16 @@ export type RequestManualAttendanceInput = {
   employeeId: Scalars['ID']['input'];
   reason?: InputMaybe<Scalars['String']['input']>;
   status: Scalars['String']['input'];
+};
+
+export type RevenueSummary = {
+  __typename?: 'RevenueSummary';
+  activeTenants: Scalars['Int']['output'];
+  mrr: Scalars['Float']['output'];
+  totalCollected: Scalars['Float']['output'];
+  totalInvoiced: Scalars['Float']['output'];
+  totalOutstanding: Scalars['Float']['output'];
+  totalTenants: Scalars['Int']['output'];
 };
 
 export type ReviewCycle = {
@@ -3039,11 +3069,14 @@ export type UpdateTenantInput = {
 export type UploadEmployeeDocumentInput = {
   documentType: Scalars['String']['input'];
   employeeId: Scalars['ID']['input'];
-  filePath: Scalars['String']['input'];
+  fileDataBase64: Scalars['String']['input'];
+  fileName: Scalars['String']['input'];
 };
 
 export type UploadMaterialInput = {
   batchId: Scalars['ID']['input'];
+  fileDataBase64?: InputMaybe<Scalars['String']['input']>;
+  fileName?: InputMaybe<Scalars['String']['input']>;
   subjectId?: InputMaybe<Scalars['ID']['input']>;
   title: Scalars['String']['input'];
   videoUrl?: InputMaybe<Scalars['String']['input']>;

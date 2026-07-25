@@ -74,6 +74,19 @@ export const GET_TENANT_QUERY = /* GraphQL */ `
   }
 `;
 
+export const GET_REVENUE_SUMMARY_QUERY = /* GraphQL */ `
+  query GetRevenueSummary {
+    getRevenueSummary {
+      totalTenants
+      activeTenants
+      mrr
+      totalInvoiced
+      totalCollected
+      totalOutstanding
+    }
+  }
+`;
+
 export const GET_TENANTS_QUERY = /* GraphQL */ `
   query GetTenants($page: Int, $limit: Int) {
     getTenants(page: $page, limit: $limit) {
