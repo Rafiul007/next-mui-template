@@ -381,7 +381,7 @@ export function LeaveWorkspace() {
     try {
       const result = await approveLeave({ variables: { applicationId } });
       if (result.error) throw result.error;
-      await refetchLeave();
+      await Promise.all([refetchLeave(), refetchBalance()]);
       toast.success("Leave approved.");
     } catch (error) {
       toast.error(getErrorMessage(error, "Unable to approve leave."));
@@ -504,11 +504,26 @@ export function LeaveWorkspace() {
             elevation={0}
             sx={{ p: 2.5, border: "1px solid", borderColor: "divider" }}
           >
-            <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 2 }}>
-              <BalanceRounded sx={{ color: "text.secondary", fontSize: 18 }} />
-              <Typography variant="subtitle2">
-                Leave balance — {new Date().getFullYear()}
-              </Typography>
+            <Stack direction="row" spacing={1} alignItems="center" justifyContent="space-between" sx={{ mb: 2 }}>
+              <Stack direction="row" spacing={1} alignItems="center">
+                <BalanceRounded sx={{ color: "text.secondary", fontSize: 18 }} />
+                <Typography variant="subtitle2">
+                  Leave balance — {new Date().getFullYear()}
+                </Typography>
+              </Stack>
+              <Tooltip title="Pick up balances for any leave policy created since this employee was last initialised">
+                <span>
+                  <Button
+                    size="small"
+                    variant="outlined"
+                    startIcon={<PersonAddAlt1Rounded />}
+                    onClick={handleInitBalances}
+                    disabled={initBalancesState.loading}
+                  >
+                    Sync balances
+                  </Button>
+                </span>
+              </Tooltip>
             </Stack>
             <Box
               sx={{

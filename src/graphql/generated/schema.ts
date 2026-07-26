@@ -1686,6 +1686,8 @@ export type MutationSubmitExamForApprovalArgs = {
 
 export type MutationSubmitMyAssignmentArgs = {
   assignmentId: Scalars['ID']['input'];
+  fileDataBase64?: InputMaybe<Scalars['String']['input']>;
+  fileName?: InputMaybe<Scalars['String']['input']>;
   linkUrl?: InputMaybe<Scalars['String']['input']>;
 };
 

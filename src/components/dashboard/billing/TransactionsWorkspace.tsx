@@ -3,10 +3,12 @@
 import { useMemo, useState } from "react";
 import dayjs from "dayjs";
 import {
+  DownloadRounded,
   PaidRounded,
   PointOfSaleRounded,
   PrintRounded,
   ReceiptLongRounded,
+  VisibilityRounded,
 } from "@mui/icons-material";
 import { useQuery } from "@apollo/client/react";
 import {
@@ -40,6 +42,7 @@ import {
   sharedTableProps,
 } from "./billing-shared";
 import { printInvoiceReceipt } from "./billing-print";
+import { downloadPdf, viewPdf } from "@/lib/pdf-actions";
 
 type BatchInvoice = GetBatchInvoicesQuery["getBatchInvoices"][number];
 
@@ -152,6 +155,23 @@ function PaymentRows({
               <PrintRounded fontSize="small" />
             </IconButton>
           </Tooltip>
+          {p.receiptPath && (
+            <>
+              <Tooltip title="View receipt PDF">
+                <IconButton size="small" onClick={() => viewPdf(p.receiptPath!)}>
+                  <VisibilityRounded fontSize="small" />
+                </IconButton>
+              </Tooltip>
+              <Tooltip title="Download receipt PDF">
+                <IconButton
+                  size="small"
+                  onClick={() => downloadPdf(p.receiptPath!, `receipt-${p.receiptNumber ?? p.id}.pdf`)}
+                >
+                  <DownloadRounded fontSize="small" />
+                </IconButton>
+              </Tooltip>
+            </>
+          )}
         </Stack>
       ))}
     </Stack>

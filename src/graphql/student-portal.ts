@@ -237,10 +237,25 @@ export type SubmitMyAssignmentResult = { submitMyAssignment: MySubmission };
 
 export const SubmitMyAssignmentDocument: TypedDocumentNode<
   SubmitMyAssignmentResult,
-  { assignmentId: string; linkUrl?: string | null }
+  {
+    assignmentId: string;
+    linkUrl?: string | null;
+    fileDataBase64?: string | null;
+    fileName?: string | null;
+  }
 > = gql`
-  mutation SubmitMyAssignment($assignmentId: ID!, $linkUrl: String) {
-    submitMyAssignment(assignmentId: $assignmentId, linkUrl: $linkUrl) {
+  mutation SubmitMyAssignment(
+    $assignmentId: ID!
+    $linkUrl: String
+    $fileDataBase64: String
+    $fileName: String
+  ) {
+    submitMyAssignment(
+      assignmentId: $assignmentId
+      linkUrl: $linkUrl
+      fileDataBase64: $fileDataBase64
+      fileName: $fileName
+    ) {
       id
       assignmentId
       studentId

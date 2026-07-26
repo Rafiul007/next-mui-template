@@ -6,13 +6,15 @@ import {
   CalendarMonthRounded,
   CancelRounded,
   CheckCircleRounded,
+  DescriptionRounded,
+  DownloadRounded,
   EditNoteRounded,
   GradingRounded,
   PublishRounded,
   QuizRounded,
   SendRounded,
 } from "@mui/icons-material";
-import { useMutation, useQuery } from "@apollo/client/react";
+import { useLazyQuery, useMutation, useQuery } from "@apollo/client/react";
 import {
   Alert,
   Box,
@@ -22,6 +24,7 @@ import {
   DialogActions,
   DialogContent,
   DialogTitle,
+  IconButton,
   InputAdornment,
   Paper,
   Stack,
@@ -34,6 +37,7 @@ import {
   TableRow,
   Tabs,
   TextField,
+  Tooltip,
   Typography,
 } from "@mui/material";
 import { toast } from "react-hot-toast";
@@ -45,6 +49,7 @@ import {
   GetEnrollmentsByBatchDocument,
   GetExamsByBatchDocument,
   GetResultsByExamDocument,
+  GetResultSlipUrlDocument,
   GetStudentsDocument,
   GetSubjectsDocument,
   MeDocument,
@@ -59,6 +64,7 @@ import { SearchSelect } from "@/components/form";
 import { SummaryCard } from "@/components/ui";
 import { hasPermission } from "@/lib/auth/roles";
 import { getErrorMessage } from "@/lib/errors";
+import { downloadPdf, viewPdf } from "@/lib/pdf-actions";
 import { primaryGradient } from "@/theme/theme";
 import { QuestionBankPanel } from "./QuestionBankPanel";
 import { ExamQuestionsDialog } from "./ExamQuestionsDialog";
@@ -299,6 +305,20 @@ export function ExamWorkspace({ batches: batchesProp, batchesLoading: batchesLoa
 
   // ── Results / publish ───────────────────────────────────────────────────────
   const [resultsExam, setResultsExam] = useState<ExamRecord | null>(null);
+  const [fetchResultSlip, { loading: resultSlipLoading }] = useLazyQuery(GetResultSlipUrlDocument);
+
+  const handleResultSlip = async (examId: string, studentId: string, mode: "view" | "download") => {
+    try {
+      const { data: slipData } = await fetchResultSlip({ variables: { examId, studentId } });
+      const url = slipData?.getResultSlipUrl;
+      if (!url) return;
+      if (mode === "view") viewPdf(url);
+      else downloadPdf(url, `result-slip-${examId}-${studentId}.pdf`);
+    } catch (err) {
+      toast.error(getErrorMessage(err, "Unable to generate result slip."));
+    }
+  };
+
   const { data: resultsData } = useQuery(GetResultsByExamDocument, {
     variables: { examId: resultsExam?.id ?? "" },
     skip: !resultsExam,
@@ -762,6 +782,9 @@ export function ExamWorkspace({ batches: batchesProp, batchesLoading: batchesLoa
                     <TableCell sx={{ fontWeight: 700 }}>Marks</TableCell>
                     <TableCell sx={{ fontWeight: 700 }}>Grade</TableCell>
                     <TableCell sx={{ fontWeight: 700 }}>Remarks</TableCell>
+                    {resultsExam?.published ? (
+                      <TableCell sx={{ fontWeight: 700 }}>Result Slip</TableCell>
+                    ) : null}
                   </TableRow>
                 </TableHead>
                 <TableBody>
@@ -773,6 +796,34 @@ export function ExamWorkspace({ batches: batchesProp, batchesLoading: batchesLoa
                       </TableCell>
                       <TableCell>{r.grade ?? "—"}</TableCell>
                       <TableCell>{r.remarks ?? "—"}</TableCell>
+                      {resultsExam?.published ? (
+                        <TableCell>
+                          <Stack direction="row" spacing={0.5}>
+                            <Tooltip title="View result slip">
+                              <IconButton
+                                size="small"
+                                disabled={resultSlipLoading}
+                                onClick={() =>
+                                  resultsExam && handleResultSlip(resultsExam.id, r.studentId, "view")
+                                }
+                              >
+                                <DescriptionRounded fontSize="small" />
+                              </IconButton>
+                            </Tooltip>
+                            <Tooltip title="Download result slip">
+                              <IconButton
+                                size="small"
+                                disabled={resultSlipLoading}
+                                onClick={() =>
+                                  resultsExam && handleResultSlip(resultsExam.id, r.studentId, "download")
+                                }
+                              >
+                                <DownloadRounded fontSize="small" />
+                              </IconButton>
+                            </Tooltip>
+                          </Stack>
+                        </TableCell>
+                      ) : null}
                     </TableRow>
                   ))}
                 </TableBody>

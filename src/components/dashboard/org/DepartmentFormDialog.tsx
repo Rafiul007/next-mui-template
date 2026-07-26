@@ -34,6 +34,7 @@ type Props = {
   open: boolean;
   isSubmitting: boolean;
   initialValues: DepartmentFormValues;
+  initialDefaultRoles?: string[];
   parentOptions: RhfSelectOption[];
   errorMessage?: string | null;
   mode: "create" | "edit";
@@ -50,6 +51,7 @@ export function DepartmentFormDialog({
   open,
   isSubmitting,
   initialValues,
+  initialDefaultRoles,
   parentOptions,
   errorMessage,
   mode,
@@ -57,7 +59,11 @@ export function DepartmentFormDialog({
   onSubmit,
 }: Props) {
   const [roleInput, setRoleInput] = useState("");
-  const [defaultRoles, setDefaultRoles] = useState<string[]>([]);
+  // The dialog is remounted (via a `key` on the department id) whenever a
+  // different department is edited, so this only needs to be seeded once —
+  // previously this always started empty, so editing a department silently
+  // hid its existing default-role chips from the form.
+  const [defaultRoles, setDefaultRoles] = useState<string[]>(initialDefaultRoles ?? []);
 
   const { control, handleSubmit, reset } = useForm<DepartmentFormValues>({
     resolver: yupResolver(schema),

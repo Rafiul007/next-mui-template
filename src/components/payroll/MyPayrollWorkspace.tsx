@@ -6,15 +6,18 @@ import {
   AccountBalanceWalletRounded,
   CheckCircleRounded,
   DescriptionRounded,
+  DownloadRounded,
   PaidRounded,
   ReceiptLongRounded,
   RequestQuoteRounded,
   SavingsRounded,
+  VisibilityRounded,
 } from "@mui/icons-material";
 import { useQuery } from "@apollo/client/react";
 import {
   Alert,
   Box,
+  Button,
   Chip,
   CircularProgress,
   Dialog,
@@ -32,6 +35,7 @@ import {
   TableCell,
   TableHead,
   TableRow,
+  Tooltip,
   Typography,
   alpha,
 } from "@mui/material";
@@ -46,6 +50,7 @@ import {
 } from "@/graphql/generated";
 import { SummaryCard } from "@/components/ui";
 import { payrollStatusMeta } from "@/lib/payroll/status";
+import { downloadPdf, viewPdf } from "@/lib/pdf-actions";
 
 type Payslip = GetMyPayslipsQuery["getMyPayslips"][number];
 type PayrollRun = GetMyPayrollRunsQuery["getMyPayrollRuns"][number];
@@ -249,6 +254,27 @@ function PayslipDialog({
                   {formatTk(payslip.netAmount)}
                 </Typography>
               </Stack>
+
+              {payslip.payslipPdfUrl && (
+                <Stack direction="row" spacing={1}>
+                  <Button
+                    fullWidth
+                    variant="outlined"
+                    startIcon={<VisibilityRounded />}
+                    onClick={() => viewPdf(payslip.payslipPdfUrl!)}
+                  >
+                    View PDF
+                  </Button>
+                  <Button
+                    fullWidth
+                    variant="outlined"
+                    startIcon={<DownloadRounded />}
+                    onClick={() => downloadPdf(payslip.payslipPdfUrl!, `payslip-${runPeriod(run)}.pdf`)}
+                  >
+                    Download
+                  </Button>
+                </Stack>
+              )}
             </Stack>
           </DialogContent>
         </>
@@ -578,8 +604,26 @@ export function MyPayrollWorkspace() {
                           {formatTk(p.netAmount)}
                         </Typography>
                       </TableCell>
-                      <TableCell align="right" sx={{ color: "text.disabled" }}>
-                        <ReceiptLongRounded sx={{ fontSize: 18 }} />
+                      <TableCell align="right">
+                        {p.payslipPdfUrl ? (
+                          <Stack direction="row" spacing={0.5} justifyContent="flex-end" onClick={(e) => e.stopPropagation()}>
+                            <Tooltip title="View payslip PDF">
+                              <IconButton size="small" onClick={() => viewPdf(p.payslipPdfUrl!)}>
+                                <VisibilityRounded fontSize="small" />
+                              </IconButton>
+                            </Tooltip>
+                            <Tooltip title="Download payslip PDF">
+                              <IconButton
+                                size="small"
+                                onClick={() => downloadPdf(p.payslipPdfUrl!, `payslip-${runPeriod(run)}.pdf`)}
+                              >
+                                <DownloadRounded fontSize="small" />
+                              </IconButton>
+                            </Tooltip>
+                          </Stack>
+                        ) : (
+                          <ReceiptLongRounded sx={{ fontSize: 18, color: "text.disabled" }} />
+                        )}
                       </TableCell>
                     </TableRow>
                   );

@@ -26,6 +26,7 @@ import {
   Typography,
   alpha,
 } from "@mui/material";
+import { AttachFileRounded } from "@mui/icons-material";
 import { useMutation, useQuery } from "@apollo/client/react";
 import { toast } from "react-hot-toast";
 import {
@@ -33,6 +34,17 @@ import {
   MyStudentProfileDocument,
   SubmitMyAssignmentDocument,
 } from "@/graphql/student-portal";
+
+const readFileAsBase64 = (file: File): Promise<string> =>
+  new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const result = String(reader.result ?? "");
+      resolve(result.split(",")[1] ?? "");
+    };
+    reader.onerror = () => reject(new Error("Unable to read the file."));
+    reader.readAsDataURL(file);
+  });
 import {
   GetAssignmentsByBatchDocument,
   GetSubmissionsDocument,
@@ -57,6 +69,7 @@ function AssignmentCard({
 }) {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [linkUrl, setLinkUrl] = useState("");
+  const [submissionFile, setSubmissionFile] = useState<File | null>(null);
 
   const { data: submissionsData, refetch } = useQuery(GetSubmissionsDocument, {
     variables: { assignmentId: assignment.id },
@@ -69,6 +82,7 @@ function AssignmentCard({
         toast.success("Assignment submitted.");
         setDialogOpen(false);
         setLinkUrl("");
+        setSubmissionFile(null);
         refetch();
       },
       onError: (err) => {
@@ -86,11 +100,14 @@ function AssignmentCard({
       ? dayjs(assignment.dueDate).isBefore(dayjs(), "day")
       : false;
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
+    const fileDataBase64 = submissionFile ? await readFileAsBase64(submissionFile) : null;
     submitMy({
       variables: {
         assignmentId: assignment.id,
         linkUrl: linkUrl.trim() || null,
+        fileDataBase64,
+        fileName: submissionFile?.name ?? null,
       },
     });
   };
@@ -229,6 +246,14 @@ function AssignmentCard({
               }}
               helperText="Paste a Google Drive, Classroom, or any public link"
             />
+            <Button component="label" variant="outlined" startIcon={<AttachFileRounded />}>
+              {submissionFile ? submissionFile.name : "Attach a file (optional)"}
+              <input
+                type="file"
+                hidden
+                onChange={(e) => setSubmissionFile(e.target.files?.[0] ?? null)}
+              />
+            </Button>
           </Stack>
         </DialogContent>
         <DialogActions>
@@ -238,7 +263,7 @@ function AssignmentCard({
           <Button
             variant="contained"
             onClick={handleSubmit}
-            disabled={submitting}
+            disabled={submitting || (!linkUrl.trim() && !submissionFile)}
             startIcon={
               submitting ? (
                 <CircularProgress size={13} color="inherit" />

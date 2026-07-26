@@ -264,6 +264,7 @@ export const GET_MY_PAYSLIPS_QUERY = /* GraphQL */ `
       taxableIncome
       taxes
       netAmount
+      payslipPdfUrl
       tenantId
     }
   }

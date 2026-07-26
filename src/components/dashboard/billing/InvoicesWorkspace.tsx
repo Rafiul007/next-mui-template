@@ -5,12 +5,14 @@ import dayjs from "dayjs";
 import {
   AccountBalanceWalletRounded,
   CheckCircleRounded,
+  DownloadRounded,
   GavelRounded,
   MoreVertRounded,
   PersonSearchRounded,
   PrintRounded,
   ReceiptLongRounded,
   TaskAltRounded,
+  VisibilityRounded,
   WarningAmberRounded,
 } from "@mui/icons-material";
 import {
@@ -60,6 +62,7 @@ import {
 } from "./billing-shared";
 import { printInvoiceReceipt } from "./billing-print";
 import { RecordPaymentDialog } from "./RecordPaymentDialog";
+import { downloadPdf, viewPdf } from "@/lib/pdf-actions";
 
 type Invoice = GetStudentInvoicesQuery["getStudentInvoices"][number];
 
@@ -106,6 +109,23 @@ function InvoiceRowMenu({
               <PrintRounded fontSize="small" />
             </IconButton>
           </Tooltip>
+        )}
+        {invoice.pdfPath && (
+          <>
+            <Tooltip title="View invoice PDF">
+              <IconButton size="small" onClick={() => viewPdf(invoice.pdfPath!)}>
+                <VisibilityRounded fontSize="small" />
+              </IconButton>
+            </Tooltip>
+            <Tooltip title="Download invoice PDF">
+              <IconButton
+                size="small"
+                onClick={() => downloadPdf(invoice.pdfPath!, `invoice-${invoice.month}-${invoice.studentId}.pdf`)}
+              >
+                <DownloadRounded fontSize="small" />
+              </IconButton>
+            </Tooltip>
+          </>
         )}
         <IconButton size="small" onClick={(e) => setAnchor(e.currentTarget)}>
           <MoreVertRounded fontSize="small" />

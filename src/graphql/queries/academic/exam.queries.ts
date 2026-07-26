@@ -108,6 +108,12 @@ export const GET_MY_RESULTS_QUERY = /* GraphQL */ `
   }
 `;
 
+export const GET_RESULT_SLIP_URL_QUERY = /* GraphQL */ `
+  query GetResultSlipUrl($examId: ID!, $studentId: ID!) {
+    getResultSlipUrl(examId: $examId, studentId: $studentId)
+  }
+`;
+
 export const GET_MY_RESULT_BREAKDOWN_QUERY = /* GraphQL */ `
   query GetMyResultBreakdown($examId: ID!) {
     getMyResultBreakdown(examId: $examId) {

@@ -43,6 +43,7 @@ import {
   GetBranchesDocument,
   GetCenterDocument,
   GetDepartmentsDocument,
+  RemoveEmployeeFromDepartmentDocument,
   GetEmployeesDocument,
   GetUsersDocument,
   OnboardEmployeeWithUserDocument,
@@ -336,6 +337,7 @@ export function EmployeesWorkspace() {
   const [onboardEmployeeWithUser, onboardState] = useMutation(OnboardEmployeeWithUserDocument);
   const [updateEmployee, updateState] = useMutation(UpdateEmployeeDocument);
   const [assignEmployeeToDepartment] = useMutation(AssignEmployeeToDepartmentDocument);
+  const [removeEmployeeFromDepartment] = useMutation(RemoveEmployeeFromDepartmentDocument);
   const [uploadEmployeeDocument, uploadState] = useMutation(UploadEmployeeDocumentDocument);
 
   const { data: departmentsData } = useQuery(GetDepartmentsDocument, { fetchPolicy: "cache-and-network" });
@@ -481,6 +483,13 @@ export function EmployeesWorkspace() {
       if (values.departmentId) {
         await assignEmployeeToDepartment({
           variables: { employeeId: savedEmployeeId, departmentId: values.departmentId },
+        });
+      } else if (formMode === "edit" && selectedEmployee?.departmentId) {
+        // Clearing the Department field back to "None" previously did
+        // nothing at all — no mutation ever fired, so the employee stayed
+        // in their old department despite the form appearing to save.
+        await removeEmployeeFromDepartment({
+          variables: { employeeId: savedEmployeeId },
         });
       }
       await refetchEmployees();

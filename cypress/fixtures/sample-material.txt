@@ -1,0 +1,1 @@
+Cypress test fixture — study material file upload regression check.

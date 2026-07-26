@@ -7,14 +7,12 @@ import {
   CampaignRounded,
   CheckCircleRounded,
   CloseRounded,
-  EditRounded,
   GroupsRounded,
   PersonRounded,
   SchoolRounded,
   SearchRounded,
   SettingsRounded,
   VerifiedUserRounded,
-  VisibilityRounded,
   WorkRounded,
 } from "@mui/icons-material";
 import {
@@ -36,6 +34,7 @@ import { RhfTextField } from "@/components/form";
 import type { GetTenantRolesQuery } from "@/graphql/generated";
 import {
   permissionGroups,
+  permissionLookup,
   roleTemplates,
 } from "./permission-registry";
 
@@ -126,27 +125,15 @@ export function CreateRoleDialog({
     );
   };
 
-  const toggleGroupRead = (groupKey: string) => {
+  const toggleGroupAll = (groupKey: string) => {
     const group = permissionGroups.find((g) => g.key === groupKey);
     if (!group) return;
-    const readKeys = group.options.map((o) => o.readKey);
-    const allOn = readKeys.every((k) => selectedPermissions.includes(k));
+    const keys = group.options.map((o) => o.value);
+    const allOn = keys.every((k) => selectedPermissions.includes(k));
     setPermissions(
       allOn
-        ? selectedPermissions.filter((p) => !readKeys.includes(p))
-        : [...new Set([...selectedPermissions, ...readKeys])],
-    );
-  };
-
-  const toggleGroupWrite = (groupKey: string) => {
-    const group = permissionGroups.find((g) => g.key === groupKey);
-    if (!group) return;
-    const writeKeys = group.options.map((o) => o.writeKey);
-    const allOn = writeKeys.every((k) => selectedPermissions.includes(k));
-    setPermissions(
-      allOn
-        ? selectedPermissions.filter((p) => !writeKeys.includes(p))
-        : [...new Set([...selectedPermissions, ...writeKeys])],
+        ? selectedPermissions.filter((p) => !keys.includes(p))
+        : [...new Set([...selectedPermissions, ...keys])],
     );
   };
 
@@ -175,13 +162,11 @@ export function CreateRoleDialog({
     filteredGroups[0] ??
     null;
 
-  const readCount = selectedPermissions.filter((p) =>
-    p.endsWith("_READ"),
+  const totalCount = selectedPermissions.length;
+  const readOnlyCount = selectedPermissions.filter(
+    (p) => permissionLookup.get(p)?.readOnly,
   ).length;
-  const writeCount = selectedPermissions.filter((p) =>
-    p.endsWith("_WRITE"),
-  ).length;
-  const totalCount = readCount + writeCount;
+  const manageCount = totalCount - readOnlyCount;
 
   return (
     <Dialog
@@ -369,10 +354,8 @@ export function CreateRoleDialog({
                   (g) => g.key === group.key,
                 );
                 const grantedCount =
-                  fullGroup?.options.filter(
-                    (o) =>
-                      selectedPermissions.includes(o.readKey) ||
-                      selectedPermissions.includes(o.writeKey),
+                  fullGroup?.options.filter((o) =>
+                    selectedPermissions.includes(o.value),
                   ).length ?? 0;
                 const isActive = group.key === activeGroup?.key;
 
@@ -508,46 +491,24 @@ export function CreateRoleDialog({
                     >
                       Quick select
                     </Typography>
-                    <Stack direction="row" spacing={1}>
-                      <Button
-                        size="small"
-                        variant="outlined"
-                        startIcon={
-                          <VisibilityRounded sx={{ fontSize: 14 }} />
-                        }
-                        onClick={() => toggleGroupRead(activeGroup.key)}
-                        sx={{
-                          fontSize: 12,
-                          py: 0.35,
-                          borderColor: alpha("#1976d2", 0.35),
-                          color: "#1976d2",
-                          "&:hover": {
-                            borderColor: "#1976d2",
-                            bgcolor: alpha("#1976d2", 0.06),
-                          },
-                        }}
-                      >
-                        All read
-                      </Button>
-                      <Button
-                        size="small"
-                        variant="outlined"
-                        startIcon={<EditRounded sx={{ fontSize: 14 }} />}
-                        onClick={() => toggleGroupWrite(activeGroup.key)}
-                        sx={{
-                          fontSize: 12,
-                          py: 0.35,
-                          borderColor: alpha("#2563eb", 0.4),
-                          color: "#1d4ed8",
-                          "&:hover": {
-                            borderColor: "#2563eb",
-                            bgcolor: alpha("#2563eb", 0.06),
-                          },
-                        }}
-                      >
-                        All write
-                      </Button>
-                    </Stack>
+                    <Button
+                      size="small"
+                      variant="outlined"
+                      startIcon={<CheckCircleRounded sx={{ fontSize: 14 }} />}
+                      onClick={() => toggleGroupAll(activeGroup.key)}
+                      sx={{
+                        fontSize: 12,
+                        py: 0.35,
+                        borderColor: alpha("#2563eb", 0.4),
+                        color: "#1d4ed8",
+                        "&:hover": {
+                          borderColor: "#2563eb",
+                          bgcolor: alpha("#2563eb", 0.06),
+                        },
+                      }}
+                    >
+                      Grant all
+                    </Button>
                   </Stack>
                 </Box>
 
@@ -555,13 +516,9 @@ export function CreateRoleDialog({
                 <Box sx={{ flex: 1, overflowY: "auto", p: 2 }}>
                   <Stack spacing={1}>
                     {activeGroup.options.map((option) => {
-                      const isRead = selectedPermissions.includes(
-                        option.readKey,
+                      const isGranted = selectedPermissions.includes(
+                        option.value,
                       );
-                      const isWrite = selectedPermissions.includes(
-                        option.writeKey,
-                      );
-                      const isAny = isRead || isWrite;
 
                       return (
                         <Box
@@ -571,13 +528,13 @@ export function CreateRoleDialog({
                             alignItems: "center",
                             gap: 2,
                             border: "1px solid",
-                            borderColor: isAny
+                            borderColor: isGranted
                               ? alpha("#2563eb", 0.28)
                               : alpha("#0f172a", 0.09),
                             borderRadius: 2,
                             px: 2,
                             py: 1.5,
-                            bgcolor: isAny
+                            bgcolor: isGranted
                               ? alpha("#2563eb", 0.04)
                               : "#ffffff",
                             transition:
@@ -585,12 +542,29 @@ export function CreateRoleDialog({
                           }}
                         >
                           <Box sx={{ flex: 1, minWidth: 0 }}>
-                            <Typography
-                              variant="body2"
-                              sx={{ fontWeight: 600, lineHeight: 1.4 }}
-                            >
-                              {option.label}
-                            </Typography>
+                            <Stack direction="row" spacing={0.75} alignItems="center">
+                              <Typography
+                                variant="body2"
+                                sx={{ fontWeight: 600, lineHeight: 1.4 }}
+                              >
+                                {option.label}
+                              </Typography>
+                              {option.readOnly ? (
+                                <Typography
+                                  variant="caption"
+                                  sx={{
+                                    fontSize: 10,
+                                    color: "text.secondary",
+                                    border: "1px solid",
+                                    borderColor: alpha("#0f172a", 0.15),
+                                    borderRadius: 1,
+                                    px: 0.5,
+                                  }}
+                                >
+                                  Read only
+                                </Typography>
+                              ) : null}
+                            </Stack>
                             <Typography
                               variant="caption"
                               color="text.secondary"
@@ -600,66 +574,38 @@ export function CreateRoleDialog({
                             </Typography>
                           </Box>
 
-                          <Stack direction="row" spacing={0.75} flexShrink={0}>
-                            <Button
-                              size="small"
-                              variant={isRead ? "contained" : "outlined"}
-                              onClick={() => toggle(option.readKey)}
-                              startIcon={
-                                <VisibilityRounded sx={{ fontSize: 13 }} />
-                              }
-                              sx={{
-                                fontSize: 12,
-                                py: 0.4,
-                                minWidth: 76,
-                                ...(isRead
-                                  ? {
-                                      bgcolor: "#1976d2",
-                                      "&:hover": { bgcolor: "#1565c0" },
-                                    }
-                                  : {
-                                      borderColor: alpha("#0f172a", 0.2),
-                                      color: "text.secondary",
-                                      "&:hover": {
-                                        borderColor: "#1976d2",
-                                        color: "#1976d2",
-                                        bgcolor: alpha("#1976d2", 0.05),
-                                      },
-                                    }),
-                              }}
-                            >
-                              Read
-                            </Button>
-                            <Button
-                              size="small"
-                              variant={isWrite ? "contained" : "outlined"}
-                              onClick={() => toggle(option.writeKey)}
-                              startIcon={
-                                <EditRounded sx={{ fontSize: 13 }} />
-                              }
-                              sx={{
-                                fontSize: 12,
-                                py: 0.4,
-                                minWidth: 76,
-                                ...(isWrite
-                                  ? {
-                                      bgcolor: "#2563eb",
-                                      "&:hover": { bgcolor: "#1d4ed8" },
-                                    }
-                                  : {
-                                      borderColor: alpha("#0f172a", 0.2),
-                                      color: "text.secondary",
-                                      "&:hover": {
-                                        borderColor: "#2563eb",
-                                        color: "#1d4ed8",
-                                        bgcolor: alpha("#2563eb", 0.05),
-                                      },
-                                    }),
-                              }}
-                            >
-                              Write
-                            </Button>
-                          </Stack>
+                          <Button
+                            size="small"
+                            variant={isGranted ? "contained" : "outlined"}
+                            onClick={() => toggle(option.value)}
+                            startIcon={
+                              isGranted ? (
+                                <CheckCircleRounded sx={{ fontSize: 13 }} />
+                              ) : undefined
+                            }
+                            sx={{
+                              fontSize: 12,
+                              py: 0.4,
+                              minWidth: 88,
+                              flexShrink: 0,
+                              ...(isGranted
+                                ? {
+                                    bgcolor: "#2563eb",
+                                    "&:hover": { bgcolor: "#1d4ed8" },
+                                  }
+                                : {
+                                    borderColor: alpha("#0f172a", 0.2),
+                                    color: "text.secondary",
+                                    "&:hover": {
+                                      borderColor: "#2563eb",
+                                      color: "#1d4ed8",
+                                      bgcolor: alpha("#2563eb", 0.05),
+                                    },
+                                  }),
+                            }}
+                          >
+                            {isGranted ? "Granted" : "Grant"}
+                          </Button>
                         </Box>
                       );
                     })}
@@ -712,7 +658,7 @@ export function CreateRoleDialog({
                 }}
               />
               <Typography sx={{ fontSize: 12, color: "text.secondary" }}>
-                {readCount} read
+                {readOnlyCount} read-only
               </Typography>
             </Stack>
             <Stack direction="row" spacing={0.75} alignItems="center">
@@ -725,7 +671,7 @@ export function CreateRoleDialog({
                 }}
               />
               <Typography sx={{ fontSize: 12, color: "text.secondary" }}>
-                {writeCount} write
+                {manageCount} manage
               </Typography>
             </Stack>
           </Stack>

@@ -7,6 +7,7 @@ import {
   AddRounded,
   CancelRounded,
   CheckCircleRounded,
+  DownloadRounded,
   GroupsRounded,
   ManageAccountsRounded,
   MoneyRounded,
@@ -16,6 +17,7 @@ import {
   PrintRounded,
   ReceiptLongRounded,
   ThumbUpAltRounded,
+  VisibilityRounded,
 } from "@mui/icons-material";
 import { useMutation, useQuery } from "@apollo/client/react";
 import {
@@ -73,6 +75,7 @@ import {
   type GetPayrollRunsQuery,
 } from "@/graphql/hr-extended";
 import { SearchSelect, type SearchSelectOption } from "@/components/form";
+import { downloadPdf, viewPdf } from "@/lib/pdf-actions";
 import { getErrorMessage } from "@/lib/errors";
 import { hasPermission } from "@/lib/auth/roles";
 import { employeeDisplayName } from "@/lib/hr/employeeName";
@@ -814,10 +817,34 @@ export function PayrollWorkspace() {
                           {payslipPeriod ? ` · ${payslipPeriod}` : ""}
                         </Typography>
                       </Box>
-                      <Chip
-                        label={`Net ৳ ${payslip.netAmount.toLocaleString()}`}
-                        color="success"
-                      />
+                      <Stack direction="row" spacing={1} alignItems="center">
+                        <Chip
+                          label={`Net ৳ ${payslip.netAmount.toLocaleString()}`}
+                          color="success"
+                        />
+                        {payslip.payslipPdfUrl && (
+                          <>
+                            <Tooltip title="View payslip PDF">
+                              <IconButton size="small" onClick={() => viewPdf(payslip.payslipPdfUrl!)}>
+                                <VisibilityRounded fontSize="small" />
+                              </IconButton>
+                            </Tooltip>
+                            <Tooltip title="Download payslip PDF">
+                              <IconButton
+                                size="small"
+                                onClick={() =>
+                                  downloadPdf(
+                                    payslip.payslipPdfUrl!,
+                                    `payslip-${payslipEmployee?.employeeCode ?? payslip.employeeId}.pdf`,
+                                  )
+                                }
+                              >
+                                <DownloadRounded fontSize="small" />
+                              </IconButton>
+                            </Tooltip>
+                          </>
+                        )}
+                      </Stack>
                     </Stack>
                     <Box
                       sx={{

@@ -672,6 +672,7 @@ export type PayrollEntry = {
   taxableIncome: number;
   taxes: number;
   netAmount: number;
+  payslipPdfUrl: string | null;
 };
 
 const PAYROLL_ENTRY_FIELDS = `
@@ -685,6 +686,7 @@ const PAYROLL_ENTRY_FIELDS = `
   taxableIncome
   taxes
   netAmount
+  payslipPdfUrl
 `;
 
 export type GetPayslipQueryVariables = {

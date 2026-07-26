@@ -45,3 +45,11 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# IDE
+.idea/
+
+# local scratch / credentials
+CREDS.md
+lint_output.txt
+/test-results/

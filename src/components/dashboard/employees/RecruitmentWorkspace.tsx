@@ -52,6 +52,7 @@ import {
   type GetVacanciesQuery,
   type GetApplicationsByVacancyQuery,
 } from "@/graphql/hr-extended";
+import { GetBranchesDocument, GetCenterDocument } from "@/graphql/generated";
 
 type Vacancy = GetVacanciesQuery["getVacancies"][number];
 type Application = GetApplicationsByVacancyQuery["getApplicationsByVacancy"][number];
@@ -64,9 +65,8 @@ const jobTypeOptions: RhfSelectOption[] = [
 ];
 
 const reviewStatusOptions = [
-  { label: "Shortlisted", value: "shortlisted" },
-  { label: "Rejected", value: "rejected" },
-  { label: "On hold", value: "on_hold" },
+  { label: "Shortlisted", value: "SHORTLISTED" },
+  { label: "Rejected", value: "REJECTED" },
 ];
 
 const vacancySchema = yup
@@ -95,15 +95,15 @@ const vacancySchema = yup
 type VacancyFormValues = yup.InferType<typeof vacancySchema>;
 
 const STATUS_COLOR: Record<string, "default" | "primary" | "success" | "error" | "warning"> = {
-  open: "success",
-  closed: "default",
-  pending: "warning",
-  applied: "primary",
-  shortlisted: "primary",
-  rejected: "error",
-  on_hold: "warning",
-  hired: "success",
-  interviewed: "warning",
+  OPEN: "success",
+  CLOSED: "default",
+  FILLED: "primary",
+  RECEIVED: "primary",
+  SHORTLISTED: "primary",
+  INTERVIEW_SCHEDULED: "warning",
+  OFFERED: "warning",
+  REJECTED: "error",
+  HIRED: "success",
 };
 
 function TabPanel({ children, value, index }: { children: React.ReactNode; value: number; index: number }) {
@@ -126,7 +126,7 @@ export function RecruitmentWorkspace() {
 
   // Review dialog
   const [reviewTarget, setReviewTarget] = useState<Application | null>(null);
-  const [reviewStatus, setReviewStatus] = useState("shortlisted");
+  const [reviewStatus, setReviewStatus] = useState("SHORTLISTED");
   const [reviewError, setReviewError] = useState<string | null>(null);
 
   // Hire dialog
@@ -138,6 +138,13 @@ export function RecruitmentWorkspace() {
     fetchPolicy: "cache-and-network",
   });
   const vacancies = vacanciesData?.getVacancies ?? [];
+
+  const { data: centerData } = useQuery(GetCenterDocument);
+  const { data: branchesData } = useQuery(GetBranchesDocument, {
+    skip: !centerData?.getCenter?.id,
+    variables: { centerId: centerData?.getCenter?.id ?? "" },
+  });
+  const branches = branchesData?.getBranches ?? [];
 
   const { data: applicationsData, refetch: refetchApplications } = useQuery(
     GetApplicationsByVacancyDocument,
@@ -301,9 +308,9 @@ export function RecruitmentWorkspace() {
     }
   };
 
-  const openVacancies = vacancies.filter((v) => v.status === "open").length;
+  const openVacancies = vacancies.filter((v) => v.status === "OPEN").length;
   const totalApplications = applications.length;
-  const hiredCount = applications.filter((a) => a.status === "hired").length;
+  const hiredCount = applications.filter((a) => a.status === "HIRED").length;
 
   return (
     <>
@@ -475,7 +482,7 @@ export function RecruitmentWorkspace() {
                         }}
                         onReview={() => {
                           setReviewTarget(app);
-                          setReviewStatus("shortlisted");
+                          setReviewStatus("SHORTLISTED");
                           setReviewError(null);
                         }}
                         onHire={() => {
@@ -674,14 +681,20 @@ export function RecruitmentWorkspace() {
               You are about to create an employee record for{" "}
               <strong>{hireTarget?.applicantName}</strong>.
             </Typography>
-            <TextField
-              label="Branch ID *"
-              value={hireForm.branchId}
-              onChange={(e) => setHireForm((f) => ({ ...f, branchId: e.target.value }))}
-              size="small"
-              fullWidth
-              helperText="Enter the branch ID to assign this employee to"
-            />
+            <FormControl fullWidth size="small">
+              <InputLabel>Branch *</InputLabel>
+              <Select
+                value={hireForm.branchId}
+                label="Branch *"
+                onChange={(e) => setHireForm((f) => ({ ...f, branchId: e.target.value }))}
+              >
+                {branches.map((b) => (
+                  <MenuItem key={b.id} value={b.id}>
+                    {b.name}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
             <Box sx={{ display: "grid", gap: 2, gridTemplateColumns: "1fr 1fr" }}>
               <TextField
                 label="Department *"
@@ -878,11 +891,11 @@ function ApplicationRow({
   offerLoading: boolean;
 }) {
   const statusColor = STATUS_COLOR[application.status] ?? "default";
-  const canHire = application.status === "shortlisted" || application.status === "interviewed";
+  const canHire = application.status === "SHORTLISTED" || application.status === "INTERVIEW_SCHEDULED";
   const canOffer =
-    application.status === "hired" ||
-    application.status === "shortlisted" ||
-    application.status === "interviewed";
+    application.status === "HIRED" ||
+    application.status === "SHORTLISTED" ||
+    application.status === "INTERVIEW_SCHEDULED";
 
   return (
     <Paper
@@ -917,7 +930,7 @@ function ApplicationRow({
             variant="outlined"
             startIcon={<EventRounded />}
             onClick={onScheduleInterview}
-            disabled={application.status === "hired" || application.status === "rejected"}
+            disabled={application.status === "HIRED" || application.status === "REJECTED"}
           >
             Interview
           </Button>
@@ -925,7 +938,7 @@ function ApplicationRow({
             size="small"
             variant="outlined"
             onClick={onReview}
-            disabled={application.status === "hired"}
+            disabled={application.status === "HIRED"}
           >
             Review
           </Button>

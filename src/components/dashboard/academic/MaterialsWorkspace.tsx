@@ -79,6 +79,17 @@ type SubmissionRecord = GetSubmissionsQuery["getSubmissions"][number];
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
+const readFileAsBase64 = (file: File): Promise<string> =>
+  new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const result = String(reader.result ?? "");
+      resolve(result.split(",")[1] ?? "");
+    };
+    reader.onerror = () => reject(new Error("Unable to read the file."));
+    reader.readAsDataURL(file);
+  });
+
 const fmtDate = (d?: string | null) =>
   d
     ? new Date(d).toLocaleDateString("en-BD", {
@@ -128,7 +139,7 @@ function UploadMaterialDialog({
   subjectOptions: RhfSelectOption[];
   errorMessage: string | null;
   onClose: () => void;
-  onSubmit: (v: UploadFormValues) => Promise<void>;
+  onSubmit: (v: UploadFormValues, file: File | null) => Promise<void>;
 }) {
   const { control, handleSubmit, reset, watch } = useForm<UploadFormValues>({
     resolver: yupResolver(uploadSchema),
@@ -140,11 +151,14 @@ function UploadMaterialDialog({
     },
   });
 
+  const [materialFile, setMaterialFile] = useState<File | null>(null);
+
   const visibleToAll = watch("visibleToAll");
 
   const handleClose = () => {
     if (!isSubmitting) {
       reset();
+      setMaterialFile(null);
       onClose();
     }
   };
@@ -155,8 +169,9 @@ function UploadMaterialDialog({
       <Box
         component="form"
         onSubmit={handleSubmit(async (v) => {
-          await onSubmit(v);
+          await onSubmit(v, materialFile);
           reset();
+          setMaterialFile(null);
         })}
         noValidate
       >
@@ -178,6 +193,14 @@ function UploadMaterialDialog({
               options={subjectOptions}
               fullWidth
             />
+            <Button component="label" variant="outlined" startIcon={<CloudUploadRounded />} fullWidth>
+              {materialFile ? materialFile.name : "Attach a file (optional)"}
+              <input
+                type="file"
+                hidden
+                onChange={(e) => setMaterialFile(e.target.files?.[0] ?? null)}
+              />
+            </Button>
             <RhfTextField
               control={control}
               name="videoUrl"
@@ -992,10 +1015,11 @@ export function MaterialsWorkspace() {
 
   // ── Handlers ───────────────────────────────────────────────────────────────
 
-  const handleUpload = async (values: UploadFormValues) => {
+  const handleUpload = async (values: UploadFormValues, file: File | null) => {
     if (!selectedBatchId) return;
     setUploadError(null);
     try {
+      const fileDataBase64 = file ? await readFileAsBase64(file) : undefined;
       await uploadMaterial({
         variables: {
           material: {
@@ -1004,6 +1028,8 @@ export function MaterialsWorkspace() {
             subjectId: values.subjectId?.trim() || undefined,
             videoUrl: values.videoUrl?.trim() || undefined,
             visibleToAll: values.visibleToAll ?? true,
+            fileDataBase64,
+            fileName: file?.name,
           },
         },
       });

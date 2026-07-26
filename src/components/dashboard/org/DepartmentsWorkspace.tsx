@@ -354,6 +354,7 @@ export function DepartmentsWorkspace() {
             parentDepartmentId: editTarget.parentDepartmentId ?? "",
             status: editTarget.status,
           }}
+          initialDefaultRoles={editTarget.defaultRoles ?? []}
           parentOptions={parentOptions.filter((o) => o.value !== editTarget.id)}
           errorMessage={editError}
           onClose={() => !updateState.loading && setEditTarget(null)}

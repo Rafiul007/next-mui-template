@@ -4,8 +4,10 @@ import dayjs from "dayjs";
 import {
   BadgeRounded,
   BalanceRounded,
+  DownloadRounded,
   PaymentsRounded,
   PrintRounded,
+  VisibilityRounded,
   WorkRounded,
 } from "@mui/icons-material";
 import { useQuery } from "@apollo/client/react";
@@ -32,6 +34,7 @@ import {
 } from "@/graphql/hr-extended";
 import { SummaryCard } from "@/components/ui";
 import { printPayslip } from "./payslip-print";
+import { downloadPdf, viewPdf } from "@/lib/pdf-actions";
 
 type LeaveBalance = GetLeaveBalanceQuery["getLeaveBalance"][number];
 
@@ -211,14 +214,36 @@ export function MyProfileWorkspace() {
                   </Typography>
                 </Stack>
                 {payslip ? (
-                  <Button
-                    size="small"
-                    variant="outlined"
-                    startIcon={<PrintRounded />}
-                    onClick={handlePrintPayslip}
-                  >
-                    Print
-                  </Button>
+                  <Stack direction="row" spacing={1}>
+                    {payslip.payslipPdfUrl && (
+                      <>
+                        <Button
+                          size="small"
+                          variant="outlined"
+                          startIcon={<VisibilityRounded />}
+                          onClick={() => viewPdf(payslip.payslipPdfUrl!)}
+                        >
+                          View
+                        </Button>
+                        <Button
+                          size="small"
+                          variant="outlined"
+                          startIcon={<DownloadRounded />}
+                          onClick={() => downloadPdf(payslip.payslipPdfUrl!, "payslip.pdf")}
+                        >
+                          Download
+                        </Button>
+                      </>
+                    )}
+                    <Button
+                      size="small"
+                      variant="outlined"
+                      startIcon={<PrintRounded />}
+                      onClick={handlePrintPayslip}
+                    >
+                      Print
+                    </Button>
+                  </Stack>
                 ) : null}
               </Stack>
 

@@ -2,7 +2,13 @@
 
 import { useState } from "react";
 import dayjs from "dayjs";
-import { CheckCircleRounded, LeaderboardRounded, VisibilityRounded } from "@mui/icons-material";
+import {
+  CheckCircleRounded,
+  DescriptionRounded,
+  DownloadRounded,
+  LeaderboardRounded,
+  VisibilityRounded,
+} from "@mui/icons-material";
 import {
   Box,
   Button,
@@ -11,18 +17,24 @@ import {
   DialogActions,
   DialogContent,
   DialogTitle,
+  IconButton,
   Paper,
   Stack,
+  Tooltip,
   Typography,
   alpha,
 } from "@mui/material";
-import { useQuery } from "@apollo/client/react";
+import { useLazyQuery, useQuery } from "@apollo/client/react";
 import { MaterialReactTable, type MRT_ColumnDef } from "material-react-table";
+import { toast } from "react-hot-toast";
 import {
   GetMyResultBreakdownDocument,
   GetMyResultsDocument,
+  GetResultSlipUrlDocument,
   type GetMyResultsQuery,
 } from "@/graphql/generated";
+import { getErrorMessage } from "@/lib/errors";
+import { downloadPdf, viewPdf } from "@/lib/pdf-actions";
 
 type MyResult = GetMyResultsQuery["myResults"][number];
 
@@ -126,6 +138,19 @@ function ResultBreakdownDialog({
 export function ResultsWorkspace() {
   const { data, loading } = useQuery(GetMyResultsDocument);
   const [breakdownExamId, setBreakdownExamId] = useState<string | null>(null);
+  const [fetchResultSlip, { loading: resultSlipLoading }] = useLazyQuery(GetResultSlipUrlDocument);
+
+  const handleResultSlip = async (examId: string, studentId: string, mode: "view" | "download") => {
+    try {
+      const { data: slipData } = await fetchResultSlip({ variables: { examId, studentId } });
+      const url = slipData?.getResultSlipUrl;
+      if (!url) return;
+      if (mode === "view") viewPdf(url);
+      else downloadPdf(url, `result-slip-${examId}.pdf`);
+    } catch (err) {
+      toast.error(getErrorMessage(err, "Unable to generate result slip."));
+    }
+  };
 
   const results = [...(data?.myResults ?? [])].sort((a, b) =>
     (b.publishedAt ?? "").localeCompare(a.publishedAt ?? ""),
@@ -199,17 +224,37 @@ export function ResultsWorkspace() {
     {
       id: "actions",
       header: "",
-      size: 100,
+      size: 220,
       enableSorting: false,
       Cell: ({ row }) => (
-        <Button
-          size="small"
-          variant="outlined"
-          startIcon={<VisibilityRounded />}
-          onClick={() => setBreakdownExamId(row.original.examId)}
-        >
-          Details
-        </Button>
+        <Stack direction="row" spacing={1}>
+          <Button
+            size="small"
+            variant="outlined"
+            startIcon={<VisibilityRounded />}
+            onClick={() => setBreakdownExamId(row.original.examId)}
+          >
+            Details
+          </Button>
+          <Tooltip title="View result slip">
+            <IconButton
+              size="small"
+              disabled={resultSlipLoading}
+              onClick={() => handleResultSlip(row.original.examId, row.original.studentId, "view")}
+            >
+              <DescriptionRounded fontSize="small" />
+            </IconButton>
+          </Tooltip>
+          <Tooltip title="Download result slip">
+            <IconButton
+              size="small"
+              disabled={resultSlipLoading}
+              onClick={() => handleResultSlip(row.original.examId, row.original.studentId, "download")}
+            >
+              <DownloadRounded fontSize="small" />
+            </IconButton>
+          </Tooltip>
+        </Stack>
       ),
     },
   ];
